@@ -82,7 +82,7 @@ const Header = () => {
             <div className="flex items-center justify-between gap-5">
                 <Link href="/" className="inline-block shrink-0 lg:ml-2.5">
                     <Image
-                        src="/images/logo.svg"
+                        src="/images/new/rmk-logo.png"
                         width={145}
                         height={34}
                         alt="Logo"
