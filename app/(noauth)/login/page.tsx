@@ -36,7 +36,7 @@ export default function Login() {
     const onSubmit = async (data: LoginFormData) => {
         setLoading(true)
         try {
-            const response = await api.post(routes.login, data)
+            await api.post(routes.login, data)
             toast.success('Login Successful!')
             router.push('/')
         } catch (error: any) {
