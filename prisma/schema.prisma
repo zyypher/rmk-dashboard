@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleType {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  role      RoleType @default(VIEWER)
+  password  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  passwordResetTokens PasswordResetToken[]
+}
+
+model Trainer {
+  id         String         @id @default(uuid())
+  name       String
+  email      String?
+  phone      String?
+  languages  String[]
+  locationId String?
+  location   Location?      @relation(fields: [locationId], references: [id])
+  courses    Course[]
+  leaves     TrainerLeave[]
+}
+
+model TrainerLeave {
+  id        String   @id @default(uuid())
+  trainerId String
+  date      DateTime
+  reason    String?
+  trainer   Trainer  @relation(fields: [trainerId], references: [id])
+}
+
+model Location {
+  id        String            @id @default(uuid())
+  name      String
+  address   String
+  rooms     Room[]
+  trainers  Trainer[]
+  sessions  TrainingSession[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+model Room {
+  id         String            @id @default(uuid())
+  name       String
+  isOnline   Boolean
+  capacity   Int?
+  locationId String
+  location   Location          @relation(fields: [locationId], references: [id])
+  sessions   TrainingSession[]
+}
+
+model Client {
+  id           String        @id @default(uuid())
+  name         String
+  phone        String
+  email        String?
+  company      String?
+  createdAt    DateTime      @default(now())
+  certificates Certificate[]
+}
+
+model Course {
+  id           String            @id @default(uuid())
+  title        String
+  category     String
+  languages    String[]
+  duration     String
+  trainerId    String
+  trainer      Trainer           @relation(fields: [trainerId], references: [id])
+  isCertified  Boolean           @default(false)
+  isPublic     Boolean           @default(true)
+  sessions     TrainingSession[]
+  certificates Certificate[]
+}
+
+model TrainingSession {
+  id           String        @id @default(uuid())
+  courseId     String
+  roomId       String
+  date         DateTime
+  startTime    DateTime
+  endTime      DateTime
+  locationId   String?
+  status       SessionStatus @default(SCHEDULED)
+  participants Int?
+  notes        String?
+
+  course   Course    @relation(fields: [courseId], references: [id])
+  room     Room      @relation(fields: [roomId], references: [id])
+  location Location? @relation(fields: [locationId], references: [id])
+}
+
+model Certificate {
+  id            String   @id @default(uuid())
+  clientId      String
+  courseId      String
+  issueDate     DateTime
+  certificateId String   @unique
+  issuedBy      String
+  client        Client   @relation(fields: [clientId], references: [id])
+  course        Course   @relation(fields: [courseId], references: [id])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  token     String   @unique
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Meeting {
+  id      String   @id @default(uuid())
+  date    DateTime
+  subject String
+  time    String
+  guest   String?
+  format  String?
+  link    String?
+  notes   String?
+}
+
+model Reminder {
+  id        String   @id @default(uuid())
+  message   String
+  remindAt  DateTime
+  createdAt DateTime @default(now())
+}
