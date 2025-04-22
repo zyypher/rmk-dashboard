@@ -34,15 +34,17 @@ model User {
 }
 
 model Trainer {
-  id         String         @id @default(uuid())
-  name       String
-  email      String?
-  phone      String?
-  languages  String[]
-  locationId String?
-  location   Location?      @relation(fields: [locationId], references: [id])
-  courses    Course[]
-  leaves     TrainerLeave[]
+  id            String         @id @default(uuid())
+  name          String
+  email         String?
+  phone         String?
+  languages     Language[]     @relation("TrainerLanguages")
+  locationId    String?
+  location      Location?      @relation(fields: [locationId], references: [id])
+  courses       Course[]
+  leaves        TrainerLeave[]
+  availableDays Day[]
+  timeSlots     Json? // Store array of { start: '09:00', end: '13:00' }
 }
 
 model TrainerLeave {
@@ -150,4 +152,20 @@ model Reminder {
   message   String
   remindAt  DateTime
   createdAt DateTime @default(now())
+}
+
+model Language {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  trainers Trainer[] @relation("TrainerLanguages")
+}
+
+enum Day {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
 }
