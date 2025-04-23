@@ -164,7 +164,8 @@ const UsersPage = () => {
                     >
                         <option value="">Select Role</option>
                         <option value="ADMIN">Admin</option>
-                        <option value="SALESPERSON">Salesperson</option>
+                        <option value="EDITOR">Editor</option>
+                        <option value="VIEWER">Viewer</option>
                     </select>
                     {errors.role && (
                         <p className="text-red-500">
