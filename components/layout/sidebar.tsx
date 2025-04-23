@@ -15,6 +15,7 @@ import {
     CircleUserRound,
     AlarmClock,
     Languages,
+    Tags,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { Card } from '@/components/ui/card'
@@ -75,6 +76,10 @@ const Sidebar = () => {
                     <NavLink href="/courses" className="nav-link">
                         <BookOpenCheck className="size-[18px]" />
                         <span>Courses</span>
+                    </NavLink>
+                    <NavLink href="/categories" className="nav-link">
+                        <Tags className="size-[18px]" />
+                        <span>Categories</span>
                     </NavLink>
                     <NavLink href="/trainers" className="nav-link">
                         <GraduationCap className="size-[18px]" />

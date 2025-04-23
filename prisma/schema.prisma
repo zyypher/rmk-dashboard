@@ -26,9 +26,9 @@ model User {
   email               String               @unique
   phone               String?
   role                RoleType             @default(VIEWER)
-  firstName          String?
-  lastName           String?
-  phoneNumber        String?
+  firstName           String?
+  lastName            String?
+  phoneNumber         String?
   password            String?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
@@ -91,7 +91,8 @@ model Client {
 model Course {
   id           String            @id @default(uuid())
   title        String
-  category     String
+  categoryId   String
+  category     Category          @relation(fields: [categoryId], references: [id]) // ✅ Explicit relation
   languages    String[]
   duration     String
   trainerId    String
@@ -160,6 +161,12 @@ model Language {
   id       String    @id @default(uuid())
   name     String    @unique
   trainers Trainer[] @relation("TrainerLanguages")
+}
+
+model Category {
+  id      String   @id @default(uuid())
+  name    String   @unique
+  courses Course[]
 }
 
 enum Day {
