@@ -14,9 +14,10 @@ interface MultiSelectProps {
   defaultValue?: string[]
   onChange?: (values: string[]) => void
   children: React.ReactNode
+  label?: string
 }
 
-export function MultiSelect({ defaultValue = [], onChange, children }: MultiSelectProps) {
+export function MultiSelect({ defaultValue = [], onChange, children, label }: MultiSelectProps) {
   const [selected, setSelected] = React.useState<string[]>(defaultValue)
 
   const toggle = (value: string) => {
@@ -31,7 +32,9 @@ export function MultiSelect({ defaultValue = [], onChange, children }: MultiSele
   return (
     <MultiSelectContext.Provider value={{ selected, toggle }}>
       <div className="rounded border px-3 py-2">
-        <div className="mb-2 text-sm font-medium text-gray-700">Languages</div>
+        {label && (
+          <div className="mb-2 text-sm font-medium text-gray-700">{label}</div>
+        )}
         <div className="flex flex-wrap gap-2">{children}</div>
       </div>
     </MultiSelectContext.Provider>
