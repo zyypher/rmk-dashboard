@@ -92,8 +92,8 @@ model Course {
   id           String            @id @default(uuid())
   title        String
   categoryId   String
-  category     Category          @relation(fields: [categoryId], references: [id]) // ✅ Explicit relation
-  languages    String[]
+  category     Category          @relation(fields: [categoryId], references: [id])
+  languages    Language[]        @relation("CourseLanguages") // ✅ many-to-many relation
   duration     String
   trainerId    String
   trainer      Trainer           @relation(fields: [trainerId], references: [id])
@@ -161,6 +161,7 @@ model Language {
   id       String    @id @default(uuid())
   name     String    @unique
   trainers Trainer[] @relation("TrainerLanguages")
+  courses  Course[]  @relation("CourseLanguages") // ✅ back relation
 }
 
 model Category {

@@ -1,4 +1,5 @@
-import type { Config } from 'tailwindcss'
+import { type Config } from 'tailwindcss'
+import defaultTheme from 'tailwindcss/defaultTheme'
 
 const config: Config = {
     content: [
@@ -21,42 +22,38 @@ const config: Config = {
         fontFamily: {
             'plus-jakarta': ['Plus Jakarta Sans', 'sans-serif'],
         },
-        colors: {
-            transparent: 'transparent',
-            current: 'currentColor',
-            white: '#FFFFFF',
-            black: '#171718',
-            primary: '#335CFF',
-            gray: {
-                DEFAULT: '#525866',
-                100: '#FAFBFC',
-                200: '#F9FAFB',
-                300: '#E2E8F0',
-                400: '#F5F7FA',
-                500: '#B9BEC6',
-                600: '#9CA3AF',
-                700: '#6B7280',
-            },
-            danger: {
-                DEFAULT: '#EF4444',
-                light: '#FEE2E2',
-            },
-            success: {
-                DEFAULT: '#22C55E',
-                light: '#DCFCE7',
-            },
-            warning: '#EAB308',
-            'light-theme': '#F4F7FF',
-            'light-orange': '#FFEDD5',
-            'light-blue': '#E0F2FE',
-            'light-purple': '#F3E8FF',
-        },
         extend: {
+            colors: {
+                ...defaultTheme.colors, // ✅ bring back Tailwind colors like red-600
+                primary: '#335CFF',
+                gray: {
+                    DEFAULT: '#525866',
+                    100: '#FAFBFC',
+                    200: '#F9FAFB',
+                    300: '#E2E8F0',
+                    400: '#F5F7FA',
+                    500: '#B9BEC6',
+                    600: '#9CA3AF',
+                    700: '#6B7280',
+                },
+                danger: {
+                    DEFAULT: '#EF4444',
+                    light: '#FEE2E2',
+                },
+                success: {
+                    DEFAULT: '#22C55E',
+                    light: '#DCFCE7',
+                },
+                warning: '#EAB308',
+                'light-theme': '#F4F7FF',
+                'light-orange': '#FFEDD5',
+                'light-blue': '#E0F2FE',
+                'light-purple': '#F3E8FF',
+            },
             boxShadow: {
                 '3xl': '0 1px 2px 0 rgba(95,74,46,0.08), 0 0 0 1px rgba(227,225,222,0.4)',
                 sm: '0 1px 2px 0 rgba(113,116,152,0.1)',
             },
-
             keyframes: {
                 'accordion-down': {
                     from: { height: '0' },
@@ -80,4 +77,5 @@ const config: Config = {
     },
     plugins: [require('tailwindcss-animate')],
 }
+
 export default config
