@@ -19,14 +19,36 @@ export async function DELETE(
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-    try {
-      const data = await req.json();
-      const course = await prisma.course.update({
-        where: { id: params.id },
-        data,
-      });
-      return NextResponse.json(course);
-    } catch (error) {
-      return NextResponse.json({ error: 'Failed to update course' }, { status: 500 });
-    }
+  try {
+    const {
+      title,
+      duration,
+      isCertified,
+      isPublic,
+      categoryId,
+      trainerId,
+      languages,
+    } = await req.json()
+
+    const updated = await prisma.course.update({
+      where: { id: params.id },
+      data: {
+        title,
+        duration,
+        isCertified,
+        isPublic,
+        categoryId,
+        trainerId,
+        languages: {
+          set: [],
+          connect: languages.map((name: string) => ({ name })),
+        },
+      },
+    })
+
+    return NextResponse.json(updated)
+  } catch (error) {
+    console.error('❌ PUT /courses/[id] error:', error)
+    return NextResponse.json({ error: 'Failed to update course' }, { status: 500 })
   }
+}

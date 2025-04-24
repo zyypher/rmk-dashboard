@@ -9,23 +9,46 @@ export async function GET() {
       include: {
         category: true,
         trainer: true,
+        languages: true,
       },
     })
     return NextResponse.json(courses)
   } catch (error) {
+    console.error('Error fetching courses:', error)
     return NextResponse.json({ error: 'Failed to fetch courses' }, { status: 500 })
   }
 }
 
+// POST: Create a new course with proper relation to languages
 export async function POST(req: NextRequest) {
   try {
-    const data = await req.json()
+    const {
+      title,
+      duration,
+      isCertified,
+      isPublic,
+      categoryId,
+      trainerId,
+      languages,
+    } = await req.json()
+
     const course = await prisma.course.create({
-      data,
+      data: {
+        title,
+        duration,
+        isCertified,
+        isPublic,
+        categoryId,
+        trainerId,
+        languages: {
+          connect: languages.map((name: string) => ({ name })),
+        },
+      },
     })
+
     return NextResponse.json(course, { status: 201 })
   } catch (error) {
-    console.error(error)
+    console.error('Error creating course:', error)
     return NextResponse.json({ error: 'Failed to create course' }, { status: 500 })
   }
 }
