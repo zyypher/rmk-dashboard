@@ -16,6 +16,7 @@ import {
     AlarmClock,
     Languages,
     Tags,
+    MonitorSmartphone,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { Card } from '@/components/ui/card'
@@ -84,6 +85,10 @@ const Sidebar = () => {
                     <NavLink href="/trainers" className="nav-link">
                         <GraduationCap className="size-[18px]" />
                         <span>Trainers</span>
+                    </NavLink>
+                    <NavLink href="/rooms" className="nav-link">
+                        <MonitorSmartphone className="size-[18px]" />
+                        <span>Rooms</span>
                     </NavLink>
                     <NavLink href="/sessions" className="nav-link">
                         <CalendarClock className="size-[18px]" />

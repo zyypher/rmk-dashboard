@@ -46,7 +46,7 @@ model Trainer {
   courses       Course[]
   leaves        TrainerLeave[]
   availableDays Day[]
-  timeSlots     Json? // Store array of { start: '09:00', end: '13:00' }
+  timeSlots     Json?
 }
 
 model TrainerLeave {
@@ -68,14 +68,21 @@ model Location {
   updatedAt DateTime          @updatedAt
 }
 
+// ✅ Prisma Schema Update for Room Model
 model Room {
   id         String            @id @default(uuid())
   name       String
-  isOnline   Boolean
+  type       RoomType // "Online" or "Offline"
   capacity   Int?
+  notes      String? // Optional notes field
   locationId String
   location   Location          @relation(fields: [locationId], references: [id])
   sessions   TrainingSession[]
+}
+
+enum RoomType {
+  ONLINE
+  OFFLINE
 }
 
 model Client {
