@@ -90,14 +90,14 @@ const Sidebar = () => {
                         <MonitorSmartphone className="size-[18px]" />
                         <span>Rooms</span>
                     </NavLink>
-                    <NavLink href="/sessions" className="nav-link">
+                    {/* <NavLink href="/sessions" className="nav-link">
                         <CalendarClock className="size-[18px]" />
                         <span>Sessions</span>
-                    </NavLink>
-                    <NavLink href="/certificates" className="nav-link">
+                    </NavLink> */}
+                    {/* <NavLink href="/certificates" className="nav-link">
                         <ScrollText className="size-[18px]" />
                         <span>Certificates</span>
-                    </NavLink>
+                    </NavLink> */}
 
                     <h3 className="mt-2.5 whitespace-nowrap rounded-lg bg-gray-400 px-5 py-2.5 text-xs font-semibold uppercase text-black">
                         Management
