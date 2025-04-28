@@ -36,17 +36,18 @@ model User {
 }
 
 model Trainer {
-  id            String         @id @default(uuid())
-  name          String
-  email         String?
-  phone         String?
-  languages     Language[]     @relation("TrainerLanguages")
-  locationId    String?
-  location      Location?      @relation(fields: [locationId], references: [id])
-  courses       Course[]
-  leaves        TrainerLeave[]
-  availableDays Day[]
-  timeSlots     Json?
+  id             String                 @id @default(uuid())
+  name           String
+  email          String?
+  phone          String?
+  languages      Language[]             @relation("TrainerLanguages")
+  locationId     String?
+  location       Location?              @relation(fields: [locationId], references: [id])
+  courses        Course[]
+  availableDays  Day[]
+  timeSlots      Json?
+  leaves         TrainerLeave[]
+  schedulingRule TrainerSchedulingRule? @relation("TrainerToScheduleRule")
 }
 
 model TrainerLeave {
@@ -58,16 +59,16 @@ model TrainerLeave {
 }
 
 model Location {
-  id         String            @id @default(uuid())
-  name       String
-  address    String
-  type       RoomType          // Online/Offline
-  capacity   Int               // Room Capacity
-  rooms      Room[]            // Relation to rooms
-  trainers   Trainer[]
-  sessions   TrainingSession[]
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  id        String            @id @default(uuid())
+  name      String
+  address   String
+  type      RoomType // Online/Offline
+  capacity  Int // Room Capacity
+  rooms     Room[] // Relation to rooms
+  trainers  Trainer[]
+  sessions  TrainingSession[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 }
 
 // ✅ Prisma Schema Update for Room Model
@@ -187,4 +188,13 @@ enum Day {
   FRI
   SAT
   SUN
+}
+
+model TrainerSchedulingRule {
+  id                String  @id @default(uuid())
+  trainerId         String  @unique
+  trainer           Trainer @relation("TrainerToScheduleRule", fields: [trainerId], references: [id])
+  maxSessionsPerDay Int
+  daysOff           Day[]
+  allowOverlap      Boolean  @default(false)
 }

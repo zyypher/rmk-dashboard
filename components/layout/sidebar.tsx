@@ -86,6 +86,10 @@ const Sidebar = () => {
                         <GraduationCap className="size-[18px]" />
                         <span>Trainers</span>
                     </NavLink>
+                    <NavLink href="/scheduling-rules" className="nav-link">
+                        <CalendarClock className="size-[18px]" />
+                        <span>Scheduling Rules</span>
+                    </NavLink>
                     <NavLink href="/rooms" className="nav-link">
                         <MonitorSmartphone className="size-[18px]" />
                         <span>Rooms</span>
