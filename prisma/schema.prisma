@@ -58,14 +58,16 @@ model TrainerLeave {
 }
 
 model Location {
-  id        String            @id @default(uuid())
-  name      String
-  address   String
-  rooms     Room[]
-  trainers  Trainer[]
-  sessions  TrainingSession[]
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id         String            @id @default(uuid())
+  name       String
+  address    String
+  type       RoomType          // Online/Offline
+  capacity   Int               // Room Capacity
+  rooms      Room[]            // Relation to rooms
+  trainers   Trainer[]
+  sessions   TrainingSession[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 }
 
 // ✅ Prisma Schema Update for Room Model
