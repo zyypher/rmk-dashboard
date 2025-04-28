@@ -1,45 +1,53 @@
 import { ColumnDef } from '@tanstack/react-table'
-import { Pencil } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { Room } from '@/types/room'
 
 export const columns = ({
-    openEditDialog,
+  openEditDialog,
+  confirmDelete,
 }: {
-    openEditDialog: (room: Room) => void
+  openEditDialog: (room: Room) => void
+  confirmDelete: (room: Room) => void
 }): ColumnDef<Room>[] => [
-    {
-        accessorKey: 'name',
-        header: 'Name',
-    },
-    {
-        accessorKey: 'type',
-        header: 'Type',
-        cell: ({ row }) =>
-            row.original.type === 'ONLINE' ? 'Online' : 'Offline',
-    },
-    {
-        accessorKey: 'capacity',
-        header: 'Capacity',
-    },
-    {
-        accessorKey: 'location.name',
-        header: 'Branch',
-        cell: ({ row }) => row.original.location.name,
-    },
-    {
-        accessorKey: 'notes',
-        header: 'Notes',
-    },
-    {
-        id: 'actions',
-        header: '',
-        cell: ({ row }) => (
-            <button
-                onClick={() => openEditDialog(row.original)}
-                className="text-blue-600 hover:text-blue-800"
-            >
-                <Pencil className="h-4 w-4" />
-            </button>
-        ),
-    },
+  {
+    accessorKey: 'name',
+    header: 'Name',
+  },
+  {
+    accessorKey: 'type',
+    header: 'Type',
+  },
+  {
+    accessorKey: 'capacity',
+    header: 'Capacity',
+  },
+  {
+    accessorKey: 'location.name',
+    header: 'Location',
+    cell: ({ row }) => row.original.location?.name ?? '-',
+  },
+  {
+    accessorKey: 'notes',
+    header: 'Notes',
+},
+  {
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => (
+      <div className="flex gap-2">
+        <button
+          className="text-blue-600 hover:text-blue-800"
+          onClick={() => openEditDialog(row.original)}
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+        <button
+          className="text-red-500 hover:text-red-700"
+          onClick={() => confirmDelete(row.original)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    ),
+  },
 ]

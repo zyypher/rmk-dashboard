@@ -3,13 +3,12 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
-import { Button } from '@/components/ui/button'
+import { useForm, Controller } from 'react-hook-form'
 import { Plus } from 'lucide-react'
+import PageHeading from '@/components/layout/page-heading'
+import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import PageHeading from '@/components/layout/page-heading'
-import { DataTable } from '@/components/custom/table/data-table'
-import { columns } from '@/components/custom/table/rooms/columns'
 import {
     Select,
     SelectTrigger,
@@ -19,7 +18,8 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useForm, Controller } from 'react-hook-form'
+import { DataTable } from '@/components/custom/table/data-table'
+import { columns } from '@/components/custom/table/rooms/columns'
 import { Room } from '@/types/room'
 
 interface Location {
@@ -32,8 +32,11 @@ export default function RoomsPage() {
     const [locations, setLocations] = useState<Location[]>([])
     const [loading, setLoading] = useState(true)
     const [dialogOpen, setDialogOpen] = useState(false)
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
+    const [roomToDelete, setRoomToDelete] = useState<Room | null>(null)
     const [formLoading, setFormLoading] = useState(false)
+
     const {
         register,
         handleSubmit,
@@ -83,12 +86,17 @@ export default function RoomsPage() {
 
     const handleAddOrEdit = async (data: any) => {
         setFormLoading(true)
+        const payload = {
+            ...data,
+            capacity: parseInt(data.capacity, 10), // ✅ fix for Prisma
+        }
+
         try {
             if (selectedRoom) {
-                await axios.put(`/api/rooms/${selectedRoom.id}`, data)
+                await axios.put(`/api/rooms/${selectedRoom.id}`, payload)
                 toast.success('Room updated successfully')
             } else {
-                await axios.post('/api/rooms', data)
+                await axios.post('/api/rooms', payload)
                 toast.success('Room added successfully')
             }
             fetchRooms()
@@ -97,6 +105,25 @@ export default function RoomsPage() {
             toast.error('Failed to submit form')
         } finally {
             setFormLoading(false)
+        }
+    }
+
+    const confirmDelete = (room: Room) => {
+        setRoomToDelete(room)
+        setDeleteDialogOpen(true)
+    }
+
+    const handleDelete = async () => {
+        if (!roomToDelete) return
+        try {
+            await axios.delete(`/api/rooms/${roomToDelete.id}`)
+            toast.success('Room deleted successfully')
+            fetchRooms()
+        } catch {
+            toast.error('Failed to delete room')
+        } finally {
+            setDeleteDialogOpen(false)
+            setRoomToDelete(null)
         }
     }
 
@@ -123,12 +150,13 @@ export default function RoomsPage() {
                 </div>
             ) : (
                 <DataTable
-                    columns={columns({ openEditDialog })}
+                    columns={columns({ openEditDialog, confirmDelete })}
                     data={rooms}
                     filterField="name"
                 />
             )}
 
+            {/* Add/Edit Dialog */}
             <Dialog
                 isOpen={dialogOpen}
                 onClose={() => setDialogOpen(false)}
@@ -159,7 +187,7 @@ export default function RoomsPage() {
                             render={({ field }) => (
                                 <Select
                                     value={field.value}
-                                    onValueChange={(val) => field.onChange(val)}
+                                    onValueChange={field.onChange}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select Room Type" />
@@ -199,7 +227,6 @@ export default function RoomsPage() {
                                 }
                             }}
                         />
-
                         {errors.capacity && (
                             <p className="text-red-600 mt-1 text-sm">
                                 {errors.capacity.message as string}
@@ -219,7 +246,7 @@ export default function RoomsPage() {
                             render={({ field }) => (
                                 <Select
                                     value={field.value}
-                                    onValueChange={(val) => field.onChange(val)}
+                                    onValueChange={field.onChange}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select Branch" />
@@ -244,6 +271,23 @@ export default function RoomsPage() {
                         )}
                     </div>
                 </div>
+            </Dialog>
+
+            {/* Delete Dialog */}
+            <Dialog
+                isOpen={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+                title="Delete Room"
+                onSubmit={handleDelete}
+                buttonLoading={formLoading}
+            >
+                <p className="text-sm">
+                    Are you sure you want to delete{' '}
+                    <span className="text-red-600 font-semibold">
+                        {roomToDelete?.name}
+                    </span>
+                    ?
+                </p>
             </Dialog>
         </div>
     )
