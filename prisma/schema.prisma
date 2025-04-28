@@ -48,6 +48,7 @@ model Trainer {
   timeSlots      Json?
   leaves         TrainerLeave[]
   schedulingRule TrainerSchedulingRule? @relation("TrainerToScheduleRule")
+  sessions       TrainingSession[]      @relation("TrainerSessions") // ✅ named relation here
 }
 
 model TrainerLeave {
@@ -114,18 +115,22 @@ model Course {
 }
 
 model TrainingSession {
-  id           String        @id @default(uuid())
-  courseId     String
-  roomId       String
-  date         DateTime
-  startTime    DateTime
-  endTime      DateTime
-  locationId   String?
-  status       SessionStatus @default(SCHEDULED)
-  participants Int?
-  notes        String?
+  id            String        @id @default(uuid())
+  courseId      String
+  trainerId     String
+  roomId        String
+  date          DateTime
+  startTime     DateTime
+  endTime       DateTime
+  locationId    String?
+  status        SessionStatus @default(SCHEDULED)
+  participants  Int?
+  notes         String?
+  selectedSeats Json?
+  language      String? //
 
   course   Course    @relation(fields: [courseId], references: [id])
+  trainer  Trainer   @relation("TrainerSessions", fields: [trainerId], references: [id]) // ✅ match the name
   room     Room      @relation(fields: [roomId], references: [id])
   location Location? @relation(fields: [locationId], references: [id])
 }
@@ -196,5 +201,5 @@ model TrainerSchedulingRule {
   trainer           Trainer @relation("TrainerToScheduleRule", fields: [trainerId], references: [id])
   maxSessionsPerDay Int
   daysOff           Day[]
-  allowOverlap      Boolean  @default(false)
+  allowOverlap      Boolean @default(false)
 }

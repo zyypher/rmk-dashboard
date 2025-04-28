@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import '@/app/globals.css'
 import { Toaster } from 'react-hot-toast'
+import 'react-datepicker/dist/react-datepicker.css'
 
 export const metadata: Metadata = {
     title: 'RMK Experts Dashboard',

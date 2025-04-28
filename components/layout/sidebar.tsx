@@ -99,10 +99,10 @@ const Sidebar = () => {
                         <MonitorSmartphone className="size-[18px]" />
                         <span>Rooms</span>
                     </NavLink>
-                    {/* <NavLink href="/sessions" className="nav-link">
-                        <CalendarClock className="size-[18px]" />
-                        <span>Sessions</span>
-                    </NavLink> */}
+                    <NavLink href="/bookings" className="nav-link">
+                        <CalendarClock className="size-[18px]" />{' '}
+                        <span>Bookings</span>
+                    </NavLink>
                     {/* <NavLink href="/certificates" className="nav-link">
                         <ScrollText className="size-[18px]" />
                         <span>Certificates</span>
