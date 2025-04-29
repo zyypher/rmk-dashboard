@@ -15,7 +15,9 @@ interface SeatSelectionModalProps {
     onBack: () => void
     roomId: string
     selectedSeats: string[]
+    onSeatChange: (seats: string[]) => void
     onConfirm: (seats: string[]) => void
+
 }
 
 export default function SeatSelectionModal({
@@ -24,16 +26,13 @@ export default function SeatSelectionModal({
     onBack,
     roomId,
     selectedSeats,
+    onSeatChange,
     onConfirm,
 }: SeatSelectionModalProps) {
+    console.log('##selectedSeats', selectedSeats)
     const [capacity, setCapacity] = useState(0)
     const [loading, setLoading] = useState(false)
-    const [selected, setSelected] = useState<string[]>([])
     const [prefillCount, setPrefillCount] = useState<number>(0)
-
-    useEffect(() => {
-        setSelected(selectedSeats)
-    }, [selectedSeats])
 
     useEffect(() => {
         const fetchRoom = async () => {
@@ -51,11 +50,10 @@ export default function SeatSelectionModal({
     }, [roomId])
 
     const toggleSeat = (seat: string) => {
-        setSelected((prev) =>
-            prev.includes(seat)
-                ? prev.filter((s) => s !== seat)
-                : [...prev, seat],
-        )
+        const updated = selectedSeats.includes(seat)
+            ? selectedSeats.filter((s) => s !== seat)
+            : [...selectedSeats, seat]
+        onSeatChange(updated)
     }
 
     const handlePrefillSeats = () => {
@@ -65,11 +63,18 @@ export default function SeatSelectionModal({
             { length: capacity },
             (_, i) => `S${i + 1}`,
         )
-        const availableSeats = allSeatIds.filter((id) => !selected.includes(id))
+        const availableSeats = allSeatIds.filter(
+            (id) => !selectedSeats.includes(id),
+        )
         const shuffled = [...availableSeats].sort(() => 0.5 - Math.random())
         const chosen = shuffled.slice(0, prefillCount)
 
-        setSelected(chosen)
+        onSeatChange([...selectedSeats, ...chosen])
+    }
+
+    const handleClose = () => {
+        setPrefillCount(0)
+        onClose()
     }
 
     const getRows = () => {
@@ -81,7 +86,7 @@ export default function SeatSelectionModal({
                     {Array.from({ length: Math.min(perRow, capacity - i) }).map(
                         (_, j) => {
                             const seatId = `S${i + j + 1}`
-                            const isSelected = selected.includes(seatId)
+                            const isSelected = selectedSeats.includes(seatId)
                             return (
                                 <button
                                     key={seatId}
@@ -107,18 +112,11 @@ export default function SeatSelectionModal({
         return rows
     }
 
-    const handleClose = () => {
-        setSelected([])
-        setPrefillCount(0)
-        onClose()
-    }
-
     return (
         <Dialog
             isOpen={isOpen}
             onClose={handleClose}
             title="Select Seats"
-            // onSubmit={() => onConfirm(selected)}
             submitLabel="Confirm"
         >
             <div className="space-y-6">
@@ -160,7 +158,7 @@ export default function SeatSelectionModal({
                             >
                                 Pre-fill
                             </Button>
-                            <Button onClick={() => setSelected([])}>
+                            <Button onClick={() => onSeatChange([])}>
                                 Clear All
                             </Button>
                         </div>
@@ -171,7 +169,7 @@ export default function SeatSelectionModal({
                             </Button>
                             <Button
                                 variant="black"
-                                onClick={() => onConfirm(selected)}
+                                onClick={() => onConfirm(selectedSeats)}
                             >
                                 Confirm
                             </Button>
