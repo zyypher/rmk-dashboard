@@ -26,7 +26,7 @@ interface BookingModalProps {
     isOpen: boolean
     onClose: () => void
     onNext: (data: any) => void
-    onSubmit: (data: any) => void // ✅ Add this line
+    onSubmit: (data: any) => void 
     loading?: boolean
     initialData?: any
     courses: Course[]
@@ -101,6 +101,7 @@ export default function BookingModal({
             onClose={onClose}
             title={initialData ? 'Edit Booking' : 'Add Booking'}
             onSubmit={handleSubmit(onNext)}
+            submitLabel='Next'
         >
             <div className="space-y-4">
                 <Select
@@ -229,11 +230,11 @@ export default function BookingModal({
 
                 <Textarea placeholder="Notes" {...register('notes')} />
 
-                <div className="flex justify-end pt-4">
+                {/* <div className="flex justify-end pt-4">
                     <Button type="submit" disabled={loading}>
                         {loading ? 'Loading...' : 'Next'}
                     </Button>
-                </div>
+                </div> */}
             </div>
         </Dialog>
     )

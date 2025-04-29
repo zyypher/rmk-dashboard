@@ -13,6 +13,7 @@ interface DialogProps {
     children: React.ReactNode
     onSubmit?: () => void
     buttonLoading?: boolean
+    submitLabel?: string
 }
 
 export function Dialog({
@@ -23,6 +24,7 @@ export function Dialog({
     children,
     onSubmit,
     buttonLoading = false,
+    submitLabel,
 }: DialogProps) {
     return (
         <DialogPrimitive.Root open={isOpen} onOpenChange={onClose}>
@@ -50,28 +52,26 @@ export function Dialog({
 
                     <div className="space-y-4">{children}</div>
                     {onSubmit && (
-
-                    <div className="mt-6 flex justify-end gap-4">
-                        <DialogPrimitive.Close asChild>
-                            <Button variant="outline-black" size="large">
-                                Cancel
+                        <div className="mt-6 flex justify-end gap-4">
+                            <DialogPrimitive.Close asChild>
+                                <Button variant="outline-black" size="large">
+                                    Cancel
+                                </Button>
+                            </DialogPrimitive.Close>
+                            <Button
+                                variant="black"
+                                size="large"
+                                onClick={onSubmit}
+                                disabled={buttonLoading}
+                            >
+                                {buttonLoading ? (
+                                    <span className="loader"></span>
+                                ) : (
+                                    submitLabel || 'Submit' 
+                                )}
                             </Button>
-                        </DialogPrimitive.Close>
-                        <Button
-                            variant="black"
-                            size="large"
-                            onClick={onSubmit}
-                            disabled={buttonLoading}
-                        >
-                            {buttonLoading ? (
-                                <span className="loader"></span>
-                            ) : (
-                                'Submit'
-                            )}
-                        </Button>
-                    </div>
-                                    )}
-
+                        </div>
+                    )}
                 </DialogPrimitive.Content>
             </DialogPrimitive.Portal>
         </DialogPrimitive.Root>
