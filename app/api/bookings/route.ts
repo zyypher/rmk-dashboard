@@ -49,8 +49,8 @@ export async function POST(req: NextRequest) {
                 date,
                 startTime,
                 endTime,
-                participants: 0,
-                selectedSeats: [],
+                participants: body.selectedSeats?.length || 0,
+                selectedSeats: body.selectedSeats || [],
             },
         })
 

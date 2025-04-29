@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 interface SeatSelectionModalProps {
     isOpen: boolean
     onClose: () => void
+    onBack: () => void
     roomId: string
     selectedSeats: string[]
     onConfirm: (seats: string[]) => void
@@ -20,6 +21,7 @@ interface SeatSelectionModalProps {
 export default function SeatSelectionModal({
     isOpen,
     onClose,
+    onBack,
     roomId,
     selectedSeats,
     onConfirm,
@@ -64,7 +66,6 @@ export default function SeatSelectionModal({
             (_, i) => `S${i + 1}`,
         )
         const availableSeats = allSeatIds.filter((id) => !selected.includes(id))
-
         const shuffled = [...availableSeats].sort(() => 0.5 - Math.random())
         const chosen = shuffled.slice(0, prefillCount)
 
@@ -106,31 +107,42 @@ export default function SeatSelectionModal({
         return rows
     }
 
+    const handleClose = () => {
+        setSelected([])
+        setPrefillCount(0)
+        onClose()
+    }
+
     return (
         <Dialog
             isOpen={isOpen}
-            onClose={onClose}
+            onClose={handleClose}
             title="Select Seats"
-            onSubmit={() => onConfirm(selected)}
+            // onSubmit={() => onConfirm(selected)}
+            submitLabel="Confirm"
         >
             <div className="space-y-6">
                 {loading ? (
-                     <div className="space-y-3 animate-pulse">
-                     {Array.from({ length: 5 }).map((_, rowIdx) => (
-                       <div key={rowIdx} className="flex gap-2 justify-center">
-                         {Array.from({ length: 6 }).map((_, seatIdx) => (
-                           <div
-                             key={seatIdx}
-                             className="w-10 h-10 rounded-md bg-gray-200 dark:bg-gray-700"
-                           />
-                         ))}
-                       </div>
-                     ))}
-                   </div>
+                    <div className="animate-pulse space-y-3">
+                        {Array.from({ length: 5 }).map((_, rowIdx) => (
+                            <div
+                                key={rowIdx}
+                                className="flex justify-center gap-2"
+                            >
+                                {Array.from({ length: 6 }).map((_, seatIdx) => (
+                                    <div
+                                        key={seatIdx}
+                                        className="h-10 w-10 rounded-md bg-gray-200 dark:bg-gray-700"
+                                    />
+                                ))}
+                            </div>
+                        ))}
+                    </div>
                 ) : capacity > 0 ? (
                     <>
                         <div className="space-y-3">{getRows()}</div>
-                        <div className="flex justify-center items-center gap-4 pt-4">
+
+                        <div className="flex items-center justify-center gap-4 pt-4">
                             <Input
                                 type="number"
                                 min={1}
@@ -145,14 +157,23 @@ export default function SeatSelectionModal({
                             <Button
                                 variant="outline"
                                 onClick={handlePrefillSeats}
-                                disabled={capacity === 0}
                             >
                                 Pre-fill
                             </Button>
-                            <Button
-                                onClick={() => setSelected([])}
-                            >
+                            <Button onClick={() => setSelected([])}>
                                 Clear All
+                            </Button>
+                        </div>
+
+                        <div className="mt-6 flex justify-end gap-4">
+                            <Button variant="outline-black" onClick={onBack}>
+                                Back
+                            </Button>
+                            <Button
+                                variant="black"
+                                onClick={() => onConfirm(selected)}
+                            >
+                                Confirm
                             </Button>
                         </div>
                     </>

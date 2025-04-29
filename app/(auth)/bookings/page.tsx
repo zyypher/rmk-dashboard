@@ -23,16 +23,16 @@ import { Language } from '@/types/language'
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const [step, setStep] = useState<'form' | 'seats' | null>(null)
   const [courses, setCourses] = useState<Course[]>([])
   const [trainers, setTrainers] = useState<Trainer[]>([])
   const [rooms, setRooms] = useState<Room[]>([])
   const [languages, setLanguages] = useState<Language[]>([])
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null)
-  const [seatModalOpen, setSeatModalOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [bookingData, setBookingData] = useState<any>(null)
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([])
 
   useEffect(() => {
     fetchBookings()
@@ -43,6 +43,7 @@ export default function BookingsPage() {
     setLoading(true)
     try {
       const res = await axios.get('/api/bookings')
+
       setBookings(res.data)
     } catch {
       toast.error('Failed to fetch bookings')
@@ -70,7 +71,7 @@ export default function BookingsPage() {
 
   const openEditDialog = (booking: Booking) => {
     setSelectedBooking(booking)
-    setDialogOpen(true)
+    setStep('form')
   }
 
   const confirmDelete = (booking: Booking) => {
@@ -78,8 +79,43 @@ export default function BookingsPage() {
     setDeleteDialogOpen(true)
   }
 
+  const resetBookingFlow = () => {
+    setStep(null)
+    setBookingData(null)
+    setSelectedSeats([])
+    setSelectedBooking(null)
+  }
+
+  const handleNextStep = (data: any) => {
+    setBookingData(data)
+    setStep('seats')
+  }
+
+
+  const handleFinalSubmit = async () => {
+    try {
+      const payload = {
+        ...bookingData,
+        selectedSeats,
+        participants: selectedSeats.length,
+        date: new Date(bookingData.date),
+        startTime: new Date(bookingData.startTime),
+        endTime: new Date(bookingData.endTime),
+      }
+  
+      await axios.post('/api/bookings', payload)
+      toast.success('Booking created')
+      fetchBookings()
+    } catch {
+      toast.error('Failed to create booking')
+    } finally {
+      resetBookingFlow()
+    }
+  }
+
   const handleDelete = async () => {
     if (!bookingToDelete) return
+  
     try {
       await axios.delete(`/api/bookings/${bookingToDelete.id}`)
       toast.success('Booking deleted')
@@ -91,40 +127,13 @@ export default function BookingsPage() {
       setBookingToDelete(null)
     }
   }
-
-  const handleNextStep = (data: any) => {
-    setBookingData(data)
-    setDialogOpen(false)
-    setSeatModalOpen(true)
-  }
-
-  const handleFinalSubmit = async (data: any, seats: string[]) => {
-    try {
-      const payload = {
-        ...data,
-        selectedSeats: seats,
-        participants: seats.length,
-        date: new Date(data.date),
-        startTime: new Date(data.startTime),
-        endTime: new Date(data.endTime),
-      }
-
-      await axios.post('/api/bookings', payload)
-      toast.success('Booking created')
-      fetchBookings()
-    } catch {
-      toast.error('Failed to create booking')
-    } finally {
-      setSeatModalOpen(false)
-      setBookingData(null)
-    }
-  }
+  
 
   return (
     <div className="space-y-6 p-6">
       <PageHeading heading="Bookings" />
       <div className="flex justify-end">
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setStep('form')}>
           <Plus className="mr-2 h-4 w-4" />
           Add Booking
         </Button>
@@ -144,27 +153,35 @@ export default function BookingsPage() {
         />
       )}
 
-      <BookingModal
-        isOpen={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        onNext={handleNextStep}
-        onSubmit={handleNextStep}
-        loading={false}
-        initialData={selectedBooking}
-        courses={courses}
-        trainers={trainers}
-        rooms={rooms}
-        languages={languages}
-        // onSubmit={() => {}} // not used in step 1
-      />
+      {/* STEP MODAL CONTROLLER */}
+      {step === 'form' && (
+        <BookingModal
+          isOpen={step === 'form'}
+          onClose={resetBookingFlow}
+          onNext={handleNextStep}
+          onSubmit={handleNextStep} // fallback
+          loading={false}
+          initialData={selectedBooking} 
+          courses={courses}
+          trainers={trainers}
+          rooms={rooms}
+          languages={languages}
+        />
+      )}
 
-      <SeatSelectionModal
-        isOpen={seatModalOpen}
-        onClose={() => setSeatModalOpen(false)}
-        roomId={bookingData?.roomId}
-        selectedSeats={bookingData?.selectedSeats || []}
-        onConfirm={(seats) => handleFinalSubmit(bookingData, seats)}
-      />
+      {step === 'seats' && (
+        <SeatSelectionModal
+          isOpen={step === 'seats'}
+          onClose={resetBookingFlow}
+          onBack={() => setStep('form')}
+          roomId={bookingData?.roomId}
+          selectedSeats={selectedSeats}
+          onConfirm={(seats) => {
+            setSelectedSeats(seats)
+            handleFinalSubmit()
+          }}
+        />
+      )}
 
       <Dialog
         isOpen={deleteDialogOpen}

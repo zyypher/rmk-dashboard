@@ -27,7 +27,12 @@ export function Dialog({
     submitLabel,
 }: DialogProps) {
     return (
-        <DialogPrimitive.Root open={isOpen} onOpenChange={onClose}>
+        <DialogPrimitive.Root
+            open={isOpen}
+            onOpenChange={(open) => {
+                if (!open) onClose() // ✅ this ensures the "X" button properly triggers reset
+            }}
+        >
             <DialogPrimitive.Portal>
                 <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/50 backdrop-blur-md transition-opacity" />
                 <DialogPrimitive.Content
@@ -51,6 +56,7 @@ export function Dialog({
                     )}
 
                     <div className="space-y-4">{children}</div>
+
                     {onSubmit && (
                         <div className="mt-6 flex justify-end gap-4">
                             <DialogPrimitive.Close asChild>
@@ -67,7 +73,7 @@ export function Dialog({
                                 {buttonLoading ? (
                                     <span className="loader"></span>
                                 ) : (
-                                    submitLabel || 'Submit' 
+                                    submitLabel || 'Submit'
                                 )}
                             </Button>
                         </div>
