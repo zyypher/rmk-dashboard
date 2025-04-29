@@ -1,0 +1,167 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Dialog } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Armchair } from 'lucide-react'
+import axios from 'axios'
+import clsx from 'clsx'
+import { Skeleton } from '@/components/ui/skeleton'
+
+interface SeatSelectionModalProps {
+    isOpen: boolean
+    onClose: () => void
+    roomId: string
+    selectedSeats: string[]
+    onConfirm: (seats: string[]) => void
+}
+
+export default function SeatSelectionModal({
+    isOpen,
+    onClose,
+    roomId,
+    selectedSeats,
+    onConfirm,
+}: SeatSelectionModalProps) {
+    const [capacity, setCapacity] = useState(0)
+    const [loading, setLoading] = useState(false)
+    const [selected, setSelected] = useState<string[]>([])
+    const [prefillCount, setPrefillCount] = useState<number>(0)
+
+    useEffect(() => {
+        setSelected(selectedSeats)
+    }, [selectedSeats])
+
+    useEffect(() => {
+        const fetchRoom = async () => {
+            setLoading(true)
+            try {
+                const res = await axios.get(`/api/rooms/${roomId}`)
+                setCapacity(res.data.capacity || 0)
+            } catch {
+                setCapacity(0)
+            } finally {
+                setLoading(false)
+            }
+        }
+        if (roomId) fetchRoom()
+    }, [roomId])
+
+    const toggleSeat = (seat: string) => {
+        setSelected((prev) =>
+            prev.includes(seat)
+                ? prev.filter((s) => s !== seat)
+                : [...prev, seat],
+        )
+    }
+
+    const handlePrefillSeats = () => {
+        if (capacity === 0 || prefillCount <= 0) return
+
+        const allSeatIds = Array.from(
+            { length: capacity },
+            (_, i) => `S${i + 1}`,
+        )
+        const availableSeats = allSeatIds.filter((id) => !selected.includes(id))
+
+        const shuffled = [...availableSeats].sort(() => 0.5 - Math.random())
+        const chosen = shuffled.slice(0, prefillCount)
+
+        setSelected(chosen)
+    }
+
+    const getRows = () => {
+        const perRow = 6
+        const rows = []
+        for (let i = 0; i < capacity; i += perRow) {
+            rows.push(
+                <div key={i} className="flex justify-center gap-2">
+                    {Array.from({ length: Math.min(perRow, capacity - i) }).map(
+                        (_, j) => {
+                            const seatId = `S${i + j + 1}`
+                            const isSelected = selected.includes(seatId)
+                            return (
+                                <button
+                                    key={seatId}
+                                    onClick={() => toggleSeat(seatId)}
+                                    className={clsx(
+                                        'rounded border p-1 transition',
+                                        isSelected
+                                            ? 'text-blue-600 border-blue-600'
+                                            : 'text-gray-500 hover:text-gray-700',
+                                    )}
+                                >
+                                    <Armchair
+                                        className="h-6 w-6"
+                                        style={{ transform: 'scaleX(-1)' }}
+                                    />
+                                </button>
+                            )
+                        },
+                    )}
+                </div>,
+            )
+        }
+        return rows
+    }
+
+    return (
+        <Dialog
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Select Seats"
+            onSubmit={() => onConfirm(selected)}
+        >
+            <div className="space-y-6">
+                {loading ? (
+                     <div className="space-y-3 animate-pulse">
+                     {Array.from({ length: 5 }).map((_, rowIdx) => (
+                       <div key={rowIdx} className="flex gap-2 justify-center">
+                         {Array.from({ length: 6 }).map((_, seatIdx) => (
+                           <div
+                             key={seatIdx}
+                             className="w-10 h-10 rounded-md bg-gray-200 dark:bg-gray-700"
+                           />
+                         ))}
+                       </div>
+                     ))}
+                   </div>
+                ) : capacity > 0 ? (
+                    <>
+                        <div className="space-y-3">{getRows()}</div>
+                        <div className="flex justify-center items-center gap-4 pt-4">
+                            <Input
+                                type="number"
+                                min={1}
+                                max={capacity}
+                                placeholder="Enter count"
+                                value={prefillCount}
+                                onChange={(e) =>
+                                    setPrefillCount(parseInt(e.target.value))
+                                }
+                                className="w-24"
+                            />
+                            <Button
+                                variant="outline"
+                                onClick={handlePrefillSeats}
+                                disabled={capacity === 0}
+                            >
+                                Pre-fill
+                            </Button>
+                            <Button
+                                onClick={() => setSelected([])}
+                            >
+                                Clear All
+                            </Button>
+                        </div>
+                    </>
+                ) : (
+                    <p className="text-sm text-gray-500">
+                        Room capacity not available.
+                    </p>
+                )}
+            </div>
+        </Dialog>
+    )
+}

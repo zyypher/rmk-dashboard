@@ -3,6 +3,24 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const room = await prisma.room.findUnique({
+      where: { id: params.id },
+    })
+
+    if (!room) {
+      return NextResponse.json({ error: 'Room not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(room)
+  } catch (error) {
+    console.error('GET /api/rooms/[id] error:', error)
+    return NextResponse.json({ error: 'Failed to fetch room' }, { status: 500 })
+  }
+}
+
+
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
     try {
