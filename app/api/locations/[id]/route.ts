@@ -20,19 +20,34 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { id: string } }
-  ) {
-    const locationId = params.id
-  
-    try {
-      await prisma.location.delete({
-        where: { id: locationId },
-      })
-  
-      return NextResponse.json({ message: 'Location deleted successfully' }, { status: 200 })
-    } catch (error) {
-      console.error('Error deleting location:', error)
-      return NextResponse.json({ error: 'Failed to delete location' }, { status: 500 })
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const locationId = params.id
+
+  try {
+    const roomCount = await prisma.room.count({
+      where: { locationId },
+    })
+
+    if (roomCount > 0) {
+      return NextResponse.json(
+        {
+          error: 'Cannot delete location with rooms',
+          rooms: roomCount,
+        },
+        { status: 409 }
+      )
     }
+
+    await prisma.location.delete({
+      where: { id: locationId },
+    })
+
+    return NextResponse.json({ message: 'Location deleted' })
+  } catch (error) {
+    console.error('Error deleting location:', error)
+    return NextResponse.json({ error: 'Failed to delete location' }, { status: 500 })
   }
+}
+

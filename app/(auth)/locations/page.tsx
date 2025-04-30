@@ -29,6 +29,10 @@ export default function LocationsPage() {
         null,
     )
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const [dependencyErrorModal, setDependencyErrorModal] = useState(false)
+    const [dependencyInfo, setDependencyInfo] = useState<{
+        rooms: number
+    } | null>(null)
 
     const locationSchema = yup.object({
         name: yup.string().required('Branch name is required'),
@@ -101,15 +105,19 @@ export default function LocationsPage() {
 
     const handleDelete = async () => {
         if (!locationToDelete) return
-
         setDeleteLoading(true)
 
         try {
             await axios.delete(`/api/locations/${locationToDelete.id}`)
             toast.success('Location deleted successfully')
             fetchLocations()
-        } catch {
-            toast.error('Failed to delete location')
+        } catch (err: any) {
+            if (err?.response?.status === 409 && err.response.data?.rooms) {
+                setDependencyInfo({ rooms: err.response.data.rooms })
+                setDependencyErrorModal(true)
+            } else {
+                toast.error('Failed to delete location')
+            }
         } finally {
             setDeleteDialogOpen(false)
             setLocationToDelete(null)
@@ -203,6 +211,32 @@ export default function LocationsPage() {
                         {locationToDelete?.name}
                     </span>
                     ?
+                </p>
+            </Dialog>
+            <Dialog
+                isOpen={dependencyErrorModal}
+                onClose={() => {
+                    setDependencyErrorModal(false)
+                    setLocationToDelete(null)
+                }}
+                title="Cannot Delete Location"
+                submitLabel="Close"
+            >
+                <p className="text-sm text-gray-700">
+                    This location cannot be deleted because it is linked to the
+                    following:
+                </p>
+                <ul className="text-red-600 mt-4 list-disc space-y-1 pl-5 text-sm">
+                    {dependencyInfo && dependencyInfo.rooms && (
+                        <li>
+                            {dependencyInfo.rooms} room(s) assigned to this
+                            location
+                        </li>
+                    )}
+                </ul>
+                <p className="mt-4 text-sm text-gray-500">
+                    Please delete or reassign those rooms before deleting this
+                    location.
                 </p>
             </Dialog>
         </div>
