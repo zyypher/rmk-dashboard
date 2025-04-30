@@ -2,8 +2,7 @@ export interface Location {
     id: string
     name: string
     address: string
-    type: 'ONLINE' | 'OFFLINE'
-    capacity: number
+    isOnline: boolean
     createdAt?: string
     updatedAt?: string
   }

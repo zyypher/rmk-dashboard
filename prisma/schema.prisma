@@ -66,34 +66,27 @@ model TrainerLeave {
 }
 
 model Location {
-  id        String            @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
   address   String
-  type      RoomType
-  capacity  Int
+  isOnline  Boolean  @default(false)
   rooms     Room[]
   trainers  Trainer[]
   sessions  TrainingSession[]
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Room {
-  id         String            @id @default(uuid())
+  id         String   @id @default(uuid())
   name       String
-  type       RoomType
   capacity   Int?
   notes      String?
   locationId String
-  location   Location          @relation(fields: [locationId], references: [id])
+  location   Location @relation(fields: [locationId], references: [id])
   sessions   TrainingSession[]
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
-}
-
-enum RoomType {
-  ONLINE
-  OFFLINE
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Client {

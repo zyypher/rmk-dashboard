@@ -5,22 +5,16 @@ import axios from 'axios'
 import { useForm } from 'react-hook-form'
 import { Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
-
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import {
-    Select,
-    SelectTrigger,
-    SelectValue,
-    SelectContent,
-    SelectItem,
-} from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
 import { DataTable } from '@/components/custom/table/data-table'
 import { columns } from '@/components/custom/table/locations/columns'
 import { Location } from '@/types/location'
+import * as yup from 'yup'
+import { yupResolver } from '@hookform/resolvers/yup'
+import { Checkbox } from '@/components/ui/checkbox'
 
 export default function LocationsPage() {
     const [locations, setLocations] = useState<Location[]>([])
@@ -34,6 +28,13 @@ export default function LocationsPage() {
     const [locationToDelete, setLocationToDelete] = useState<Location | null>(
         null,
     )
+    const [deleteLoading, setDeleteLoading] = useState(false)
+
+    const locationSchema = yup.object({
+        name: yup.string().required('Branch name is required'),
+        address: yup.string().required('Address is required'),
+        isOnline: yup.boolean().required('Please specify online status'),
+    })
 
     const {
         register,
@@ -41,8 +42,14 @@ export default function LocationsPage() {
         reset,
         setValue,
         watch,
+        trigger,
         formState: { errors },
-    } = useForm()
+    } = useForm({
+        resolver: yupResolver(locationSchema),
+        defaultValues: {
+            isOnline: false,
+        },
+    })
 
     const fetchLocations = async () => {
         setLoading(true)
@@ -65,22 +72,17 @@ export default function LocationsPage() {
         setDialogOpen(true)
         setValue('name', location.name)
         setValue('address', location.address)
-        setValue('type', location.type)
-        setValue('capacity', location.capacity)
+        setValue('isOnline', location.isOnline)
     }
 
     const handleAddOrEdit = async (data: any) => {
         setFormLoading(true)
         try {
-            const payload = {
-                ...data,
-                capacity: parseInt(data.capacity, 10), // 👈 ensure it's a number
-              }
             if (selectedLocation) {
-                await axios.put(`/api/locations/${selectedLocation.id}`, payload)
+                await axios.put(`/api/locations/${selectedLocation.id}`, data)
                 toast.success('Location updated')
             } else {
-                await axios.post('/api/locations', payload)
+                await axios.post('/api/locations', data)
                 toast.success('Location added')
             }
             fetchLocations()
@@ -100,6 +102,8 @@ export default function LocationsPage() {
     const handleDelete = async () => {
         if (!locationToDelete) return
 
+        setDeleteLoading(true)
+
         try {
             await axios.delete(`/api/locations/${locationToDelete.id}`)
             toast.success('Location deleted successfully')
@@ -109,6 +113,7 @@ export default function LocationsPage() {
         } finally {
             setDeleteDialogOpen(false)
             setLocationToDelete(null)
+            setDeleteLoading(false)
         }
     }
 
@@ -128,19 +133,12 @@ export default function LocationsPage() {
                 </Button>
             </div>
 
-            {loading ? (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                    ))}
-                </div>
-            ) : (
-                <DataTable
-                    columns={columns({ openEditDialog, confirmDelete })}
-                    data={locations}
-                    filterField="name"
-                />
-            )}
+            <DataTable
+                columns={columns({ openEditDialog, confirmDelete })}
+                data={locations}
+                filterField="name"
+                loading={loading}
+            />
 
             <Dialog
                 isOpen={dialogOpen}
@@ -161,7 +159,6 @@ export default function LocationsPage() {
                             {errors.name.message as string}
                         </p>
                     )}
-
                     <Input
                         placeholder="Full Address"
                         {...register('address', {
@@ -173,37 +170,24 @@ export default function LocationsPage() {
                             {errors.address.message as string}
                         </p>
                     )}
-
-                    <Select
-                        value={watch('type')}
-                        onValueChange={(val) =>
-                            setValue('type', val, { shouldValidate: true })
-                        }
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="ONLINE">Online</SelectItem>
-                            <SelectItem value="OFFLINE">Offline</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    {errors.type && (
-                        <p className="text-red-600 text-sm">Type is required</p>
-                    )}
-
-                    <Input
-                        type="number"
-                        placeholder="Capacity"
-                        {...register('capacity', {
-                            required: 'Capacity is required',
-                        })}
-                    />
-                    {errors.capacity && (
-                        <p className="text-red-600 text-sm">
-                            {errors.capacity.message as string}
-                        </p>
-                    )}
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            id="isOnline"
+                            checked={watch('isOnline') === true}
+                            onCheckedChange={(checked) =>
+                                setValue('isOnline', !!checked, {
+                                    shouldValidate: true,
+                                })
+                            }
+                            className="h-3 w-3 data-[state=checked]:bg-primary data-[state=checked]:text-white"
+                        />
+                        <label
+                            htmlFor="isOnline"
+                            className="text-muted-foreground text-sm"
+                        >
+                            Online Location
+                        </label>
+                    </div>
                 </div>
             </Dialog>
             <Dialog
@@ -211,7 +195,7 @@ export default function LocationsPage() {
                 onClose={() => setDeleteDialogOpen(false)}
                 title="Delete Location"
                 onSubmit={handleDelete}
-                buttonLoading={formLoading}
+                buttonLoading={deleteLoading}
             >
                 <p className="text-sm">
                     Are you sure you want to delete{' '}

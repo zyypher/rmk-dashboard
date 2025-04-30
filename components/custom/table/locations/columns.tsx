@@ -18,13 +18,17 @@ export const columns = ({
     header: 'Full Address',
   },
   {
-    accessorKey: 'type',
-    header: 'Room Type',
-    cell: ({ row }) => row.original.type === 'ONLINE' ? 'Online' : 'Offline',
+    accessorKey: 'isOnline',
+    header: 'Location Type',
+    cell: ({ row }) => (row.original.isOnline ? 'Online' : 'Offline'),
   },
   {
-    accessorKey: 'capacity',
-    header: 'Room Capacity',
+    accessorKey: 'createdAt',
+    header: 'Created At',
+    cell: ({ row }) =>
+      row.original.createdAt
+        ? new Date(row.original.createdAt).toLocaleDateString()
+        : 'N/A',
   },
   {
     id: 'actions',
@@ -32,18 +36,19 @@ export const columns = ({
     cell: ({ row }) => (
       <div className="flex gap-2">
         <button
-          className="text-blue-600 hover:text-blue-800"
           onClick={() => openEditDialog(row.original)}
+          className="text-blue-600 hover:text-blue-800"
         >
           <Pencil className="h-4 w-4" />
         </button>
         <button
-          className="text-red-500 hover:text-red-700"
           onClick={() => confirmDelete(row.original)}
+          className="text-red-500 hover:text-red-700"
         >
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
     ),
+    enableSorting: false,
   },
 ]
