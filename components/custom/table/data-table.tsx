@@ -56,7 +56,9 @@ export function DataTable<TData extends { id: string; status?: string }>({
         React.useState<ColumnFiltersState>([])
     const [columnVisibility, setColumnVisibility] =
         React.useState<VisibilityState>({})
-    const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
+    const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
+        {},
+    )
 
     const table = useReactTable({
         data,
@@ -84,7 +86,7 @@ export function DataTable<TData extends { id: string; status?: string }>({
               .rows.filter((rowItems) =>
                   isFilterRowBasedOnValue === isAllRowKey
                       ? rowItems
-                      : rowItems.original.status === isFilterRowBasedOnValue
+                      : rowItems.original.status === isFilterRowBasedOnValue,
               )
         : table.getRowModel().rows
 
@@ -97,9 +99,9 @@ export function DataTable<TData extends { id: string; status?: string }>({
 
     // Track row selection changes
     useEffect(() => {
-        const selectedIds = Object.keys(rowSelection).map(
-            (key) => table.getRow(key)?.original.id
-        ).filter(Boolean)
+        const selectedIds = Object.keys(rowSelection)
+            .map((key) => table.getRow(key)?.original.id)
+            .filter(Boolean)
         console.log('Row selection updated. Selected IDs:', selectedIds)
         if (rowSelectionCallback) rowSelectionCallback(selectedIds)
     }, [rowSelection, table])
@@ -152,13 +154,18 @@ export function DataTable<TData extends { id: string; status?: string }>({
                     </TableHeader>
                     <TableBody>
                         {loading ? (
-                            Array.from({ length: 5 }).map((_, index) => (
-                                <TableRow key={index}>
-                                    {columns.map((_, cellIndex) => (
-                                        <TableCell key={cellIndex}>
-                                            <Skeleton className="h-4 w-full" />
-                                        </TableCell>
-                                    ))}
+                            Array.from({ length: 5 }).map((_, rowIdx) => (
+                                <TableRow key={`skeleton-row-${rowIdx}`}>
+                                    {table
+                                        .getAllColumns()
+                                        .filter((col) => col.getIsVisible())
+                                        .map((col, colIdx) => (
+                                            <TableCell
+                                                key={`skeleton-cell-${rowIdx}-${colIdx}`}
+                                            >
+                                                <Skeleton className="h-4 w-[80%]" />
+                                            </TableCell>
+                                        ))}
                                 </TableRow>
                             ))
                         ) : table.getRowModel().rows?.length ? (

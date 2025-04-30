@@ -70,12 +70,11 @@ export default function BookingsPage() {
     }
 
     const openEditDialog = (booking: Booking) => {
-      setSelectedBooking(booking)
-      setBookingData(booking) // important ✅
-      setSelectedSeats(booking.selectedSeats || []) // important ✅
-      setStep('form')
-  }
-  
+        setSelectedBooking(booking)
+        setBookingData(booking) // important ✅
+        setSelectedSeats(booking.selectedSeats || []) // important ✅
+        setStep('form')
+    }
 
     const confirmDelete = (booking: Booking) => {
         setBookingToDelete(booking)
@@ -95,36 +94,34 @@ export default function BookingsPage() {
     }
 
     const handleFinalSubmit = async (seats: string[]) => {
-      try {
-        const payload = {
-          ...bookingData,
-          selectedSeats: seats,
-          participants: seats.length,
-          date: new Date(bookingData.date),
-          startTime: new Date(bookingData.startTime),
-          endTime: new Date(bookingData.endTime),
+        try {
+            const payload = {
+                ...bookingData,
+                selectedSeats: seats,
+                participants: seats.length,
+                date: new Date(bookingData.date),
+                startTime: new Date(bookingData.startTime),
+                endTime: new Date(bookingData.endTime),
+            }
+
+            if (bookingData?.id) {
+                // 🛠 Edit Existing
+                await axios.put(`/api/bookings/${bookingData.id}`, payload)
+                toast.success('Booking updated')
+            } else {
+                // 🆕 Create New
+                await axios.post('/api/bookings', payload)
+                toast.success('Booking created')
+            }
+
+            fetchBookings()
+        } catch (err) {
+            toast.error('Failed to save booking')
+            console.error('Save error:', err)
+        } finally {
+            resetBookingFlow()
         }
-    
-        if (bookingData?.id) {
-          // 🛠 Edit Existing
-          await axios.put(`/api/bookings/${bookingData.id}`, payload)
-          toast.success('Booking updated')
-        } else {
-          // 🆕 Create New
-          await axios.post('/api/bookings', payload)
-          toast.success('Booking created')
-        }
-    
-        fetchBookings()
-      } catch (err) {
-        toast.error('Failed to save booking')
-        console.error('Save error:', err)
-      } finally {
-        resetBookingFlow()
-      }
     }
-    
-    
 
     const handleDelete = async () => {
         if (!bookingToDelete) return
@@ -151,19 +148,12 @@ export default function BookingsPage() {
                 </Button>
             </div>
 
-            {loading ? (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                    ))}
-                </div>
-            ) : (
-                <DataTable
-                    columns={columns({ openEditDialog, confirmDelete })}
-                    data={bookings}
-                    filterField="course.title"
-                />
-            )}
+            <DataTable
+                columns={columns({ openEditDialog, confirmDelete })}
+                data={bookings}
+                filterField="course.title"
+                loading={loading}
+            />
 
             {/* STEP MODAL CONTROLLER */}
             {step === 'form' && (
