@@ -17,7 +17,7 @@ interface SeatSelectionModalProps {
     selectedSeats: string[]
     onSeatChange: (seats: string[]) => void
     onConfirm: (seats: string[]) => void
-
+    initialCapacity?: number 
 }
 
 export default function SeatSelectionModal({
@@ -28,32 +28,50 @@ export default function SeatSelectionModal({
     selectedSeats,
     onSeatChange,
     onConfirm,
+    initialCapacity
 }: SeatSelectionModalProps) {
     console.log('##selectedSeats', selectedSeats)
     const [capacity, setCapacity] = useState(0)
     const [loading, setLoading] = useState(false)
     const [prefillCount, setPrefillCount] = useState<number>(0)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     useEffect(() => {
-        const fetchRoom = async () => {
-            setLoading(true)
-            try {
-                const res = await axios.get(`/api/rooms/${roomId}`)
-                setCapacity(res.data.capacity || 0)
-            } catch {
-                setCapacity(0)
-            } finally {
-                setLoading(false)
-            }
+        if (initialCapacity) {
+          setCapacity(initialCapacity)
+          return
         }
+      
+        const fetchRoom = async () => {
+          setLoading(true)
+          try {
+            const res = await axios.get(`/api/rooms/${roomId}`)
+            setCapacity(res.data.capacity || 0)
+          } catch {
+            setCapacity(0)
+          } finally {
+            setLoading(false)
+          }
+        }
+      
         if (roomId) fetchRoom()
-    }, [roomId])
+      }, [roomId, initialCapacity])
+      
 
     const toggleSeat = (seat: string) => {
         const updated = selectedSeats.includes(seat)
             ? selectedSeats.filter((s) => s !== seat)
             : [...selectedSeats, seat]
         onSeatChange(updated)
+    }
+
+    const handleConfirm = async () => {
+        setIsSubmitting(true)
+        try {
+            await onConfirm(selectedSeats)
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handlePrefillSeats = () => {
@@ -169,9 +187,14 @@ export default function SeatSelectionModal({
                             </Button>
                             <Button
                                 variant="black"
-                                onClick={() => onConfirm(selectedSeats)}
+                                onClick={handleConfirm}
+                                disabled={isSubmitting}
                             >
-                                Confirm
+                                {isSubmitting ? (
+                                    <span className="loader" />
+                                ) : (
+                                    'Confirm'
+                                )}
                             </Button>
                         </div>
                     </>

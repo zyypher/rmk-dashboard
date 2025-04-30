@@ -105,15 +105,25 @@ export default function BookingsPage() {
           endTime: new Date(bookingData.endTime),
         }
     
-        await axios.post('/api/bookings', payload)
-        toast.success('Booking created')
+        if (bookingData?.id) {
+          // 🛠 Edit Existing
+          await axios.put(`/api/bookings/${bookingData.id}`, payload)
+          toast.success('Booking updated')
+        } else {
+          // 🆕 Create New
+          await axios.post('/api/bookings', payload)
+          toast.success('Booking created')
+        }
+    
         fetchBookings()
-      } catch {
-        toast.error('Failed to create booking')
+      } catch (err) {
+        toast.error('Failed to save booking')
+        console.error('Save error:', err)
       } finally {
         resetBookingFlow()
       }
     }
+    
     
 
     const handleDelete = async () => {
@@ -180,6 +190,7 @@ export default function BookingsPage() {
                     selectedSeats={selectedSeats}
                     onSeatChange={(seats) => setSelectedSeats(seats)}
                     onConfirm={handleFinalSubmit}
+                    initialCapacity={bookingData?.room?.capacity}
                 />
             )}
 

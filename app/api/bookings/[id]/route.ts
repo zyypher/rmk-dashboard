@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -10,25 +11,25 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const startTime = new Date(body.startTime)
     const endTime = new Date(body.endTime)
 
-    if (isNaN(date.getTime()) || isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+    if (
+      isNaN(date.getTime()) ||
+      isNaN(startTime.getTime()) ||
+      isNaN(endTime.getTime())
+    ) {
       return NextResponse.json({ error: 'Invalid date/time values' }, { status: 400 })
     }
+
+    const { course, trainer, room, ...cleaned } = body
 
     const updated = await prisma.trainingSession.update({
       where: { id: params.id },
       data: {
-        courseId: body.courseId,
-        trainerId: body.trainerId,
-        roomId: body.roomId,
+        ...cleaned,
         date,
         startTime,
         endTime,
-        status: body.status,
-        notes: body.notes,
-        participants: 0,
-        selectedSeats: body.selectedSeats ?? [],
-        locationId: body.locationId ?? null,
-        // ❌ remove `language` if it's not in schema
+        participants: cleaned.selectedSeats?.length || 0,
+        selectedSeats: cleaned.selectedSeats ?? [],
       },
     })
 
@@ -41,9 +42,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await prisma.trainingSession.delete({ where: { id: params.id } })
+    await prisma.trainingSession.delete({
+      where: { id: params.id },
+    })
+
     return NextResponse.json({ success: true })
-  } catch {
+  } catch (error) {
     return NextResponse.json({ error: 'Failed to delete session' }, { status: 500 })
   }
 }
