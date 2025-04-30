@@ -33,6 +33,8 @@ model User {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   passwordResetTokens PasswordResetToken[]
+
+  @@index([createdAt])
 }
 
 model Trainer {
@@ -48,7 +50,9 @@ model Trainer {
   timeSlots      Json?
   leaves         TrainerLeave[]
   schedulingRule TrainerSchedulingRule? @relation("TrainerToScheduleRule")
-  sessions       TrainingSession[]      @relation("TrainerSessions") // ✅ named relation here
+  sessions       TrainingSession[]      @relation("TrainerSessions")
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
 }
 
 model TrainerLeave {
@@ -57,31 +61,34 @@ model TrainerLeave {
   date      DateTime
   reason    String?
   trainer   Trainer  @relation(fields: [trainerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Location {
   id        String            @id @default(uuid())
   name      String
   address   String
-  type      RoomType // Online/Offline
-  capacity  Int // Room Capacity
-  rooms     Room[] // Relation to rooms
+  type      RoomType
+  capacity  Int
+  rooms     Room[]
   trainers  Trainer[]
   sessions  TrainingSession[]
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 }
 
-// ✅ Prisma Schema Update for Room Model
 model Room {
   id         String            @id @default(uuid())
   name       String
-  type       RoomType // "Online" or "Offline"
+  type       RoomType
   capacity   Int?
-  notes      String? // Optional notes field
+  notes      String?
   locationId String
   location   Location          @relation(fields: [locationId], references: [id])
   sessions   TrainingSession[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 }
 
 enum RoomType {
@@ -96,6 +103,7 @@ model Client {
   email        String?
   company      String?
   createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   certificates Certificate[]
 }
 
@@ -104,7 +112,7 @@ model Course {
   title        String
   categoryId   String
   category     Category          @relation(fields: [categoryId], references: [id])
-  languages    Language[]        @relation("CourseLanguages") // ✅ many-to-many relation
+  languages    Language[]        @relation("CourseLanguages")
   duration     String
   trainerId    String
   trainer      Trainer           @relation(fields: [trainerId], references: [id])
@@ -112,6 +120,10 @@ model Course {
   isPublic     Boolean           @default(true)
   sessions     TrainingSession[]
   certificates Certificate[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([createdAt])
 }
 
 model TrainingSession {
@@ -127,12 +139,15 @@ model TrainingSession {
   participants  Int?
   notes         String?
   selectedSeats Json?
-  language      String? //
+  language      String?
+  course        Course        @relation(fields: [courseId], references: [id])
+  trainer       Trainer       @relation("TrainerSessions", fields: [trainerId], references: [id])
+  room          Room          @relation(fields: [roomId], references: [id])
+  location      Location?     @relation(fields: [locationId], references: [id])
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  course   Course    @relation(fields: [courseId], references: [id])
-  trainer  Trainer   @relation("TrainerSessions", fields: [trainerId], references: [id]) // ✅ match the name
-  room     Room      @relation(fields: [roomId], references: [id])
-  location Location? @relation(fields: [locationId], references: [id])
+  @@index([createdAt])
 }
 
 model Certificate {
@@ -144,6 +159,8 @@ model Certificate {
   issuedBy      String
   client        Client   @relation(fields: [clientId], references: [id])
   course        Course   @relation(fields: [courseId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model PasswordResetToken {
@@ -152,37 +169,25 @@ model PasswordResetToken {
   token     String   @unique
   expiresAt DateTime
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Meeting {
-  id      String   @id @default(uuid())
-  date    DateTime
-  subject String
-  time    String
-  guest   String?
-  format  String?
-  link    String?
-  notes   String?
-}
-
-model Reminder {
-  id        String   @id @default(uuid())
-  message   String
-  remindAt  DateTime
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Language {
-  id       String    @id @default(uuid())
-  name     String    @unique
-  trainers Trainer[] @relation("TrainerLanguages")
-  courses  Course[]  @relation("CourseLanguages") // ✅ back relation
+  id        String    @id @default(uuid())
+  name      String    @unique
+  trainers  Trainer[] @relation("TrainerLanguages")
+  courses   Course[]  @relation("CourseLanguages")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Category {
-  id      String   @id @default(uuid())
-  name    String   @unique
-  courses Course[]
+  id        String   @id @default(uuid())
+  name      String   @unique
+  courses   Course[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Day {
@@ -196,10 +201,12 @@ enum Day {
 }
 
 model TrainerSchedulingRule {
-  id                String  @id @default(uuid())
-  trainerId         String  @unique
-  trainer           Trainer @relation("TrainerToScheduleRule", fields: [trainerId], references: [id])
+  id                String   @id @default(uuid())
+  trainerId         String   @unique
+  trainer           Trainer  @relation("TrainerToScheduleRule", fields: [trainerId], references: [id])
   maxSessionsPerDay Int
   daysOff           Day[]
-  allowOverlap      Boolean @default(false)
+  allowOverlap      Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
