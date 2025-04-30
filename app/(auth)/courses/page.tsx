@@ -20,6 +20,9 @@ import {
 } from '@/components/ui/select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { MultiSelect, MultiSelectItem } from '@/components/ui/multi-select'
+import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
+import * as yup from 'yup'
+import { yupResolver } from '@hookform/resolvers/yup'
 
 interface Category {
     id: string
@@ -49,6 +52,19 @@ interface Course {
     trainer: { name: string }
 }
 
+const courseSchema = yup.object({
+    title: yup.string().required('Course title is required'),
+    duration: yup.string().required('Duration is required'),
+    categoryId: yup.string().required('Category is required'),
+    trainerId: yup.string().required('Trainer is required'),
+    isCertified: yup.string().required('Certification status is required'),
+    isPublic: yup.string().required('Public status is required'),
+    languages: yup
+        .array()
+        .of(yup.string())
+        .min(1, 'At least one language is required'),
+})
+
 const CoursesPage = () => {
     const [courses, setCourses] = useState<Course[]>([])
     const [loading, setLoading] = useState(true)
@@ -73,9 +89,13 @@ const CoursesPage = () => {
         reset,
         watch,
         setValue,
-        getValues,
+        trigger,
         formState: { errors },
-    } = useForm()
+    } = useForm({ resolver: yupResolver(courseSchema) })
+
+    useEffect(() => {
+        register('languages')
+    }, [register])
 
     const fetchCourses = async () => {
         setLoading(true)
@@ -138,7 +158,10 @@ const CoursesPage = () => {
         setValue('trainerId', course.trainerId)
         setValue('isCertified', course.isCertified ? 'yes' : 'no')
         setValue('isPublic', course.isPublic ? 'public' : 'inhouse')
-        setValue('languages', course.languages.map((l: any) => l.name))
+        setValue(
+            'languages',
+            course.languages.map((l: any) => l.name),
+        )
     }
 
     const handleAddOrEdit = async (data: any) => {
@@ -218,7 +241,6 @@ const CoursesPage = () => {
                 loading={loading}
             />
 
-            {/* Add/Edit Dialog */}
             <Dialog
                 isOpen={dialogOpen}
                 onClose={() => setDialogOpen(false)}
@@ -227,21 +249,33 @@ const CoursesPage = () => {
                 buttonLoading={formLoading}
             >
                 <div className="space-y-4">
-                    <div>
-                        <Input
-                            placeholder="Course Title"
-                            {...register('title', {
-                                required: 'Course title is required',
-                            })}
-                        />
-                        {errors.title && (
-                            <p className="text-error text-red-600 mt-1 text-sm">
-                                {errors.title.message as string}
-                            </p>
-                        )}
-                    </div>
+                    <FloatingLabelInput
+                        label="Course Title"
+                        value={watch('title')}
+                        onChange={(val) =>
+                            setValue('title', val, { shouldValidate: true })
+                        }
+                        name="title"
+                        error={errors.title?.message as string}
+                    />
+
+                    <FloatingLabelInput
+                        label="Duration (hours)"
+                        type="number"
+                        value={watch('duration')}
+                        onChange={(val) =>
+                            setValue('duration', val, {
+                                shouldValidate: true,
+                            })
+                        }
+                        name="duration"
+                        error={errors.duration?.message as string}
+                    />
 
                     <div>
+                        <label className="text-sm font-medium text-gray-700">
+                            Category
+                        </label>
                         <Select
                             value={watch('categoryId')}
                             onValueChange={(value) =>
@@ -269,47 +303,9 @@ const CoursesPage = () => {
                     </div>
 
                     <div>
-                        <MultiSelect
-                            value={watch('languages')}
-                            onChange={(vals: string[]) =>
-                                setValue('languages', vals, {
-                                    shouldValidate: true,
-                                })
-                            }
-                        >
-                            {languagesList.map((lang) => (
-                                <MultiSelectItem
-                                    key={lang.id}
-                                    value={lang.name}
-                                >
-                                    {lang.name}
-                                </MultiSelectItem>
-                            ))}
-                        </MultiSelect>
-                        {errors.languages && (
-                            <p className="text-red-600 mt-1 text-sm">
-                                At least one language is required
-                            </p>
-                        )}
-                    </div>
-
-                    <div>
-                        <Input
-                            type="number"
-                            step="0.5"
-                            placeholder="Duration (hours)"
-                            {...register('duration', {
-                                required: 'Duration is required',
-                            })}
-                        />
-                        {errors.duration && (
-                            <p className="text-red-600 mt-1 text-sm">
-                                {errors.duration.message as string}
-                            </p>
-                        )}
-                    </div>
-
-                    <div>
+                        <label className="text-sm font-medium text-gray-700">
+                            Trainer
+                        </label>
                         <Select
                             value={watch('trainerId')}
                             onValueChange={(value) =>
@@ -336,43 +332,99 @@ const CoursesPage = () => {
                         )}
                     </div>
 
-                    <RadioGroup
-                        value={watch('isPublic')}
-                        onValueChange={(val) =>
-                            setValue('isPublic', val, { shouldValidate: true })
-                        }
-                    >
-                        <div className="flex gap-4">
-                            <label className="flex items-center gap-2">
-                                <RadioGroupItem value="public" /> Public
-                            </label>
-                            <label className="flex items-center gap-2">
-                                <RadioGroupItem value="inhouse" /> In-house
-                            </label>
-                        </div>
-                    </RadioGroup>
+                    <div>
+                        <label className="text-sm font-medium text-gray-700">
+                            Languages
+                        </label>
 
-                    <RadioGroup
-                        value={watch('isCertified')}
-                        onValueChange={(val) =>
-                            setValue('isCertified', val, {
-                                shouldValidate: true,
-                            })
-                        }
-                    >
-                        <div className="flex gap-4">
-                            <label className="flex items-center gap-2">
-                                <RadioGroupItem value="yes" /> Certified
-                            </label>
-                            <label className="flex items-center gap-2">
-                                <RadioGroupItem value="no" /> Not Certified
-                            </label>
-                        </div>
-                    </RadioGroup>
+                        <MultiSelect
+                            value={
+                                (watch('languages') || []).filter(
+                                    Boolean,
+                                ) as string[]
+                            }
+                            onChange={(vals: string[]) => {
+                                setValue('languages', vals, {
+                                    shouldValidate: true,
+                                })
+                                trigger('languages')
+                            }}
+                        >
+                            {languagesList.map((lang) => (
+                                <MultiSelectItem
+                                    key={lang.id}
+                                    value={lang.name}
+                                >
+                                    {lang.name}
+                                </MultiSelectItem>
+                            ))}
+                        </MultiSelect>
+
+                        {errors.languages && (
+                            <p className="text-red-600 mt-1 text-sm">
+                                {errors.languages.message as string}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-700">
+                            Course Type
+                        </p>
+                        <RadioGroup
+                            value={watch('isPublic')}
+                            onValueChange={(val) =>
+                                setValue('isPublic', val, {
+                                    shouldValidate: true,
+                                })
+                            }
+                        >
+                            <div className="flex gap-4">
+                                <label className="flex items-center gap-2">
+                                    <RadioGroupItem value="public" /> Public
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <RadioGroupItem value="inhouse" /> In-house
+                                </label>
+                            </div>
+                        </RadioGroup>
+                        {errors.isPublic && (
+                            <p className="text-red-600 text-sm">
+                                {errors.isPublic.message as string}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-700">
+                            Certification
+                        </p>
+                        <RadioGroup
+                            value={watch('isCertified')}
+                            onValueChange={(val) =>
+                                setValue('isCertified', val, {
+                                    shouldValidate: true,
+                                })
+                            }
+                        >
+                            <div className="flex gap-4">
+                                <label className="flex items-center gap-2">
+                                    <RadioGroupItem value="yes" /> Certified
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <RadioGroupItem value="no" /> Not Certified
+                                </label>
+                            </div>
+                        </RadioGroup>
+                        {errors.isCertified && (
+                            <p className="text-red-600 text-sm">
+                                {errors.isCertified.message as string}
+                            </p>
+                        )}
+                    </div>
                 </div>
             </Dialog>
 
-            {/* Delete Dialog */}
             <Dialog
                 isOpen={deleteDialogOpen}
                 onClose={() => setDeleteDialogOpen(false)}
@@ -388,6 +440,7 @@ const CoursesPage = () => {
                     ?
                 </p>
             </Dialog>
+
             <Dialog
                 isOpen={dependencyErrorModal}
                 onClose={() => {
