@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import PageHeading from '@/components/layout/page-heading'
 import { Dialog } from '@/components/ui/dialog'
-import { Skeleton } from '@/components/ui/skeleton'
 import { columns } from '@/components/custom/table/courses/columns'
 import { DataTable } from '@/components/custom/table/data-table'
 import { useForm } from 'react-hook-form'
@@ -62,6 +61,11 @@ const CoursesPage = () => {
     const [languagesList, setLanguagesList] = useState<Language[]>([])
     const [formLoading, setFormLoading] = useState(false)
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const [dependencyErrorModal, setDependencyErrorModal] = useState(false)
+    const [dependencyInfo, setDependencyInfo] = useState<{
+        bookings: number
+        languages: number
+    } | null>(null)
 
     const {
         register,
@@ -84,6 +88,20 @@ const CoursesPage = () => {
             setLoading(false)
         }
     }
+
+    useEffect(() => {
+        if (selectedCourse) {
+            reset({
+                title: selectedCourse.title,
+                duration: selectedCourse.duration,
+                categoryId: selectedCourse.categoryId,
+                trainerId: selectedCourse.trainerId,
+                isCertified: selectedCourse.isCertified ? 'yes' : 'no',
+                isPublic: selectedCourse.isPublic ? 'public' : 'inhouse',
+                languages: selectedCourse.languages.map((l: any) => l.name),
+            })
+        }
+    }, [selectedCourse, reset])
 
     const fetchDropdowns = async () => {
         try {
@@ -120,7 +138,7 @@ const CoursesPage = () => {
         setValue('trainerId', course.trainerId)
         setValue('isCertified', course.isCertified ? 'yes' : 'no')
         setValue('isPublic', course.isPublic ? 'public' : 'inhouse')
-        setValue('languages', course.languages)
+        setValue('languages', course.languages.map((l: any) => l.name))
     }
 
     const handleAddOrEdit = async (data: any) => {
@@ -159,15 +177,26 @@ const CoursesPage = () => {
     const handleDelete = async () => {
         if (!courseToDelete) return
         setDeleteLoading(true)
+
         try {
-            await axios.delete(`/api/courses/${courseToDelete.id}`)
-            toast.success('Course deleted successfully')
-            fetchCourses()
-        } catch {
-            toast.error('Failed to delete course')
+            const res = await axios.delete(`/api/courses/${courseToDelete.id}`)
+            if (res.status === 200) {
+                toast.success('Course deleted successfully')
+                fetchCourses()
+                setDeleteDialogOpen(false)
+            }
+        } catch (err: any) {
+            if (
+                err?.response?.status === 409 &&
+                err.response.data.dependencies
+            ) {
+                setDependencyInfo(err.response.data.dependencies)
+                setDeleteDialogOpen(false)
+                setDependencyErrorModal(true)
+            } else {
+                toast.error('Failed to delete course')
+            }
         } finally {
-            setDeleteDialogOpen(false)
-            setCourseToDelete(null)
             setDeleteLoading(false)
         }
     }
@@ -181,19 +210,13 @@ const CoursesPage = () => {
                     Add Course
                 </Button>
             </div>
-            {loading ? (
-                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                    ))}
-                </div>
-            ) : (
-                <DataTable
-                    columns={columns({ openEditDialog, confirmDelete })}
-                    data={courses}
-                    filterField="title"
-                />
-            )}
+
+            <DataTable
+                columns={columns({ openEditDialog, confirmDelete })}
+                data={courses}
+                filterField="title"
+                loading={loading}
+            />
 
             {/* Add/Edit Dialog */}
             <Dialog
@@ -247,9 +270,11 @@ const CoursesPage = () => {
 
                     <div>
                         <MultiSelect
-                            defaultValue={selectedCourse?.languages || []}
+                            value={watch('languages')}
                             onChange={(vals: string[]) =>
-                                setValue('languages', vals)
+                                setValue('languages', vals, {
+                                    shouldValidate: true,
+                                })
                             }
                         >
                             {languagesList.map((lang) => (
@@ -311,7 +336,12 @@ const CoursesPage = () => {
                         )}
                     </div>
 
-                    <RadioGroup defaultValue="public" {...register('isPublic')}>
+                    <RadioGroup
+                        value={watch('isPublic')}
+                        onValueChange={(val) =>
+                            setValue('isPublic', val, { shouldValidate: true })
+                        }
+                    >
                         <div className="flex gap-4">
                             <label className="flex items-center gap-2">
                                 <RadioGroupItem value="public" /> Public
@@ -322,7 +352,14 @@ const CoursesPage = () => {
                         </div>
                     </RadioGroup>
 
-                    <RadioGroup defaultValue="yes" {...register('isCertified')}>
+                    <RadioGroup
+                        value={watch('isCertified')}
+                        onValueChange={(val) =>
+                            setValue('isCertified', val, {
+                                shouldValidate: true,
+                            })
+                        }
+                    >
                         <div className="flex gap-4">
                             <label className="flex items-center gap-2">
                                 <RadioGroupItem value="yes" /> Certified
@@ -349,6 +386,48 @@ const CoursesPage = () => {
                         {courseToDelete?.title}
                     </span>
                     ?
+                </p>
+            </Dialog>
+            <Dialog
+                isOpen={dependencyErrorModal}
+                onClose={() => {
+                    setDependencyErrorModal(false)
+                    setCourseToDelete(null)
+                }}
+                title="Cannot Delete Course"
+                submitLabel="Close"
+                onSubmit={() => {
+                    setDependencyErrorModal(false)
+                    setCourseToDelete(null)
+                }}
+            >
+                <p className="text-sm text-gray-700">
+                    This course cannot be deleted because it is linked to the
+                    following:
+                </p>
+                {!dependencyInfo ? (
+                    <p className="text-red-600 text-sm">
+                        Unable to determine dependencies.
+                    </p>
+                ) : (
+                    <ul className="text-red-600 mt-4 list-disc space-y-1 pl-5 text-sm">
+                        {dependencyInfo.bookings > 0 && (
+                            <li>
+                                {dependencyInfo.bookings} training session(s)
+                                using this course
+                            </li>
+                        )}
+                        {dependencyInfo.languages > 0 && (
+                            <li>
+                                {dependencyInfo.languages} language relation(s)
+                            </li>
+                        )}
+                    </ul>
+                )}
+
+                <p className="mt-4 text-sm text-gray-500">
+                    Please remove these dependencies before deleting this
+                    course.
                 </p>
             </Dialog>
         </div>
