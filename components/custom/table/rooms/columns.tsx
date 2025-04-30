@@ -14,10 +14,6 @@ export const columns = ({
     header: 'Name',
   },
   {
-    accessorKey: 'type',
-    header: 'Type',
-  },
-  {
     accessorKey: 'capacity',
     header: 'Capacity',
   },

@@ -4,28 +4,45 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useForm, Controller } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as yup from 'yup'
 import { Plus } from 'lucide-react'
+
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import {
-    Select,
-    SelectTrigger,
-    SelectValue,
-    SelectContent,
-    SelectItem,
-} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Skeleton } from '@/components/ui/skeleton'
 import { DataTable } from '@/components/custom/table/data-table'
 import { columns } from '@/components/custom/table/rooms/columns'
 import { Room } from '@/types/room'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
+
+const MAXIMUM_ROOM_CAPACITY = 30
 
 interface Location {
     id: string
     name: string
 }
+
+// ✅ Yup schema with max capacity
+const roomSchema = yup.object({
+    name: yup.string().required('Room name is required'),
+    capacity: yup
+        .number()
+        .typeError('Capacity must be a number')
+        .required('Capacity is required')
+        .integer('Only whole numbers allowed')
+        .max(MAXIMUM_ROOM_CAPACITY, `Maximum allowed is ${MAXIMUM_ROOM_CAPACITY}`),
+    locationId: yup.string().required('Location is required'),
+    notes: yup.string().optional(),
+})
 
 export default function RoomsPage() {
     const [rooms, setRooms] = useState<Room[]>([])
@@ -36,17 +53,18 @@ export default function RoomsPage() {
     const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
     const [roomToDelete, setRoomToDelete] = useState<Room | null>(null)
     const [formLoading, setFormLoading] = useState(false)
+    const [deleteLoading, setDeleteLoading] = useState(false)
 
     const {
         register,
         handleSubmit,
         reset,
         setValue,
-        watch,
-        trigger,
         control,
         formState: { errors },
-    } = useForm()
+    } = useForm({
+        resolver: yupResolver(roomSchema),
+    })
 
     const fetchRooms = async () => {
         setLoading(true)
@@ -78,8 +96,7 @@ export default function RoomsPage() {
         setSelectedRoom(room)
         setDialogOpen(true)
         setValue('name', room.name)
-        setValue('type', room.type)
-        setValue('capacity', room.capacity)
+        setValue('capacity', room.capacity ?? 0)
         setValue('notes', room.notes)
         setValue('locationId', room.locationId)
     }
@@ -88,9 +105,8 @@ export default function RoomsPage() {
         setFormLoading(true)
         const payload = {
             ...data,
-            capacity: parseInt(data.capacity, 10), // ✅ fix for Prisma
+            capacity: parseInt(data.capacity, 10),
         }
-
         try {
             if (selectedRoom) {
                 await axios.put(`/api/rooms/${selectedRoom.id}`, payload)
@@ -115,6 +131,7 @@ export default function RoomsPage() {
 
     const handleDelete = async () => {
         if (!roomToDelete) return
+        setDeleteLoading(true)
         try {
             await axios.delete(`/api/rooms/${roomToDelete.id}`)
             toast.success('Room deleted successfully')
@@ -124,6 +141,7 @@ export default function RoomsPage() {
         } finally {
             setDeleteDialogOpen(false)
             setRoomToDelete(null)
+            setDeleteLoading(false)
         }
     }
 
@@ -142,21 +160,14 @@ export default function RoomsPage() {
                     Add Room
                 </Button>
             </div>
-            {loading ? (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                    ))}
-                </div>
-            ) : (
-                <DataTable
-                    columns={columns({ openEditDialog, confirmDelete })}
-                    data={rooms}
-                    filterField="name"
-                />
-            )}
 
-            {/* Add/Edit Dialog */}
+            <DataTable
+                columns={columns({ openEditDialog, confirmDelete })}
+                data={rooms}
+                filterField="name"
+                loading={loading}
+            />
+
             <Dialog
                 isOpen={dialogOpen}
                 onClose={() => setDialogOpen(false)}
@@ -165,121 +176,58 @@ export default function RoomsPage() {
                 buttonLoading={formLoading}
             >
                 <div className="space-y-4">
-                    <div>
-                        <Input
-                            placeholder="Room Name"
-                            {...register('name', {
-                                required: 'Room name is required',
-                            })}
-                        />
-                        {errors.name && (
-                            <p className="text-red-600 mt-1 text-sm">
-                                {errors.name.message as string}
-                            </p>
-                        )}
-                    </div>
+                    <Input
+                        placeholder="Room Name"
+                        {...register('name')}
+                    />
+                    {errors.name && (
+                        <p className="text-red-600 text-sm">{String(errors.name.message)}</p>
+                    )}
 
-                    <div>
-                        <Controller
-                            name="type"
-                            control={control}
-                            rules={{ required: 'Room type is required' }}
-                            render={({ field }) => (
-                                <Select
-                                    value={field.value}
-                                    onValueChange={field.onChange}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Room Type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="ONLINE">
-                                            Online
+                    <Input
+                        type="number"
+                        placeholder="Capacity"
+                        {...register('capacity')}
+                        onKeyDown={(e) => {
+                            if (e.key === '.' || e.key === 'e') e.preventDefault()
+                        }}
+                    />
+                    {errors.capacity && (
+                        <p className="text-red-600 text-sm">{String(errors.capacity.message)}</p>
+                    )}
+
+                    <Controller
+                        name="locationId"
+                        control={control}
+                        render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select Location" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {locations.map((loc) => (
+                                        <SelectItem key={loc.id} value={loc.id}>
+                                            {loc.name}
                                         </SelectItem>
-                                        <SelectItem value="OFFLINE">
-                                            Offline
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            )}
-                        />
-                        {errors.type && (
-                            <p className="text-red-600 mt-1 text-sm">
-                                {errors.type.message as string}
-                            </p>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         )}
-                    </div>
+                    />
+                    {errors.locationId && (
+                        <p className="text-red-600 text-sm">{String(errors.locationId.message)}</p>
+                    )}
 
-                    <div>
-                        <Input
-                            type="number"
-                            step="1"
-                            placeholder="Capacity"
-                            {...register('capacity', {
-                                required: 'Capacity is required',
-                                validate: (value) =>
-                                    Number.isInteger(Number(value)) ||
-                                    'Only whole numbers allowed',
-                            })}
-                            onKeyDown={(e) => {
-                                if (e.key === '.' || e.key === 'e') {
-                                    e.preventDefault()
-                                }
-                            }}
-                        />
-                        {errors.capacity && (
-                            <p className="text-red-600 mt-1 text-sm">
-                                {errors.capacity.message as string}
-                            </p>
-                        )}
-                    </div>
-
-                    <div>
-                        <Textarea placeholder="Notes" {...register('notes')} />
-                    </div>
-
-                    <div>
-                        <Controller
-                            name="locationId"
-                            control={control}
-                            rules={{ required: 'Branch is required' }}
-                            render={({ field }) => (
-                                <Select
-                                    value={field.value}
-                                    onValueChange={field.onChange}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Branch" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {locations.map((loc) => (
-                                            <SelectItem
-                                                key={loc.id}
-                                                value={loc.id}
-                                            >
-                                                {loc.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                        />
-                        {errors.locationId && (
-                            <p className="text-red-600 mt-1 text-sm">
-                                {errors.locationId.message as string}
-                            </p>
-                        )}
-                    </div>
+                    <Textarea placeholder="Notes" {...register('notes')} />
                 </div>
             </Dialog>
 
-            {/* Delete Dialog */}
             <Dialog
                 isOpen={deleteDialogOpen}
                 onClose={() => setDeleteDialogOpen(false)}
                 title="Delete Room"
                 onSubmit={handleDelete}
-                buttonLoading={formLoading}
+                buttonLoading={deleteLoading}
             >
                 <p className="text-sm">
                     Are you sure you want to delete{' '}
