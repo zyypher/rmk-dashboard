@@ -23,7 +23,7 @@ import { Language } from '@/types/language'
 export default function BookingsPage() {
     const [bookings, setBookings] = useState<Booking[]>([])
     const [loading, setLoading] = useState(true)
-    const [step, setStep] = useState<'form' | 'seats' | null>(null)
+    const [step, setStep] = useState<'form' | 'seats' | 'error' | null>(null)
     const [courses, setCourses] = useState<Course[]>([])
     const [trainers, setTrainers] = useState<Trainer[]>([])
     const [rooms, setRooms] = useState<Room[]>([])
@@ -33,6 +33,7 @@ export default function BookingsPage() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [bookingData, setBookingData] = useState<any>(null)
     const [selectedSeats, setSelectedSeats] = useState<string[]>([])
+    const [conflictErrors, setConflictErrors] = useState<string[]>([])
 
     useEffect(() => {
         fetchBookings()
@@ -105,21 +106,24 @@ export default function BookingsPage() {
             }
 
             if (bookingData?.id) {
-                // 🛠 Edit Existing
                 await axios.put(`/api/bookings/${bookingData.id}`, payload)
                 toast.success('Booking updated')
             } else {
-                // 🆕 Create New
                 await axios.post('/api/bookings', payload)
                 toast.success('Booking created')
             }
 
             fetchBookings()
-        } catch (err) {
-            toast.error('Failed to save booking')
-            console.error('Save error:', err)
-        } finally {
-            resetBookingFlow()
+            resetBookingFlow() // ✅ only reset if success
+        } catch (err: any) {
+            if (err?.response?.status === 409 && err?.response?.data?.reasons) {
+                setConflictErrors(err.response.data.reasons)
+                setStep('error') // ✅ do NOT reset!
+            } else {
+                toast.error('Failed to save booking')
+                console.error('Save error:', err)
+                resetBookingFlow()
+            }
         }
     }
 
@@ -163,7 +167,7 @@ export default function BookingsPage() {
                     onNext={handleNextStep}
                     onSubmit={handleNextStep} // fallback
                     loading={false}
-                    initialData={selectedBooking}
+                    initialData={bookingData}
                     courses={courses}
                     trainers={trainers}
                     rooms={rooms}
@@ -182,6 +186,25 @@ export default function BookingsPage() {
                     onConfirm={handleFinalSubmit}
                     initialCapacity={bookingData?.room?.capacity}
                 />
+            )}
+
+            {step === 'error' && (
+                <Dialog
+                    isOpen={step === 'error'}
+                    onClose={resetBookingFlow}
+                    title="Booking Conflict Detected"
+                    onSubmit={() => setStep('form')}
+                    submitLabel="Go Back and Edit"
+                >
+                    <ul className="text-red-600 list-disc space-y-2 pl-5 text-sm">
+                        {conflictErrors.map((reason, idx) => (
+                            <li key={idx}>{reason}</li>
+                        ))}
+                    </ul>
+                    <p className="mt-4 text-sm text-gray-500">
+                        Please adjust the trainer, room, or time and try again.
+                    </p>
+                </Dialog>
             )}
 
             <Dialog
