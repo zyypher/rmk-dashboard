@@ -13,6 +13,7 @@ interface FloatingLabelInputProps {
   error?: string
   type?: string
   placeholder?: string
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void
 }
 
 export function FloatingLabelInput({
@@ -23,6 +24,7 @@ export function FloatingLabelInput({
   error,
   type = 'text',
   placeholder,
+  onKeyDown
 }: FloatingLabelInputProps) {
   const [isFocused, setIsFocused] = useState(false)
 
@@ -40,6 +42,7 @@ export function FloatingLabelInput({
         onBlur={() => setIsFocused(false)}
         onChange={(e) => onChange?.(e.target.value)}
         className="peer placeholder-transparent pt-5"
+        onKeyDown={onKeyDown} 
       />
       <Label
         htmlFor={name}

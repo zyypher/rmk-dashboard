@@ -23,6 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
+import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
 
 const MAXIMUM_ROOM_CAPACITY = 30
 
@@ -39,7 +40,10 @@ const roomSchema = yup.object({
         .typeError('Capacity must be a number')
         .required('Capacity is required')
         .integer('Only whole numbers allowed')
-        .max(MAXIMUM_ROOM_CAPACITY, `Maximum allowed is ${MAXIMUM_ROOM_CAPACITY}`),
+        .max(
+            MAXIMUM_ROOM_CAPACITY,
+            `Maximum allowed is ${MAXIMUM_ROOM_CAPACITY}`,
+        ),
     locationId: yup.string().required('Location is required'),
     notes: yup.string().optional(),
 })
@@ -61,6 +65,7 @@ export default function RoomsPage() {
         reset,
         setValue,
         control,
+        watch,
         formState: { errors },
     } = useForm({
         resolver: yupResolver(roomSchema),
@@ -176,47 +181,69 @@ export default function RoomsPage() {
                 buttonLoading={formLoading}
             >
                 <div className="space-y-4">
-                    <Input
-                        placeholder="Room Name"
-                        {...register('name')}
+                    <FloatingLabelInput
+                        label="Room Name"
+                        value={watch('name')}
+                        onChange={(val) =>
+                            setValue('name', val, { shouldValidate: true })
+                        }
+                        name="name"
+                        error={errors.name?.message as string}
                     />
-                    {errors.name && (
-                        <p className="text-red-600 text-sm">{String(errors.name.message)}</p>
-                    )}
 
-                    <Input
+                    <FloatingLabelInput
+                        label="Capacity"
                         type="number"
-                        placeholder="Capacity"
-                        {...register('capacity')}
-                        onKeyDown={(e) => {
-                            if (e.key === '.' || e.key === 'e') e.preventDefault()
+                        value={String(watch('capacity') ?? '')}
+                        onChange={(val) =>
+                            setValue('capacity', parseInt(val || '0', 10), {
+                                shouldValidate: true,
+                            })
+                        }
+                        name="capacity"
+                        onKeyDown={(
+                            e: React.KeyboardEvent<HTMLInputElement>,
+                        ) => {
+                            if (e.key === '.' || e.key === 'e')
+                                e.preventDefault()
                         }}
+                        error={errors.capacity?.message as string}
                     />
-                    {errors.capacity && (
-                        <p className="text-red-600 text-sm">{String(errors.capacity.message)}</p>
-                    )}
 
-                    <Controller
-                        name="locationId"
-                        control={control}
-                        render={({ field }) => (
-                            <Select value={field.value} onValueChange={field.onChange}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Location" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {locations.map((loc) => (
-                                        <SelectItem key={loc.id} value={loc.id}>
-                                            {loc.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                    <div>
+                        <label className="text-sm font-medium text-gray-700">
+                            Branch
+                        </label>
+                        <Controller
+                            name="locationId"
+                            control={control}
+                            render={({ field }) => (
+                                <Select
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Location" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {locations.map((loc) => (
+                                            <SelectItem
+                                                key={loc.id}
+                                                value={loc.id}
+                                            >
+                                                {loc.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
+                        {errors.locationId && (
+                            <p className="text-red-600 text-sm">
+                                {errors.locationId.message as string}
+                            </p>
                         )}
-                    />
-                    {errors.locationId && (
-                        <p className="text-red-600 text-sm">{String(errors.locationId.message)}</p>
-                    )}
+                    </div>
 
                     <Textarea placeholder="Notes" {...register('notes')} />
                 </div>

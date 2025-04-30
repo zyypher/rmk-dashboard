@@ -8,31 +8,25 @@ import toast from 'react-hot-toast'
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { DataTable } from '@/components/custom/table/data-table'
 import { columns } from '@/components/custom/table/locations/columns'
 import { Location } from '@/types/location'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { Checkbox } from '@/components/ui/checkbox'
+import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
 
 export default function LocationsPage() {
     const [locations, setLocations] = useState<Location[]>([])
     const [loading, setLoading] = useState(true)
     const [dialogOpen, setDialogOpen] = useState(false)
     const [formLoading, setFormLoading] = useState(false)
-    const [selectedLocation, setSelectedLocation] = useState<Location | null>(
-        null,
-    )
+    const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-    const [locationToDelete, setLocationToDelete] = useState<Location | null>(
-        null,
-    )
+    const [locationToDelete, setLocationToDelete] = useState<Location | null>(null)
     const [deleteLoading, setDeleteLoading] = useState(false)
     const [dependencyErrorModal, setDependencyErrorModal] = useState(false)
-    const [dependencyInfo, setDependencyInfo] = useState<{
-        rooms: number
-    } | null>(null)
+    const [dependencyInfo, setDependencyInfo] = useState<{ rooms: number } | null>(null)
 
     const locationSchema = yup.object({
         name: yup.string().required('Branch name is required'),
@@ -156,28 +150,26 @@ export default function LocationsPage() {
                 buttonLoading={formLoading}
             >
                 <div className="space-y-4">
-                    <Input
-                        placeholder="Branch Name"
-                        {...register('name', {
-                            required: 'Branch name is required',
-                        })}
+                    <FloatingLabelInput
+                        label="Branch Name"
+                        value={watch('name')}
+                        onChange={(val) =>
+                            setValue('name', val, { shouldValidate: true })
+                        }
+                        name="name"
+                        error={errors.name?.message as string}
                     />
-                    {errors.name && (
-                        <p className="text-red-600 text-sm">
-                            {errors.name.message as string}
-                        </p>
-                    )}
-                    <Input
-                        placeholder="Full Address"
-                        {...register('address', {
-                            required: 'Address is required',
-                        })}
+
+                    <FloatingLabelInput
+                        label="Full Address"
+                        value={watch('address')}
+                        onChange={(val) =>
+                            setValue('address', val, { shouldValidate: true })
+                        }
+                        name="address"
+                        error={errors.address?.message as string}
                     />
-                    {errors.address && (
-                        <p className="text-red-600 text-sm">
-                            {errors.address.message as string}
-                        </p>
-                    )}
+
                     <div className="flex items-center gap-2">
                         <Checkbox
                             id="isOnline"
@@ -196,8 +188,14 @@ export default function LocationsPage() {
                             Online Location
                         </label>
                     </div>
+                    {errors.isOnline && (
+                        <p className="text-red-600 text-sm">
+                            {errors.isOnline.message as string}
+                        </p>
+                    )}
                 </div>
             </Dialog>
+
             <Dialog
                 isOpen={deleteDialogOpen}
                 onClose={() => setDeleteDialogOpen(false)}
@@ -213,6 +211,7 @@ export default function LocationsPage() {
                     ?
                 </p>
             </Dialog>
+
             <Dialog
                 isOpen={dependencyErrorModal}
                 onClose={() => {
