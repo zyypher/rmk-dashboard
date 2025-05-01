@@ -119,14 +119,14 @@ const Sidebar = () => {
                         <Building2 className="size-[18px]" />
                         <span>Locations</span>
                     </NavLink>
-                    <NavLink href="/reminders" className="nav-link">
+                    {/* <NavLink href="/reminders" className="nav-link">
                         <AlarmClock className="size-[18px]" />
                         <span>Reminders</span>
                     </NavLink>
                     <NavLink href="/notifications" className="nav-link">
                         <Bell className="size-[18px]" />
                         <span>Notifications</span>
-                    </NavLink>
+                    </NavLink> */}
 
                     <h3 className="mt-2.5 whitespace-nowrap rounded-lg bg-gray-400 px-5 py-2.5 text-xs font-semibold uppercase text-black">
                         Admin Tools

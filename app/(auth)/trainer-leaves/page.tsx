@@ -7,11 +7,9 @@ import toast from 'react-hot-toast'
 import { useForm, Controller } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
-
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
-import { Skeleton } from '@/components/ui/skeleton'
 import { DataTable } from '@/components/custom/table/data-table'
 import { columns } from '@/components/custom/table/trainer-leaves/columns'
 import {
@@ -22,7 +20,6 @@ import {
     SelectItem,
 } from '@/components/ui/select'
 import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
-import { Textarea } from '@/components/ui/textarea'
 import { DatePicker } from '@/components/ui/DatePicker'
 
 interface Trainer {
