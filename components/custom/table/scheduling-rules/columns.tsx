@@ -35,10 +35,6 @@ export const columns = ({
     header: 'Max Sessions/Day',
   },
   {
-    accessorKey: 'notes',
-    header: 'Notes',
-  },
-  {
     accessorKey: 'allowOverlap',
     header: 'Overlap',
     cell: ({ row }) => (row.original.allowOverlap ? '✅' : '❌'),

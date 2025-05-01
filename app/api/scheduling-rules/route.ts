@@ -20,6 +20,17 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json()
+    const existing = await prisma.trainerSchedulingRule.findUnique({
+      where: { trainerId: data.trainerId },
+    })
+    
+    if (existing) {
+      return NextResponse.json(
+        { error: 'A rule already exists for this trainer.' },
+        { status: 400 }
+      )
+    }
+    
     const rule = await prisma.trainerSchedulingRule.create({
       data: {
         trainerId: data.trainerId,

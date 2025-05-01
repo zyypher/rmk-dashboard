@@ -10,7 +10,7 @@ export async function validateBookingConflicts(data: any): Promise<string[]> {
     const start = new Date(startTime)
     const end = new Date(endTime)
 
-    // Fetch trainer's daily time slots
+    // 1. Fetch trainer info (including time slots)
     const trainer = await prisma.trainer.findUnique({
         where: { id: trainerId },
         select: { dailyTimeSlots: true },
@@ -26,7 +26,7 @@ export async function validateBookingConflicts(data: any): Promise<string[]> {
         end: string
     }[]
 
-    // Check if booking falls within any allowed slot
+    // 2. Validate the booking time fits within one of the trainer's available time slots
     const fitsInAnySlot = dailySlots?.some((slot) => {
         const slotStart = new Date(
             `${sessionDate.toDateString()} ${slot.start}`,
@@ -36,10 +36,10 @@ export async function validateBookingConflicts(data: any): Promise<string[]> {
     })
 
     if (!fitsInAnySlot) {
-        conflicts.push(`Trainer is not available at the selected time.`)
+        conflicts.push('Trainer is not available at the selected time.')
     }
 
-    // Fetch overlapping sessions on the same date excluding the current one if updating
+    // 3. Check overlapping sessions for the same date (excluding this session if editing)
     const overlappingSessions = await prisma.trainingSession.findMany({
         where: {
             date: sessionDate,
@@ -65,7 +65,7 @@ export async function validateBookingConflicts(data: any): Promise<string[]> {
         }
     }
 
-    // Check trainer leave
+    // 4. Check if the trainer is on leave that day
     const leave = await prisma.trainerLeave.findFirst({
         where: {
             trainerId,
@@ -75,6 +75,39 @@ export async function validateBookingConflicts(data: any): Promise<string[]> {
 
     if (leave) {
         conflicts.push(`Trainer is on leave on ${sessionDate.toDateString()}.`)
+    }
+
+    // 5. Fetch trainer's scheduling rule (if exists)
+    const rule = await prisma.trainerSchedulingRule.findUnique({
+        where: { trainerId },
+    })
+
+    if (rule) {
+        // 5a. Validate max sessions per day
+        const trainerSessionCount = await prisma.trainingSession.count({
+            where: {
+                trainerId,
+                date: sessionDate,
+                ...(id && { NOT: { id } }),
+            },
+        })
+
+        if (trainerSessionCount >= rule.maxSessionsPerDay) {
+            conflicts.push(
+                `Trainer has reached the maximum of ${rule.maxSessionsPerDay} sessions for ${sessionDate.toDateString()}.`,
+            )
+        }
+
+        // 5b. Validate day off (e.g., SUN, MON, etc.)
+        const dayName = sessionDate
+            .toLocaleDateString('en-US', { weekday: 'short' })
+            .toUpperCase() as any // 'SUN', 'MON', etc.
+
+        if (rule.daysOff.includes(dayName)) {
+            conflicts.push(
+                `Trainer is not available on ${sessionDate.toDateString()} (Day Off).`,
+            )
+        }
     }
 
     return conflicts
