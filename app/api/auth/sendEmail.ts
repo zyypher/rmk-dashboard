@@ -27,7 +27,7 @@ export default async function sendEmail(to: string, subject: string, resetLink: 
     try {
         await sgMail.send({
             to,
-            from: process.env.SENDGRID_FROM_EMAIL as string, // Your verified SendGrid sender email
+            from: process.env.SENDGRID_FROM_EMAIL as string,
             subject,
             html: emailContent,
         })
