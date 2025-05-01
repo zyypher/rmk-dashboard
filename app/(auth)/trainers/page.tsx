@@ -6,14 +6,15 @@ import toast from 'react-hot-toast'
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { DataTable } from '@/components/custom/table/data-table'
 import { columns } from '@/components/custom/table/trainers/columns'
 import { Dialog } from '@/components/ui/dialog'
 import { useForm } from 'react-hook-form'
-import { Input } from '@/components/ui/input'
-import { Day, daysList } from '@/lib/constants'
 import { MultiSelect, MultiSelectItem } from '@/components/ui/multi-select'
+import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
+import { Day, daysList } from '@/lib/constants'
+import * as yup from 'yup'
+import { yupResolver } from '@hookform/resolvers/yup'
 
 interface Trainer {
     id: string
@@ -30,6 +31,33 @@ interface Language {
     id: string
     name: string
 }
+
+const trainerSchema = yup.object({
+    name: yup.string().required('Name is required'),
+
+    email: yup
+        .string()
+        .required('Email is required')
+        .email('Invalid email address'),
+
+    phone: yup
+        .string()
+        .required('Phone is required')
+        .matches(
+            /^(\+?\d{1,3}[- ]?)?\d{10}$/,
+            'Invalid phone number (must be 10 digits or include country code)',
+        ),
+
+    languages: yup
+        .array()
+        .of(yup.string())
+        .min(1, 'At least one language is required'),
+
+    availableDays: yup
+        .array()
+        .of(yup.string())
+        .min(1, 'At least one day is required'),
+})
 
 export default function TrainersPage() {
     const [trainers, setTrainers] = useState<Trainer[]>([])
@@ -48,8 +76,11 @@ export default function TrainersPage() {
         reset,
         setValue,
         watch,
+        trigger,
         formState: { errors },
-    } = useForm()
+    } = useForm({
+        resolver: yupResolver(trainerSchema),
+    })
 
     const fetchTrainers = async () => {
         setLoading(true)
@@ -142,21 +173,14 @@ export default function TrainersPage() {
                     Add Trainer
                 </Button>
             </div>
-            {loading ? (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <Skeleton key={i} className="h-24 w-full rounded-lg" />
-                    ))}
-                </div>
-            ) : (
-                <DataTable
-                    columns={columns({ openEditDialog, confirmDelete })}
-                    data={trainers}
-                    filterField="name"
-                />
-            )}
 
-            {/* Add/Edit Dialog */}
+            <DataTable
+                columns={columns({ openEditDialog, confirmDelete })}
+                data={trainers}
+                filterField="name"
+                loading={loading}
+            />
+
             <Dialog
                 isOpen={dialogOpen}
                 onClose={() => setDialogOpen(false)}
@@ -165,60 +189,50 @@ export default function TrainersPage() {
                 buttonLoading={formLoading}
             >
                 <div className="space-y-4">
-                    <div>
-                        <Input
-                            placeholder="Name"
-                            {...register('name', {
-                                required: 'Name is required',
-                            })}
-                        />
-                        {errors.name && (
-                            <p className="text-red-600 mt-1 text-sm">
-                                {errors.name.message as string}
-                            </p>
-                        )}
-                    </div>
+                    <FloatingLabelInput
+                        label="Name"
+                        value={watch('name')}
+                        onChange={(val) =>
+                            setValue('name', val, { shouldValidate: true })
+                        }
+                        name="name"
+                        error={errors.name?.message as string}
+                    />
 
-                    <div>
-                        <Input
-                            placeholder="Email"
-                            {...register('email', {
-                                required: 'Email is required',
-                            })}
-                        />
-                        {errors.email && (
-                            <p className="text-red-600 mt-1 text-sm">
-                                {errors.email.message as string}
-                            </p>
-                        )}
-                    </div>
+                    <FloatingLabelInput
+                        label="Email"
+                        value={watch('email')}
+                        onChange={(val) =>
+                            setValue('email', val, { shouldValidate: true })
+                        }
+                        name="email"
+                        error={errors.email?.message as string}
+                    />
 
-                    <div>
-                        <Input
-                            placeholder="Phone"
-                            {...register('phone', {
-                                required: 'Phone is required',
-                            })}
-                        />
-                        {errors.phone && (
-                            <p className="text-red-600 mt-1 text-sm">
-                                {errors.phone.message as string}
-                            </p>
-                        )}
-                    </div>
+                    <FloatingLabelInput
+                        label="Phone"
+                        value={watch('phone')}
+                        onChange={(val) =>
+                            setValue('phone', val, { shouldValidate: true })
+                        }
+                        name="phone"
+                        error={errors.phone?.message as string}
+                    />
 
                     <div className="space-y-1">
                         <label className="text-sm font-medium text-gray-700">
                             Languages
                         </label>
                         <MultiSelect
-                            label="Languages"
-                            defaultValue={selectedTrainer?.languages || []}
-                            onChange={(vals) =>
+                            value={(watch('languages') || []).filter(
+                                (v): v is string => Boolean(v),
+                            )}
+                            onChange={(vals) => {
                                 setValue('languages', vals, {
                                     shouldValidate: true,
                                 })
-                            }
+                                trigger('languages')
+                            }}
                         >
                             {languagesList.map((lang) => (
                                 <MultiSelectItem
@@ -231,7 +245,7 @@ export default function TrainersPage() {
                         </MultiSelect>
                         {errors.languages && (
                             <p className="text-red-600 mt-1 text-sm">
-                                At least one language is required.
+                                {errors.languages.message as string}
                             </p>
                         )}
                     </div>
@@ -241,8 +255,9 @@ export default function TrainersPage() {
                             Available Days
                         </label>
                         <MultiSelect
-                            label="Available Days"
-                            defaultValue={selectedTrainer?.availableDays || []}
+                            value={(watch('availableDays') || []).filter(
+                                (v): v is string => Boolean(v),
+                            )}
                             onChange={(vals) =>
                                 setValue('availableDays', vals, {
                                     shouldValidate: true,
@@ -257,7 +272,7 @@ export default function TrainersPage() {
                         </MultiSelect>
                         {errors.availableDays && (
                             <p className="text-red-600 mt-1 text-sm">
-                                At least one day is required.
+                                {errors.availableDays.message as string}
                             </p>
                         )}
                     </div>

@@ -8,7 +8,6 @@ export async function GET() {
     const courses = await prisma.course.findMany({
       include: {
         category: true,
-        trainer: true,
         languages: true,
       },
     })
@@ -39,7 +38,6 @@ export async function POST(req: NextRequest) {
         isCertified,
         isPublic,
         categoryId,
-        trainerId,
         languages: {
           connect: languages.map((name: string) => ({ name })),
         },

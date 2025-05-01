@@ -8,10 +8,11 @@ export async function GET() {
     try {
         const sessions = await prisma.trainingSession.findMany({
             include: {
-                course: { include: { trainer: true } },
-                room: true,
+              course: { include: { trainers: true } }, // ✅ updated here
+              room: true,
             },
-        })
+          })
+          
 
         return NextResponse.json(sessions)
     } catch (error) {

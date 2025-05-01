@@ -45,7 +45,7 @@ model Trainer {
   languages      Language[]             @relation("TrainerLanguages")
   locationId     String?
   location       Location?              @relation(fields: [locationId], references: [id])
-  courses        Course[]
+  courses        Course[]               @relation("TrainerCourses")
   availableDays  Day[]
   timeSlots      Json?
   leaves         TrainerLeave[]
@@ -66,27 +66,27 @@ model TrainerLeave {
 }
 
 model Location {
-  id        String   @id @default(uuid())
+  id        String            @id @default(uuid())
   name      String
   address   String
-  isOnline  Boolean  @default(false)
+  isOnline  Boolean           @default(false)
   rooms     Room[]
   trainers  Trainer[]
   sessions  TrainingSession[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 }
 
 model Room {
-  id         String   @id @default(uuid())
+  id         String            @id @default(uuid())
   name       String
   capacity   Int?
   notes      String?
   locationId String
-  location   Location @relation(fields: [locationId], references: [id])
+  location   Location          @relation(fields: [locationId], references: [id])
   sessions   TrainingSession[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 }
 
 model Client {
@@ -107,12 +107,11 @@ model Course {
   category     Category          @relation(fields: [categoryId], references: [id])
   languages    Language[]        @relation("CourseLanguages")
   duration     String
-  trainerId    String
-  trainer      Trainer           @relation(fields: [trainerId], references: [id])
   isCertified  Boolean           @default(false)
   isPublic     Boolean           @default(true)
   sessions     TrainingSession[]
   certificates Certificate[]
+  trainers     Trainer[]         @relation("TrainerCourses")
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 

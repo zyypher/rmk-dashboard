@@ -19,11 +19,6 @@ export const columns = ({
         cell: ({ row }) => row.original.category.name,
     },
     {
-        accessorKey: 'trainer.name',
-        header: 'Trainer',
-        cell: ({ row }) => row.original.trainer.name,
-    },
-    {
         accessorKey: 'duration',
         header: 'Duration',
     },

@@ -10,7 +10,6 @@ import { Dialog } from '@/components/ui/dialog'
 import { columns } from '@/components/custom/table/courses/columns'
 import { DataTable } from '@/components/custom/table/data-table'
 import { useForm } from 'react-hook-form'
-import { Input } from '@/components/ui/input'
 import {
     Select,
     SelectTrigger,
@@ -23,13 +22,9 @@ import { MultiSelect, MultiSelectItem } from '@/components/ui/multi-select'
 import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
+import { Course } from '@/types/course'
 
 interface Category {
-    id: string
-    name: string
-}
-
-interface Trainer {
     id: string
     name: string
 }
@@ -39,24 +34,10 @@ interface Language {
     name: string
 }
 
-interface Course {
-    id: string
-    title: string
-    duration: string
-    isCertified: boolean
-    isPublic: boolean
-    trainerId: string
-    categoryId: string
-    languages: string[]
-    category: { name: string }
-    trainer: { name: string }
-}
-
 const courseSchema = yup.object({
     title: yup.string().required('Course title is required'),
     duration: yup.string().required('Duration is required'),
     categoryId: yup.string().required('Category is required'),
-    trainerId: yup.string().required('Trainer is required'),
     isCertified: yup.string().required('Certification status is required'),
     isPublic: yup.string().required('Public status is required'),
     languages: yup
@@ -73,7 +54,6 @@ const CoursesPage = () => {
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
     const [courseToDelete, setCourseToDelete] = useState<Course | null>(null)
     const [categories, setCategories] = useState<Category[]>([])
-    const [trainers, setTrainers] = useState<Trainer[]>([])
     const [languagesList, setLanguagesList] = useState<Language[]>([])
     const [formLoading, setFormLoading] = useState(false)
     const [deleteLoading, setDeleteLoading] = useState(false)
@@ -115,7 +95,6 @@ const CoursesPage = () => {
                 title: selectedCourse.title,
                 duration: selectedCourse.duration,
                 categoryId: selectedCourse.categoryId,
-                trainerId: selectedCourse.trainerId,
                 isCertified: selectedCourse.isCertified ? 'yes' : 'no',
                 isPublic: selectedCourse.isPublic ? 'public' : 'inhouse',
                 languages: selectedCourse.languages.map((l: any) => l.name),
@@ -125,13 +104,11 @@ const CoursesPage = () => {
 
     const fetchDropdowns = async () => {
         try {
-            const [catRes, trainerRes, langRes] = await Promise.all([
+            const [catRes, langRes] = await Promise.all([
                 axios.get('/api/categories'),
-                axios.get('/api/trainers').catch(() => ({ data: [] })),
                 axios.get('/api/languages'),
             ])
             setCategories(catRes.data)
-            setTrainers(trainerRes.data)
             setLanguagesList(langRes.data)
         } catch {
             toast.error('Failed to load dropdown data')
@@ -155,7 +132,6 @@ const CoursesPage = () => {
         setValue('title', course.title)
         setValue('duration', course.duration)
         setValue('categoryId', course.categoryId)
-        setValue('trainerId', course.trainerId)
         setValue('isCertified', course.isCertified ? 'yes' : 'no')
         setValue('isPublic', course.isPublic ? 'public' : 'inhouse')
         setValue(
@@ -298,36 +274,6 @@ const CoursesPage = () => {
                         {errors.categoryId && (
                             <p className="text-red-600 mt-1 text-sm">
                                 {errors.categoryId.message as string}
-                            </p>
-                        )}
-                    </div>
-
-                    <div>
-                        <label className="text-sm font-medium text-gray-700">
-                            Trainer
-                        </label>
-                        <Select
-                            value={watch('trainerId')}
-                            onValueChange={(value) =>
-                                setValue('trainerId', value, {
-                                    shouldValidate: true,
-                                })
-                            }
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select Trainer" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {trainers.map((t) => (
-                                    <SelectItem key={t.id} value={t.id}>
-                                        {t.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {errors.trainerId && (
-                            <p className="text-red-600 mt-1 text-sm">
-                                {errors.trainerId.message as string}
                             </p>
                         )}
                     </div>

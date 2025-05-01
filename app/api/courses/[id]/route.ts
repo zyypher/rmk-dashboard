@@ -7,31 +7,32 @@ export async function DELETE(
     _: NextRequest,
     { params }: { params: { id: string } },
 ) {
-    const prisma = new PrismaClient()
     const courseId = params.id
 
     try {
-        const [bookingsCount, languageLinks] = await Promise.all([
-            prisma.trainingSession.count({ where: { courseId } }),
-            prisma.language.count({
-                where: { courses: { some: { id: courseId } } },
-            }),
-        ])
+        const bookingsCount = await prisma.trainingSession.count({
+            where: { courseId },
+        })
 
-        if (bookingsCount > 0 || languageLinks > 0) {
+        if (bookingsCount > 0) {
             return NextResponse.json(
                 {
-                    error: 'Cannot delete course with existing dependencies.',
-                    dependencies: {
-                        bookings: bookingsCount,
-                        languages: languageLinks,
-                    },
+                    error: 'Cannot delete course with existing training sessions.',
+                    dependencies: { bookings: bookingsCount },
                 },
                 { status: 409 },
             )
         }
 
-        await prisma.course.delete({ where: { id: courseId } })
+        await prisma.$transaction([
+            prisma.course.update({
+                where: { id: courseId },
+                data: {
+                    languages: { set: [] }, // disconnect languages
+                },
+            }),
+            prisma.course.delete({ where: { id: courseId } }),
+        ])
 
         return NextResponse.json({ message: 'Course deleted' })
     } catch (error) {
@@ -54,7 +55,6 @@ export async function PUT(
             isCertified,
             isPublic,
             categoryId,
-            trainerId,
             languages,
         } = await req.json()
 
@@ -70,7 +70,6 @@ export async function PUT(
                 isCertified,
                 isPublic,
                 categoryId,
-                trainerId,
                 languages: {
                     set: [],
                     connect: languageNames.map((name: string) => ({ name })),
