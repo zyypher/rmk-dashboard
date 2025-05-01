@@ -48,6 +48,7 @@ model Trainer {
   courses        Course[]               @relation("TrainerCourses")
   availableDays  Day[]
   timeSlots      Json?
+  dailyTimeSlots Json?
   leaves         TrainerLeave[]
   schedulingRule TrainerSchedulingRule? @relation("TrainerToScheduleRule")
   sessions       TrainingSession[]      @relation("TrainerSessions")

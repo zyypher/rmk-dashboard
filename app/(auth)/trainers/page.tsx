@@ -15,6 +15,17 @@ import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
 import { Day, daysList } from '@/lib/constants'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
+import { TimePicker } from '@/components/ui/TimePicker'
+
+interface CourseOption {
+    id: string
+    title: string
+}
+
+interface Language {
+    id: string
+    name: string
+}
 
 interface Trainer {
     id: string
@@ -24,44 +35,50 @@ interface Trainer {
     languages: string[]
     availableDays: Day[]
     timeSlots: { start: string; end: string }[]
+    dailyTimeSlots?: { start: Date; end: Date }[]
     courses: { id: string; title: string }[]
-}
-
-interface Language {
-    id: string
-    name: string
 }
 
 const trainerSchema = yup.object({
     name: yup.string().required('Name is required'),
-
     email: yup
         .string()
         .required('Email is required')
         .email('Invalid email address'),
-
     phone: yup
         .string()
         .required('Phone is required')
-        .matches(
-            /^(\+?\d{1,3}[- ]?)?\d{10}$/,
-            'Invalid phone number (must be 10 digits or include country code)',
-        ),
-
+        .matches(/^(\+?\d{1,3}[- ]?)?\d{10}$/, 'Invalid phone number'),
     languages: yup
         .array()
         .of(yup.string())
         .min(1, 'At least one language is required'),
-
     availableDays: yup
         .array()
         .of(yup.string())
         .min(1, 'At least one day is required'),
+    courses: yup
+        .array()
+        .of(yup.string())
+        .min(1, 'At least one course is required'),
+    dailyTimeSlots: yup
+        .array()
+        .of(
+            yup.object({
+                start: yup
+                    .date()
+                    .typeError('Start time is required')
+                    .required(),
+                end: yup.date().typeError('End time is required').required(),
+            }),
+        )
+        .min(1, 'At least one time slot is required'),
 })
 
 export default function TrainersPage() {
     const [trainers, setTrainers] = useState<Trainer[]>([])
     const [languagesList, setLanguagesList] = useState<Language[]>([])
+    const [coursesList, setCoursesList] = useState<CourseOption[]>([])
     const [loading, setLoading] = useState(true)
     const [dialogOpen, setDialogOpen] = useState(false)
     const [selectedTrainer, setSelectedTrainer] = useState<Trainer | null>(null)
@@ -81,6 +98,10 @@ export default function TrainersPage() {
     } = useForm({
         resolver: yupResolver(trainerSchema),
     })
+
+    const [slots, setSlots] = useState<
+        { start: Date | null; end: Date | null }[]
+    >([])
 
     const fetchTrainers = async () => {
         setLoading(true)
@@ -103,9 +124,19 @@ export default function TrainersPage() {
         }
     }
 
+    const fetchCourses = async () => {
+        try {
+            const res = await axios.get('/api/courses')
+            setCoursesList(res.data)
+        } catch {
+            toast.error('Failed to fetch courses')
+        }
+    }
+
     useEffect(() => {
         fetchTrainers()
         fetchLanguages()
+        fetchCourses()
     }, [])
 
     const openAddDialog = () => {
@@ -122,16 +153,33 @@ export default function TrainersPage() {
         setValue('phone', trainer.phone)
         setValue('languages', trainer.languages)
         setValue('availableDays', trainer.availableDays)
+        setValue(
+            'courses',
+            trainer.courses.map((c) => c.id),
+        )
+        setSlots(
+            (trainer.dailyTimeSlots || []).map((s) => ({
+                start: new Date(s.start),
+                end: new Date(s.end),
+            })),
+        )
+        setValue('dailyTimeSlots', trainer.dailyTimeSlots || [])
     }
 
     const handleAddOrEdit = async (data: any) => {
         setFormLoading(true)
+        const payload = {
+            ...data,
+            dailyTimeSlots: data.dailyTimeSlots,
+            courses: data.courses,
+        }
+
         try {
             if (selectedTrainer) {
-                await axios.put(`/api/trainers/${selectedTrainer.id}`, data)
+                await axios.put(`/api/trainers/${selectedTrainer.id}`, payload)
                 toast.success('Trainer updated successfully')
             } else {
-                await axios.post('/api/trainers', data)
+                await axios.post('/api/trainers', payload)
                 toast.success('Trainer added successfully')
             }
             fetchTrainers()
@@ -273,6 +321,150 @@ export default function TrainersPage() {
                         {errors.availableDays && (
                             <p className="text-red-600 mt-1 text-sm">
                                 {errors.availableDays.message as string}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium text-gray-700">
+                            Assigned Courses
+                        </label>
+                        <MultiSelect
+                            value={(watch('courses') || []).filter(
+                                (v): v is string => Boolean(v),
+                            )}
+                            onChange={(vals) => setValue('courses', vals)}
+                        >
+                            {coursesList.map((course) => (
+                                <MultiSelectItem
+                                    key={course.id}
+                                    value={course.id}
+                                >
+                                    {course.title}
+                                </MultiSelectItem>
+                            ))}
+                        </MultiSelect>
+                        {errors.courses && (
+                            <p className="text-red-600 mt-1 text-sm">
+                                {errors.courses.message as string}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Daily Time Slots */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">
+                            Daily Time Slots
+                        </label>
+
+                        {slots.map((slot, index) => (
+                            <div
+                                key={index}
+                                className="flex items-center gap-2"
+                            >
+                                {/* Start Time Picker */}
+                                <TimePicker
+                                    time={slot.start}
+                                    onChange={(val) => {
+                                        const newSlots = [...slots]
+                                        newSlots[index].start = val
+                                        setSlots(newSlots)
+
+                                        const validSlots = newSlots.filter(
+                                            (
+                                                s,
+                                            ): s is {
+                                                start: Date
+                                                end: Date
+                                            } =>
+                                                s.start instanceof Date &&
+                                                s.end instanceof Date,
+                                        )
+                                        setValue('dailyTimeSlots', validSlots)
+                                    }}
+                                />
+
+                                <span>to</span>
+
+                                {/* End Time Picker */}
+                                <TimePicker
+                                    time={slot.end}
+                                    onChange={(val) => {
+                                        const newSlots = [...slots]
+                                        newSlots[index].end = val
+                                        setSlots(newSlots)
+
+                                        const validSlots = newSlots.filter(
+                                            (
+                                                s,
+                                            ): s is {
+                                                start: Date
+                                                end: Date
+                                            } =>
+                                                s.start instanceof Date &&
+                                                s.end instanceof Date,
+                                        )
+                                        setValue('dailyTimeSlots', validSlots)
+                                    }}
+                                />
+
+                                {/* Remove Button */}
+                                <Button
+                                    type="button"
+                                    //   variant="ghost"
+                                    onClick={() => {
+                                        const newSlots = slots.filter(
+                                            (_, i) => i !== index,
+                                        )
+                                        setSlots(newSlots)
+
+                                        const validSlots = newSlots.filter(
+                                            (
+                                                s,
+                                            ): s is {
+                                                start: Date
+                                                end: Date
+                                            } =>
+                                                s.start instanceof Date &&
+                                                s.end instanceof Date,
+                                        )
+                                        setValue('dailyTimeSlots', validSlots)
+                                    }}
+                                >
+                                    Remove
+                                </Button>
+                            </div>
+                        ))}
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                const now = new Date()
+                                const oneHourLater = new Date(
+                                    now.getTime() + 60 * 60 * 1000,
+                                )
+
+                                const newSlots = [
+                                    ...slots,
+                                    { start: now, end: oneHourLater },
+                                ]
+                                setSlots(newSlots)
+
+                                const validSlots = newSlots.filter(
+                                    (s): s is { start: Date; end: Date } =>
+                                        s.start instanceof Date &&
+                                        s.end instanceof Date,
+                                )
+                                setValue('dailyTimeSlots', validSlots)
+                            }}
+                        >
+                            + Add Time Slot
+                        </Button>
+
+                        {errors.dailyTimeSlots && (
+                            <p className="text-red-600 mt-1 text-sm">
+                                {errors.dailyTimeSlots.message as string}
                             </p>
                         )}
                     </div>

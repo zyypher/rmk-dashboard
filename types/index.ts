@@ -9,4 +9,5 @@ export interface Trainer {
   availableDays: Day[]
   timeSlots: { start: string; end: string }[]
   courses: { id: string; title: string }[]
+  dailyTimeSlots?: { start: Date; end: Date }[] 
 }

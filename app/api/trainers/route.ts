@@ -25,7 +25,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json()
-    const { name, email, phone, languages, availableDays } = data
+    const { name, email, phone, languages, availableDays, courses, dailyTimeSlots } = data
 
     const created = await prisma.trainer.create({
       data: {
@@ -33,13 +33,19 @@ export async function POST(req: NextRequest) {
         email,
         phone,
         availableDays,
+        dailyTimeSlots,
         languages: {
           connect: languages.map((lang: string) => ({ name: lang })),
         },
+        courses: {
+          connect: courses.map((id: string) => ({ id })),
+        },
       },
     })
+
     return NextResponse.json(created, { status: 201 })
   } catch (error) {
+    console.error('Failed to create trainer:', error)
     return NextResponse.json({ error: 'Failed to create trainer' }, { status: 500 })
   }
 }
