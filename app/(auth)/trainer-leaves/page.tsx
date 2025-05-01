@@ -263,7 +263,7 @@ export default function TrainerLeavesPage() {
                 <p className="text-sm">
                     Are you sure you want to delete{' '}
                     <span className="text-red-600 font-semibold">
-                        {leaveToDelete?.trainer.name}'s leave
+                        {`${leaveToDelete?.trainer.name}'s`} leave
                     </span>
                     ?
                 </p>
