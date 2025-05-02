@@ -4,7 +4,10 @@ import { PrismaClient } from '@prisma/client'
 import { jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 
+export const dynamic = 'force-dynamic'
+
 export async function PATCH(req: Request) {
+ 
     const prisma = new PrismaClient()
 
     async function getUserIdFromToken() {
