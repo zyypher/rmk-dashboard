@@ -139,7 +139,7 @@ const Sidebar = () => {
                         <Languages className="size-[18px]" />
                         <span>Languages</span>
                     </NavLink>
-                    <NavLink href="/settings" className="nav-link">
+                    <NavLink href="/setting" className="nav-link">
                         <Settings className="size-[18px]" />
                         <span>Settings</span>
                     </NavLink>
