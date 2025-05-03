@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { validateBookingConflicts } from '@/utils/validateBookingConflicts'
+
 export const dynamic = 'force-dynamic'
 const prisma = new PrismaClient()
 
@@ -8,11 +9,10 @@ export async function GET() {
     try {
         const sessions = await prisma.trainingSession.findMany({
             include: {
-              course: { include: { trainers: true } }, // ✅ updated here
-              room: true,
+                course: { include: { trainers: true } },
+                room: true,
             },
-          })
-          
+        })
 
         return NextResponse.json(sessions)
     } catch (error) {
@@ -31,7 +31,15 @@ export async function POST(req: NextRequest) {
         const startTime = new Date(body.startTime)
         const endTime = new Date(body.endTime)
 
-        // Run validation check
+        // Destructure and remove unwanted nested object (e.g., room)
+        const {
+            room, // ❌ Prisma doesn't allow nested object here
+            course,
+            trainer,
+            ...rest
+        } = body
+
+        // Optional: Validation for time/location conflicts
         // const conflictReasons = await validateBookingConflicts({
         //     id: undefined,
         //     trainerId: body.trainerId,
@@ -40,20 +48,16 @@ export async function POST(req: NextRequest) {
         //     startTime,
         //     endTime,
         // })
-
         // if (conflictReasons.length > 0) {
         //     return NextResponse.json(
-        //         {
-        //             error: 'Booking conflict detected',
-        //             reasons: conflictReasons,
-        //         },
-        //         { status: 409 },
+        //         { error: 'Booking conflict detected', reasons: conflictReasons },
+        //         { status: 409 }
         //     )
         // }
 
         const session = await prisma.trainingSession.create({
             data: {
-                ...body,
+                ...rest,
                 date,
                 startTime,
                 endTime,

@@ -90,7 +90,11 @@ export default function BookingsPage() {
     }
 
     const handleNextStep = (data: any) => {
-        setBookingData(data)
+        const selectedRoom = rooms.find((r) => r.id === data.roomId)
+        setBookingData({
+            ...data,
+            room: selectedRoom,
+        })
         setStep('seats')
     }
 
@@ -165,7 +169,7 @@ export default function BookingsPage() {
                     isOpen={step === 'form'}
                     onClose={resetBookingFlow}
                     onNext={handleNextStep}
-                    onSubmit={handleNextStep} // fallback
+                    onSubmit={handleNextStep}
                     loading={false}
                     initialData={bookingData}
                     courses={courses}
@@ -180,11 +184,10 @@ export default function BookingsPage() {
                     isOpen={step === 'seats'}
                     onClose={resetBookingFlow}
                     onBack={() => setStep('form')}
-                    roomId={bookingData?.roomId}
+                    room={bookingData?.room}
                     selectedSeats={selectedSeats}
                     onSeatChange={(seats) => setSelectedSeats(seats)}
                     onConfirm={handleFinalSubmit}
-                    initialCapacity={bookingData?.room?.capacity}
                 />
             )}
 

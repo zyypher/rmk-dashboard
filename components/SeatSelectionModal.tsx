@@ -8,27 +8,26 @@ import { Armchair } from 'lucide-react'
 import axios from 'axios'
 import clsx from 'clsx'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Room } from '@/types/room'
 
 interface SeatSelectionModalProps {
     isOpen: boolean
     onClose: () => void
     onBack: () => void
-    roomId: string
+    room: Room | undefined
     selectedSeats: string[]
     onSeatChange: (seats: string[]) => void
     onConfirm: (seats: string[]) => void
-    initialCapacity?: number 
 }
 
 export default function SeatSelectionModal({
     isOpen,
     onClose,
     onBack,
-    roomId,
+    room,
     selectedSeats,
     onSeatChange,
     onConfirm,
-    initialCapacity
 }: SeatSelectionModalProps) {
     console.log('##selectedSeats', selectedSeats)
     const [capacity, setCapacity] = useState(0)
@@ -37,27 +36,13 @@ export default function SeatSelectionModal({
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     useEffect(() => {
-        if (initialCapacity) {
-          setCapacity(initialCapacity)
-          return
+        if (room?.capacity) {
+          setCapacity(room.capacity)
+        } else {
+          setCapacity(0)
         }
+      }, [room])
       
-        const fetchRoom = async () => {
-          setLoading(true)
-          try {
-            const res = await axios.get(`/api/rooms/${roomId}`)
-            setCapacity(res.data.capacity || 0)
-          } catch {
-            setCapacity(0)
-          } finally {
-            setLoading(false)
-          }
-        }
-      
-        if (roomId) fetchRoom()
-      }, [roomId, initialCapacity])
-      
-
     const toggleSeat = (seat: string) => {
         const updated = selectedSeats.includes(seat)
             ? selectedSeats.filter((s) => s !== seat)
