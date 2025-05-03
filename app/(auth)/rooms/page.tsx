@@ -7,11 +7,9 @@ import { useForm, Controller } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import { Plus } from 'lucide-react'
-
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { DataTable } from '@/components/custom/table/data-table'
 import { columns } from '@/components/custom/table/rooms/columns'
@@ -34,7 +32,7 @@ interface Location {
 
 // ✅ Yup schema with max capacity
 const roomSchema = yup.object({
-    name: yup.string().required('Room name is required'),
+    name: yup.string().required('Room number is required'),
     capacity: yup
         .number()
         .typeError('Capacity must be a number')
@@ -181,36 +179,7 @@ export default function RoomsPage() {
                 buttonLoading={formLoading}
             >
                 <div className="space-y-4">
-                    <FloatingLabelInput
-                        label="Room Name"
-                        value={watch('name')}
-                        onChange={(val) =>
-                            setValue('name', val, { shouldValidate: true })
-                        }
-                        name="name"
-                        error={errors.name?.message as string}
-                    />
-
-                    <FloatingLabelInput
-                        label="Capacity"
-                        type="number"
-                        value={String(watch('capacity') ?? '')}
-                        onChange={(val) =>
-                            setValue('capacity', parseInt(val || '0', 10), {
-                                shouldValidate: true,
-                            })
-                        }
-                        name="capacity"
-                        onKeyDown={(
-                            e: React.KeyboardEvent<HTMLInputElement>,
-                        ) => {
-                            if (e.key === '.' || e.key === 'e')
-                                e.preventDefault()
-                        }}
-                        error={errors.capacity?.message as string}
-                    />
-
-                    <div>
+                    <div className="space-y-4">
                         <label className="text-sm font-medium text-gray-700">
                             Branch
                         </label>
@@ -243,6 +212,35 @@ export default function RoomsPage() {
                                 {errors.locationId.message as string}
                             </p>
                         )}
+
+                        <FloatingLabelInput
+                            label="Room Number"
+                            value={watch('name')}
+                            onChange={(val) =>
+                                setValue('name', val, { shouldValidate: true })
+                            }
+                            name="name"
+                            error={errors.name?.message as string}
+                        />
+
+                        <FloatingLabelInput
+                            label="Room Capacity"
+                            type="number"
+                            value={String(watch('capacity') ?? '')}
+                            onChange={(val) =>
+                                setValue('capacity', parseInt(val || '0', 10), {
+                                    shouldValidate: true,
+                                })
+                            }
+                            name="capacity"
+                            onKeyDown={(
+                                e: React.KeyboardEvent<HTMLInputElement>,
+                            ) => {
+                                if (e.key === '.' || e.key === 'e')
+                                    e.preventDefault()
+                            }}
+                            error={errors.capacity?.message as string}
+                        />
                     </div>
 
                     <Textarea placeholder="Notes" {...register('notes')} />
