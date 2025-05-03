@@ -3,7 +3,8 @@ export interface Client {
     name: string
     phone: string
     email?: string
-    company?: string
     createdAt: string
+    contactPersonName?: string
+    tradeLicenseNumber?: string
   }
   

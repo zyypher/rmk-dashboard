@@ -14,21 +14,31 @@ export const columns = ({
     header: 'Name',
   },
   {
+    accessorKey: 'contactPersonName',
+    header: 'Contact Person Name',
+    cell: ({ row }) => row.original.contactPersonName || '-',
+  },
+  {
     accessorKey: 'phone',
     header: 'Phone',
   },
   {
     accessorKey: 'email',
     header: 'Email',
+    cell: ({ row }) => row.original.email || '-',
   },
   {
-    accessorKey: 'company',
-    header: 'Company',
+    accessorKey: 'tradeLicenseNumber',
+    header: 'Trade License Number',
+    cell: ({ row }) => row.original.tradeLicenseNumber || '-',
   },
   {
     accessorKey: 'createdAt',
     header: 'Created At',
-    cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
+    cell: ({ row }) =>
+      row.original.createdAt
+        ? new Date(row.original.createdAt).toLocaleDateString()
+        : 'N/A',
   },
   {
     id: 'actions',

@@ -25,7 +25,8 @@ const clientSchema = yup.object({
             'Invalid phone number (must be 10 digits or include country code)',
         ),
     email: yup.string().email('Invalid email').optional(),
-    company: yup.string().optional(),
+    contactPersonName: yup.string().optional(),
+    tradeLicenseNumber: yup.string().optional(),
 })
 
 export default function ClientsPage() {
@@ -51,7 +52,8 @@ export default function ClientsPage() {
             name: '',
             phone: '',
             email: '',
-            company: '',
+            contactPersonName: '',
+            tradeLicenseNumber: '',
         },
     })
 
@@ -77,7 +79,8 @@ export default function ClientsPage() {
         setValue('name', client.name)
         setValue('email', client.email ?? '')
         setValue('phone', client.phone)
-        setValue('company', client.company ?? '')
+        setValue('contactPersonName', client.contactPersonName ?? '')
+        setValue('tradeLicenseNumber', client.tradeLicenseNumber ?? '')
     }
 
     const handleAddOrEdit = async (data: any) => {
@@ -164,6 +167,14 @@ export default function ClientsPage() {
                     />
 
                     <FloatingLabelInput
+                        label="Contact Person Name"
+                        name="contactPersonName"
+                        value={watch('contactPersonName')}
+                        onChange={(val) => setValue('contactPersonName', val)}
+                        error={errors.contactPersonName?.message}
+                    />
+
+                    <FloatingLabelInput
                         label="Phone"
                         name="phone"
                         value={watch('phone')}
@@ -182,11 +193,11 @@ export default function ClientsPage() {
                     />
 
                     <FloatingLabelInput
-                        label="Company (optional)"
-                        name="company"
-                        value={watch('company')}
-                        onChange={(val) => setValue('company', val)}
-                        error={errors.company?.message}
+                        label="Trade License Number (optional)"
+                        name="tradeLicenseNumber"
+                        value={watch('tradeLicenseNumber')}
+                        onChange={(val) => setValue('tradeLicenseNumber', val)}
+                        error={errors.tradeLicenseNumber?.message}
                     />
                 </div>
             </Dialog>
