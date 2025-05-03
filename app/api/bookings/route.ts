@@ -32,24 +32,24 @@ export async function POST(req: NextRequest) {
         const endTime = new Date(body.endTime)
 
         // Run validation check
-        const conflictReasons = await validateBookingConflicts({
-            id: undefined,
-            trainerId: body.trainerId,
-            roomId: body.roomId,
-            date,
-            startTime,
-            endTime,
-        })
+        // const conflictReasons = await validateBookingConflicts({
+        //     id: undefined,
+        //     trainerId: body.trainerId,
+        //     roomId: body.roomId,
+        //     date,
+        //     startTime,
+        //     endTime,
+        // })
 
-        if (conflictReasons.length > 0) {
-            return NextResponse.json(
-                {
-                    error: 'Booking conflict detected',
-                    reasons: conflictReasons,
-                },
-                { status: 409 },
-            )
-        }
+        // if (conflictReasons.length > 0) {
+        //     return NextResponse.json(
+        //         {
+        //             error: 'Booking conflict detected',
+        //             reasons: conflictReasons,
+        //         },
+        //         { status: 409 },
+        //     )
+        // }
 
         const session = await prisma.trainingSession.create({
             data: {

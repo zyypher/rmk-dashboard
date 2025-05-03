@@ -111,7 +111,7 @@ const Header = () => {
             <div className="flex items-center justify-between gap-5">
                 <Link href="/" className="inline-block shrink-0 lg:ml-2.5">
                     <img
-                        src="/images/gulbahar-logo.png"
+                        src="/images/new/rmk-logo.png"
                         alt="Brand Logo"
                         className="h-10 w-auto"
                     />
