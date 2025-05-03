@@ -77,38 +77,5 @@ export async function validateBookingConflicts(data: any): Promise<string[]> {
         conflicts.push(`Trainer is on leave on ${sessionDate.toDateString()}.`)
     }
 
-    // 5. Fetch trainer's scheduling rule (if exists)
-    const rule = await prisma.trainerSchedulingRule.findUnique({
-        where: { trainerId },
-    })
-
-    if (rule) {
-        // 5a. Validate max sessions per day
-        const trainerSessionCount = await prisma.trainingSession.count({
-            where: {
-                trainerId,
-                date: sessionDate,
-                ...(id && { NOT: { id } }),
-            },
-        })
-
-        if (trainerSessionCount >= rule.maxSessionsPerDay) {
-            conflicts.push(
-                `Trainer has reached the maximum of ${rule.maxSessionsPerDay} sessions for ${sessionDate.toDateString()}.`,
-            )
-        }
-
-        // 5b. Validate day off (e.g., SUN, MON, etc.)
-        const dayName = sessionDate
-            .toLocaleDateString('en-US', { weekday: 'short' })
-            .toUpperCase() as any // 'SUN', 'MON', etc.
-
-        if (rule.daysOff.includes(dayName)) {
-            conflicts.push(
-                `Trainer is not available on ${sessionDate.toDateString()} (Day Off).`,
-            )
-        }
-    }
-
     return conflicts
 }

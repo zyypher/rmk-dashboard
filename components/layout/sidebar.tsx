@@ -9,11 +9,8 @@ import {
     BookOpenCheck,
     Building2,
     CalendarClock,
-    ScrollText,
-    Bell,
     LogOut,
     CircleUserRound,
-    AlarmClock,
     Languages,
     Tags,
     MonitorSmartphone,
@@ -87,10 +84,6 @@ const Sidebar = () => {
                         <GraduationCap className="size-[18px]" />
                         <span>Trainers</span>
                     </NavLink>
-                    <NavLink href="/scheduling-rules" className="nav-link">
-                        <CalendarClock className="size-[18px]" />
-                        <span>Scheduling Rules</span>
-                    </NavLink>
                     <NavLink href="/trainer-leaves" className="nav-link">
                         <CalendarDays className="size-[18px]" />{' '}
                         <span>Trainer Leaves</span>
@@ -103,10 +96,6 @@ const Sidebar = () => {
                         <CalendarClock className="size-[18px]" />{' '}
                         <span>Bookings</span>
                     </NavLink>
-                    {/* <NavLink href="/certificates" className="nav-link">
-                        <ScrollText className="size-[18px]" />
-                        <span>Certificates</span>
-                    </NavLink> */}
 
                     <h3 className="mt-2.5 whitespace-nowrap rounded-lg bg-gray-400 px-5 py-2.5 text-xs font-semibold uppercase text-black">
                         Management
@@ -119,14 +108,6 @@ const Sidebar = () => {
                         <Building2 className="size-[18px]" />
                         <span>Locations</span>
                     </NavLink>
-                    {/* <NavLink href="/reminders" className="nav-link">
-                        <AlarmClock className="size-[18px]" />
-                        <span>Reminders</span>
-                    </NavLink>
-                    <NavLink href="/notifications" className="nav-link">
-                        <Bell className="size-[18px]" />
-                        <span>Notifications</span>
-                    </NavLink> */}
 
                     <h3 className="mt-2.5 whitespace-nowrap rounded-lg bg-gray-400 px-5 py-2.5 text-xs font-semibold uppercase text-black">
                         Admin Tools
