@@ -67,15 +67,17 @@ model TrainerLeave {
 }
 
 model Location {
-  id        String            @id @default(uuid())
-  name      String
-  address   String
-  isOnline  Boolean           @default(false)
-  rooms     Room[]
-  trainers  Trainer[]
-  sessions  TrainingSession[]
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id               String            @id @default(uuid())
+  name             String
+  emirate          String
+  deliveryApproach String?
+  zoomLink         String?
+  locationType     String?
+  rooms            Room[]
+  trainers         Trainer[]
+  sessions         TrainingSession[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model Room {

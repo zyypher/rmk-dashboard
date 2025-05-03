@@ -1,9 +1,11 @@
 export interface Location {
     id: string
     name: string
-    address: string
-    isOnline: boolean
     createdAt?: string
     updatedAt?: string
+    emirate: string
+    zoomLink?: string
+    locationType: string
+    deliveryApproach?: string
   }
   
