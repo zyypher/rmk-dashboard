@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Armchair } from 'lucide-react'
-import axios from 'axios'
+import { Armchair, Users } from 'lucide-react'
 import clsx from 'clsx'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Room } from '@/types/room'
+import { Delegate } from '@/types/delegate'
+import AttendantSheetModal from './AttendantSheetModal'
+import DelegateModal, { DelegateForm } from './DelegateModal'
+import { uploadToS3 } from '@/lib/s3'
 
 interface SeatSelectionModalProps {
     isOpen: boolean
@@ -18,6 +19,8 @@ interface SeatSelectionModalProps {
     selectedSeats: string[]
     onSeatChange: (seats: string[]) => void
     onConfirm: (seats: string[]) => void
+    delegates: Record<string, Delegate>
+    setDelegates: React.Dispatch<React.SetStateAction<Record<string, Delegate>>>
 }
 
 export default function SeatSelectionModal({
@@ -28,26 +31,27 @@ export default function SeatSelectionModal({
     selectedSeats,
     onSeatChange,
     onConfirm,
+    delegates,
+    setDelegates,
 }: SeatSelectionModalProps) {
-    console.log('##selectedSeats', selectedSeats)
     const [capacity, setCapacity] = useState(0)
-    const [loading, setLoading] = useState(false)
-    const [prefillCount, setPrefillCount] = useState<number>(0)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [showSheet, setShowSheet] = useState(false)
+    const [delegateModalOpen, setDelegateModalOpen] = useState(false)
+    const [activeSeat, setActiveSeat] = useState<string | null>(null)
 
     useEffect(() => {
-        if (room?.capacity) {
-          setCapacity(room.capacity)
-        } else {
-          setCapacity(0)
-        }
-      }, [room])
-      
+        if (room?.capacity) setCapacity(room.capacity)
+    }, [room])
+
     const toggleSeat = (seat: string) => {
-        const updated = selectedSeats.includes(seat)
-            ? selectedSeats.filter((s) => s !== seat)
-            : [...selectedSeats, seat]
-        onSeatChange(updated)
+        setActiveSeat(seat)
+        setDelegateModalOpen(false)
+        // Wait for modal unmount
+        setTimeout(() => {
+            setActiveSeat(seat)
+            setDelegateModalOpen(true)
+        }, 0)
     }
 
     const handleConfirm = async () => {
@@ -59,25 +63,11 @@ export default function SeatSelectionModal({
         }
     }
 
-    const handlePrefillSeats = () => {
-        if (capacity === 0 || prefillCount <= 0) return
-
-        const allSeatIds = Array.from(
-            { length: capacity },
-            (_, i) => `S${i + 1}`,
-        )
-        const availableSeats = allSeatIds.filter(
-            (id) => !selectedSeats.includes(id),
-        )
-        const shuffled = [...availableSeats].sort(() => 0.5 - Math.random())
-        const chosen = shuffled.slice(0, prefillCount)
-
-        onSeatChange([...selectedSeats, ...chosen])
-    }
-
-    const handleClose = () => {
-        setPrefillCount(0)
-        onClose()
+    const getStatus = (seatId: string) => {
+        if (!delegates[seatId]) return 'EMPTY'
+        return delegates[seatId].status === 'CONFIRMED'
+            ? 'CONFIRMED'
+            : 'NOT_CONFIRMED'
     }
 
     const getRows = () => {
@@ -90,15 +80,25 @@ export default function SeatSelectionModal({
                         (_, j) => {
                             const seatId = `S${i + j + 1}`
                             const isSelected = selectedSeats.includes(seatId)
+                            const status = getStatus(seatId)
+
+                            const color =
+                                status === 'CONFIRMED'
+                                    ? 'text-green-600 border-green-600'
+                                    : status === 'NOT_CONFIRMED'
+                                      ? 'text-yellow-500 border-yellow-500'
+                                      : 'text-gray-600 border-gray-400'
+
                             return (
                                 <button
                                     key={seatId}
                                     onClick={() => toggleSeat(seatId)}
                                     className={clsx(
                                         'rounded border p-1 transition',
+                                        color,
                                         isSelected
-                                            ? 'text-blue-600 border-blue-600'
-                                            : 'text-gray-500 hover:text-gray-700',
+                                            ? 'bg-muted'
+                                            : 'hover:scale-105',
                                     )}
                                 >
                                     <Armchair
@@ -118,76 +118,107 @@ export default function SeatSelectionModal({
     return (
         <Dialog
             isOpen={isOpen}
-            onClose={handleClose}
+            onClose={onClose}
             title="Select Seats"
             submitLabel="Confirm"
         >
             <div className="space-y-6">
-                {loading ? (
-                    <div className="animate-pulse space-y-3">
-                        {Array.from({ length: 5 }).map((_, rowIdx) => (
-                            <div
-                                key={rowIdx}
-                                className="flex justify-center gap-2"
-                            >
-                                {Array.from({ length: 6 }).map((_, seatIdx) => (
-                                    <div
-                                        key={seatIdx}
-                                        className="h-10 w-10 rounded-md bg-gray-200 dark:bg-gray-700"
-                                    />
-                                ))}
-                            </div>
-                        ))}
+                <div className="space-y-3">{getRows()}</div>
+
+                <div className="mt-6 flex items-center justify-between gap-4">
+                    <Button variant="outline-black" onClick={onBack}>
+                        Back
+                    </Button>
+
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowSheet(true)}
+                            className="text-sm"
+                        >
+                            <Users className="mr-2 h-4 w-4" /> Attendant Sheet
+                        </Button>
+
+                        <Button
+                            variant="black"
+                            onClick={handleConfirm}
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Saving...' : 'Confirm'}
+                        </Button>
                     </div>
-                ) : capacity > 0 ? (
-                    <>
-                        <div className="space-y-3">{getRows()}</div>
+                </div>
 
-                        <div className="flex items-center justify-center gap-4 pt-4">
-                            <Input
-                                type="number"
-                                min={1}
-                                max={capacity}
-                                placeholder="Enter count"
-                                value={prefillCount}
-                                onChange={(e) =>
-                                    setPrefillCount(parseInt(e.target.value))
-                                }
-                                className="w-24"
-                            />
-                            <Button
-                                variant="outline"
-                                onClick={handlePrefillSeats}
-                            >
-                                Pre-fill
-                            </Button>
-                            <Button onClick={() => onSeatChange([])}>
-                                Clear All
-                            </Button>
-                        </div>
+                <DelegateModal
+                    key={activeSeat}
+                    isOpen={delegateModalOpen}
+                    onClose={() => {
+                        setDelegateModalOpen(false)
+                        setActiveSeat(null) // ✅ reset
+                    }}
+                    seatId={activeSeat || ''}
+                    initialData={
+                        activeSeat && delegates[activeSeat]
+                            ? {
+                                  name: delegates[activeSeat].name,
+                                  emiratesId: delegates[activeSeat].emiratesId,
+                                  phone: delegates[activeSeat].phone,
+                                  email: delegates[activeSeat].email,
+                                  photo: null,
+                                  companyName:
+                                      delegates[activeSeat].companyName,
+                                  isCorporate:
+                                      delegates[activeSeat].isCorporate,
+                                  status: delegates[activeSeat].status,
+                                  photoUrl: delegates[activeSeat].photoUrl,
+                              }
+                            : undefined
+                    }
+                    onSave={async (formData) => {
+                        if (!activeSeat) return
 
-                        <div className="mt-6 flex justify-end gap-4">
-                            <Button variant="outline-black" onClick={onBack}>
-                                Back
-                            </Button>
-                            <Button
-                                variant="black"
-                                onClick={handleConfirm}
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? (
-                                    <span className="loader" />
-                                ) : (
-                                    'Confirm'
-                                )}
-                            </Button>
-                        </div>
-                    </>
-                ) : (
-                    <p className="text-sm text-gray-500">
-                        Room capacity not available.
-                    </p>
-                )}
+                        let photoUrl = delegates[activeSeat]?.photoUrl ?? ''
+                        if (formData.photo) {
+                            photoUrl = await uploadToS3(formData.photo)
+                        }
+
+                        const delegate: Delegate = {
+                            id: '',
+                            sessionId: '',
+                            name: formData.name,
+                            emiratesId: formData.emiratesId,
+                            phone: formData.phone,
+                            email: formData.email,
+                            companyName: formData.companyName,
+                            isCorporate: formData.isCorporate,
+                            status: formData.status,
+                            photoUrl,
+                            createdAt: new Date(),
+                            updatedAt: new Date(),
+                            session: {} as any,
+                            photo: '',
+                            seatId: activeSeat,
+                        }
+
+                        setDelegates((prev) => ({
+                            ...prev,
+                            [activeSeat]: delegate,
+                        }))
+
+                        if (!selectedSeats.includes(activeSeat)) {
+                            onSeatChange([...selectedSeats, activeSeat])
+                        }
+
+                        setDelegateModalOpen(false)
+                    }}
+                />
+
+                <AttendantSheetModal
+                    isOpen={showSheet}
+                    onClose={() => setShowSheet(false)}
+                    delegates={delegates}
+                    large
+                />
             </div>
         </Dialog>
     )

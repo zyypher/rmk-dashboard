@@ -8,11 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Plus } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
-
-type Category = {
-  id: string
-  name: string
-}
+import { Category } from '@/types/category'
 
 const CategoriesPage = () => {
   const [categories, setCategories] = useState<Category[]>([])

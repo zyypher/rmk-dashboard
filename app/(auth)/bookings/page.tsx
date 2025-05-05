@@ -4,21 +4,21 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
-
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
-import { Skeleton } from '@/components/ui/skeleton'
 import { DataTable } from '@/components/custom/table/data-table'
 import { columns } from '@/components/custom/table/bookings/columns'
 import { Booking } from '@/types/booking'
 import BookingModal from '@/components/BookingModal'
 import SeatSelectionModal from '@/components/SeatSelectionModal'
-
 import { Course } from '@/types/course'
 import { Trainer } from '@/types'
 import { Room } from '@/types/room'
 import { Language } from '@/types/language'
+import { Category } from '@/types/category'
+import { Location } from '@/types/location'
+import { Delegate } from '@/types/delegate'
 
 export default function BookingsPage() {
     const [bookings, setBookings] = useState<Booking[]>([])
@@ -28,12 +28,15 @@ export default function BookingsPage() {
     const [trainers, setTrainers] = useState<Trainer[]>([])
     const [rooms, setRooms] = useState<Room[]>([])
     const [languages, setLanguages] = useState<Language[]>([])
+    const [categories, setCategories] = useState<Category[]>([])
+    const [locations, setLocations] = useState<Location[]>([])
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
     const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [bookingData, setBookingData] = useState<any>(null)
     const [selectedSeats, setSelectedSeats] = useState<string[]>([])
     const [conflictErrors, setConflictErrors] = useState<string[]>([])
+    const [delegates, setDelegates] = useState<Record<string, Delegate>>({})
 
     useEffect(() => {
         fetchBookings()
@@ -44,7 +47,6 @@ export default function BookingsPage() {
         setLoading(true)
         try {
             const res = await axios.get('/api/bookings')
-
             setBookings(res.data)
         } catch {
             toast.error('Failed to fetch bookings')
@@ -55,26 +57,42 @@ export default function BookingsPage() {
 
     const fetchDropdowns = async () => {
         try {
-            const [c, t, r, l] = await Promise.all([
+            const [c, t, r, l, cat, loc] = await Promise.all([
                 axios.get('/api/courses'),
                 axios.get('/api/trainers'),
                 axios.get('/api/rooms'),
                 axios.get('/api/languages'),
+                axios.get('/api/categories'),
+                axios.get('/api/locations'),
             ])
             setCourses(c.data)
             setTrainers(t.data)
             setRooms(r.data)
             setLanguages(l.data)
+            setCategories(cat.data)
+            setLocations(loc.data)
         } catch {
             toast.error('Failed to fetch dropdowns')
         }
     }
 
-    const openEditDialog = (booking: Booking) => {
+    const openEditDialog = async (booking: Booking) => {
         setSelectedBooking(booking)
-        setBookingData(booking) // important ✅
-        setSelectedSeats(booking.selectedSeats || []) // important ✅
+        setBookingData(booking)
+        setSelectedSeats(booking.selectedSeats || [])
+        setDelegates({}) // optional reset for safety
+        // Open modal immediately
         setStep('form')
+        try {
+            const res = await axios.get(`/api/bookings/${booking.id}/delegates`)
+            const delegateMap: Record<string, Delegate> = {}
+            res.data.forEach((d: Delegate) => {
+                delegateMap[d.seatId] = d
+            })
+            setDelegates(delegateMap)
+        } catch {
+            toast.error('Failed to fetch delegates')
+        }
     }
 
     const confirmDelete = (booking: Booking) => {
@@ -86,50 +104,76 @@ export default function BookingsPage() {
         setStep(null)
         setBookingData(null)
         setSelectedSeats([])
+        setDelegates({})
         setSelectedBooking(null)
     }
 
     const handleNextStep = (data: any) => {
         const selectedRoom = rooms.find((r) => r.id === data.roomId)
-        setBookingData({
-            ...data,
-            room: selectedRoom,
-        })
+
+        if (!data.trainerId) {
+            toast.error('Trainer is required')
+            return
+        }
+
+        setBookingData({ ...data, room: selectedRoom })
         setStep('seats')
     }
 
     const handleFinalSubmit = async (seats: string[]) => {
         try {
-            const payload = {
-                ...bookingData,
-                selectedSeats: seats,
-                participants: seats.length,
-                date: new Date(bookingData.date),
-                startTime: new Date(bookingData.startTime),
-                endTime: new Date(bookingData.endTime),
-            }
-
-            if (bookingData?.id) {
-                await axios.put(`/api/bookings/${bookingData.id}`, payload)
-                toast.success('Booking updated')
-            } else {
-                await axios.post('/api/bookings', payload)
-                toast.success('Booking created')
-            }
-
-            fetchBookings()
-            resetBookingFlow() // ✅ only reset if success
+          const delegateArray = Object.entries(delegates).map(([seatId, delegate]) => ({
+            ...delegate,
+            seatId,
+          }))
+      
+          const payload = {
+            ...bookingData,
+            selectedSeats: seats,
+            participants: seats.length,
+            date: new Date(bookingData.date),
+            startTime: new Date(bookingData.startTime),
+            endTime: new Date(bookingData.endTime),
+            delegates: delegateArray.map(({ photo, ...rest }) => rest), // remove file from payload
+          }
+      
+          // ✅ Only for new bookings with photos
+          if (!bookingData?.id) {
+            const formData = new FormData()
+            formData.append('data', JSON.stringify(payload))
+      
+            delegateArray.forEach((d) => {
+                if (d.photo && typeof d.photo !== 'string') {
+                    formData.append(d.seatId, d.photo)
+                  }
+            })
+      
+            await fetch('/api/bookings', {
+              method: 'POST',
+              body: formData,
+            })
+      
+            toast.success('Booking created')
+          } else {
+            // ✅ For updates, just use PUT
+            await axios.put(`/api/bookings/${bookingData.id}`, payload)
+            toast.success('Booking updated')
+          }
+      
+          fetchBookings()
+          resetBookingFlow()
         } catch (err: any) {
-            if (err?.response?.status === 409 && err?.response?.data?.reasons) {
-                setConflictErrors(err.response.data.reasons)
-                setStep('error') // ✅ do NOT reset!
-            } else {
-                toast.error('Failed to save booking')
-                console.error('Save error:', err)
-                resetBookingFlow()
-            }
+          if (err?.response?.status === 409 && err?.response?.data?.reasons) {
+            setConflictErrors(err.response.data.reasons)
+            setStep('error')
+          } else {
+            toast.error('Failed to save booking')
+            console.error('Save error:', err)
+            resetBookingFlow()
+          }
         }
-    }
+      }
+      
 
     const handleDelete = async () => {
         if (!bookingToDelete) return
@@ -163,19 +207,19 @@ export default function BookingsPage() {
                 loading={loading}
             />
 
-            {/* STEP MODAL CONTROLLER */}
             {step === 'form' && (
                 <BookingModal
                     isOpen={step === 'form'}
                     onClose={resetBookingFlow}
                     onNext={handleNextStep}
-                    onSubmit={handleNextStep}
                     loading={false}
                     initialData={bookingData}
                     courses={courses}
                     trainers={trainers}
                     rooms={rooms}
                     languages={languages}
+                    categories={categories}
+                    locations={locations}
                 />
             )}
 
@@ -188,6 +232,8 @@ export default function BookingsPage() {
                     selectedSeats={selectedSeats}
                     onSeatChange={(seats) => setSelectedSeats(seats)}
                     onConfirm={handleFinalSubmit}
+                    delegates={delegates}
+                    setDelegates={setDelegates}
                 />
             )}
 
@@ -199,7 +245,7 @@ export default function BookingsPage() {
                     onSubmit={() => setStep('form')}
                     submitLabel="Go Back and Edit"
                 >
-                    <ul className="text-red-600 list-disc space-y-2 pl-5 text-sm">
+                    <ul className="list-disc space-y-2 pl-5 text-sm text-red-600">
                         {conflictErrors.map((reason, idx) => (
                             <li key={idx}>{reason}</li>
                         ))}
@@ -219,7 +265,7 @@ export default function BookingsPage() {
             >
                 <p className="text-sm">
                     Are you sure you want to delete{' '}
-                    <span className="text-red-600 font-semibold">
+                    <span className="font-semibold text-red-600">
                         {bookingToDelete?.course.title}
                     </span>{' '}
                     booking?

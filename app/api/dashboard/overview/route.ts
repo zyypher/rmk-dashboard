@@ -10,7 +10,6 @@ export async function GET() {
     const [
       totalSessions,
       upcomingSessions,
-      certificatesIssued,
       trainerCount,
       clientCount,
       roomCount,
@@ -20,7 +19,6 @@ export async function GET() {
     ] = await Promise.all([
       prisma.trainingSession.count(),
       prisma.trainingSession.count({ where: { date: { gt: new Date() } } }),
-      prisma.certificate.count(),
       prisma.trainer.count(),
       prisma.client.count(),
       prisma.room.count(),
@@ -32,12 +30,11 @@ export async function GET() {
       }),
     ])
 
-    // Aggregate by createdAt date
-    const bookingsPerDay = bookings.reduce((acc, session) => {
+    const bookingsPerDay = bookings.reduce<Record<string, number>>((acc, session) => {
       const day = session.createdAt.toISOString().split('T')[0]
       acc[day] = (acc[day] || 0) + 1
       return acc
-    }, {} as Record<string, number>)
+    }, {})
 
     const bookingStats = Object.entries(bookingsPerDay).map(([date, count]) => ({
       date,
@@ -47,7 +44,6 @@ export async function GET() {
     return NextResponse.json({
       totalSessions,
       upcomingSessions,
-      certificatesIssued,
       trainerCount,
       clientCount,
       roomCount,

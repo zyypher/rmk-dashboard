@@ -5,7 +5,6 @@ import { useForm, Controller } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import { Dialog } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import {
     Select,
     SelectContent,
@@ -16,45 +15,50 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { TimePicker } from '@/components/ui/TimePicker'
-import { SessionStatus } from '@prisma/client'
 import { Course } from '@/types/course'
 import { Trainer } from '@/types'
 import { Room } from '@/types/room'
 import { Language } from '@/types/language'
+import { Category } from '@/types/category'
+import { Location } from '@/types/location'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
 
 interface BookingModalProps {
     isOpen: boolean
     onClose: () => void
     onNext: (data: any) => void
-    onSubmit: (data: any) => void
     loading?: boolean
     initialData?: any
     courses: Course[]
     trainers: Trainer[]
     rooms: Room[]
     languages: Language[]
+    categories: Category[]
+    locations: Location[]
 }
 
 type BookingFormValues = {
     courseId: string
-    trainerId: string
+    categoryId: string
+    language: string
+    locationId: string
     roomId: string
+    trainerId: string
     date: Date | null
     startTime: Date | null
     endTime: Date | null
-    language: string
-    status: SessionStatus
     notes?: string
 }
 
 export const bookingSchema = yup.object({
     courseId: yup.string().required('Course is required'),
-    trainerId: yup.string().required('Trainer is required'),
+    categoryId: yup.string().required('Category is required'),
+    language: yup.string().required('Language is required'),
+    locationId: yup.string().required('Location is required'),
     roomId: yup.string().required('Room is required'),
     date: yup.date().nullable().required('Date is required'),
     startTime: yup.date().nullable().required('Start time is required'),
+    trainerId: yup.string().required('Trainer is required'),
     endTime: yup
         .date()
         .nullable()
@@ -68,9 +72,6 @@ export const bookingSchema = yup.object({
                 ),
             otherwise: (schema) => schema,
         }),
-
-    language: yup.string().required('Language is required'),
-    status: yup.mixed().required('Status is required'),
     notes: yup.string().notRequired(),
 })
 
@@ -84,6 +85,8 @@ export default function BookingModal({
     trainers,
     rooms,
     languages,
+    categories,
+    locations,
 }: BookingModalProps) {
     const {
         register,
@@ -97,32 +100,36 @@ export default function BookingModal({
         mode: 'onChange',
         defaultValues: {
             courseId: '',
-            trainerId: '',
+            categoryId: '',
+            language: '',
+            locationId: '',
             roomId: '',
             date: null,
             startTime: null,
             endTime: null,
-            language: '',
-            status: undefined,
             notes: '',
         },
         resolver: yupResolver(bookingSchema) as any,
     })
 
+    console.log('##initial', initialData)
+
     useEffect(() => {
         if (initialData) {
-            reset({
-                ...initialData,
-                date: initialData.date ? new Date(initialData.date) : null,
-                startTime: initialData.startTime
-                    ? new Date(initialData.startTime)
-                    : null,
-                endTime: initialData.endTime
-                    ? new Date(initialData.endTime)
-                    : null,
-            })
+          reset({
+            courseId: initialData.courseId,
+            categoryId: initialData.course?.categoryId || '', 
+            language: initialData.language,
+            locationId: initialData.locationId,
+            roomId: initialData.roomId,
+            trainerId: initialData.trainerId,
+            date: initialData.date ? new Date(initialData.date) : null,
+            startTime: initialData.startTime ? new Date(initialData.startTime) : null,
+            endTime: initialData.endTime ? new Date(initialData.endTime) : null,
+            notes: initialData.notes || '',
+          })
         }
-    }, [initialData, reset])
+      }, [initialData, reset])
       
     return (
         <Dialog
@@ -133,6 +140,7 @@ export default function BookingModal({
             submitLabel="Next"
         >
             <div className="max-h-[75vh] space-y-4 overflow-y-auto">
+                {/* Course */}
                 <Select
                     value={watch('courseId')}
                     onValueChange={(val) =>
@@ -156,29 +164,79 @@ export default function BookingModal({
                     </p>
                 )}
 
+                {/* Category */}
                 <Select
-                    value={watch('trainerId')}
+                    value={watch('categoryId')}
                     onValueChange={(val) =>
-                        setValue('trainerId', val, { shouldValidate: true })
+                        setValue('categoryId', val, { shouldValidate: true })
                     }
                 >
                     <SelectTrigger>
-                        <SelectValue placeholder="Select Trainer" />
+                        <SelectValue placeholder="Select Category" />
                     </SelectTrigger>
                     <SelectContent>
-                        {trainers.map((trainer) => (
-                            <SelectItem key={trainer.id} value={trainer.id}>
-                                {trainer.name}
+                        {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                                {cat.name}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-                {errors.trainerId && (
+                {errors.categoryId && (
                     <p className="text-red-500 text-sm">
-                        {errors.trainerId.message}
+                        {errors.categoryId.message}
                     </p>
                 )}
 
+                {/* Language */}
+                <Select
+                    value={watch('language')}
+                    onValueChange={(val) =>
+                        setValue('language', val, { shouldValidate: true })
+                    }
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select Language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {languages.map((lang) => (
+                            <SelectItem key={lang.id} value={lang.name}>
+                                {lang.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                {errors.language && (
+                    <p className="text-red-500 text-sm">
+                        {errors.language.message}
+                    </p>
+                )}
+
+                {/* Location */}
+                <Select
+                    value={watch('locationId')}
+                    onValueChange={(val) =>
+                        setValue('locationId', val, { shouldValidate: true })
+                    }
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select Location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {locations.map((loc) => (
+                            <SelectItem key={loc.id} value={loc.id}>
+                                {loc.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                {errors.locationId && (
+                    <p className="text-red-500 text-sm">
+                        {errors.locationId.message}
+                    </p>
+                )}
+
+                {/* Room */}
                 <Select
                     value={watch('roomId')}
                     onValueChange={(val) =>
@@ -199,6 +257,30 @@ export default function BookingModal({
                 {errors.roomId && (
                     <p className="text-red-500 text-sm">
                         {errors.roomId.message}
+                    </p>
+                )}
+
+                {/* Trainer */}
+                <Select
+                    value={watch('trainerId')}
+                    onValueChange={(val) =>
+                        setValue('trainerId', val, { shouldValidate: true })
+                    }
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select Trainer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {trainers.map((trainer) => (
+                            <SelectItem key={trainer.id} value={trainer.id}>
+                                {trainer.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                {errors.trainerId && (
+                    <p className="text-red-500 text-sm">
+                        {errors.trainerId.message}
                     </p>
                 )}
 
@@ -258,54 +340,6 @@ export default function BookingModal({
                         )}
                     </div>
                 </div>
-
-                <Select
-                    value={watch('language')}
-                    onValueChange={(val) =>
-                        setValue('language', val, { shouldValidate: true })
-                    }
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select Language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {languages.map((lang) => (
-                            <SelectItem key={lang.id} value={lang.name}>
-                                {lang.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                {errors.language && (
-                    <p className="text-red-500 text-sm">
-                        {errors.language.message}
-                    </p>
-                )}
-
-                <Select
-                    value={watch('status')}
-                    onValueChange={(val) =>
-                        setValue('status', val as SessionStatus, {
-                            shouldValidate: true,
-                        })
-                    }
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {Object.values(SessionStatus).map((status) => (
-                            <SelectItem key={status} value={status}>
-                                {status}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                {errors.status && (
-                    <p className="text-red-500 text-sm">
-                        {errors.status.message}
-                    </p>
-                )}
 
                 <Textarea
                     placeholder="Notes (optional)"

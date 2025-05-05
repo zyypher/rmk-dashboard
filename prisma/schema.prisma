@@ -20,6 +20,11 @@ enum SessionStatus {
   RESCHEDULED
 }
 
+enum DelegateStatus {
+  CONFIRMED
+  NOT_CONFIRMED
+}
+
 model User {
   id                  String               @id @default(uuid())
   name                String
@@ -121,7 +126,7 @@ model Course {
 }
 
 model TrainingSession {
-  id            String        @id @default(uuid())
+  id            String     @id @default(uuid())
   courseId      String
   trainerId     String
   roomId        String
@@ -129,20 +134,38 @@ model TrainingSession {
   startTime     DateTime
   endTime       DateTime
   locationId    String?
-  status        SessionStatus @default(SCHEDULED)
   participants  Int?
   notes         String?
   selectedSeats Json?
   language      String?
-  course        Course        @relation(fields: [courseId], references: [id])
-  trainer       Trainer       @relation("TrainerSessions", fields: [trainerId], references: [id])
-  room          Room          @relation(fields: [roomId], references: [id])
-  location      Location?     @relation(fields: [locationId], references: [id])
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  course        Course     @relation(fields: [courseId], references: [id])
+  trainer       Trainer    @relation("TrainerSessions", fields: [trainerId], references: [id])
+  room          Room       @relation(fields: [roomId], references: [id])
+  location      Location?  @relation(fields: [locationId], references: [id])
+  delegates     Delegate[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   @@index([createdAt])
 }
+
+model Delegate {
+  id          String   @id @default(uuid())
+  seatId      String
+  sessionId   String
+  name        String
+  emiratesId  String
+  phone       String
+  email       String
+  companyName String
+  isCorporate Boolean
+  photoUrl    String
+  status      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  session     TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
 
 model PasswordResetToken {
   id        String   @id @default(uuid())

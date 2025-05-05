@@ -14,6 +14,7 @@ interface DialogProps {
     onSubmit?: () => void
     buttonLoading?: boolean
     submitLabel?: string
+    className?: string
 }
 
 export function Dialog({
@@ -25,6 +26,7 @@ export function Dialog({
     onSubmit,
     buttonLoading = false,
     submitLabel,
+    className
 }: DialogProps) {
     return (
         <DialogPrimitive.Root
@@ -38,6 +40,7 @@ export function Dialog({
                 <DialogPrimitive.Content
                     className={cn(
                         'fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-8 shadow-2xl focus:outline-none',
+                        className,
                     )}
                 >
                     <div className="mb-6 flex items-center justify-between">

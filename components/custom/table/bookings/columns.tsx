@@ -12,48 +12,61 @@ export const columns = ({
   {
     accessorKey: 'course.title',
     header: 'Course',
-    cell: ({ row }) => row.original.course?.title ?? <span className="text-gray-400 italic">N/A</span>,
+    cell: ({ row }) =>
+      row.original.course?.title ?? <span className="text-gray-400 italic">N/A</span>,
   },
   {
     accessorKey: 'trainer.name',
     header: 'Trainer',
-    cell: ({ row }) =>
-      row.original.course?.trainer?.name ?? <span className="text-gray-400 italic">N/A</span>,
+    cell: ({ row }) => {
+      const trainers = row.original.course?.trainers
+      return trainers && trainers.length > 0
+        ? trainers[0].name
+        : <span className="text-gray-400 italic">N/A</span>
+    },
   },
+  
   {
     accessorKey: 'room.name',
     header: 'Room',
-    cell: ({ row }) => row.original.room?.name ?? <span className="text-gray-400 italic">N/A</span>,
+    cell: ({ row }) =>
+      row.original.room?.name ?? <span className="text-gray-400 italic">N/A</span>,
   },
   {
     accessorKey: 'date',
     header: 'Date',
-    cell: ({ row }) => new Date(row.original.date).toLocaleDateString(),
+    cell: ({ row }) =>
+      new Date(row.original.date).toLocaleDateString(),
   },
   {
     accessorKey: 'startTime',
     header: 'Start Time',
-    cell: ({ row }) => new Date(row.original.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    cell: ({ row }) =>
+      new Date(row.original.startTime).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
   },
   {
     accessorKey: 'endTime',
     header: 'End Time',
-    cell: ({ row }) => new Date(row.original.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    cell: ({ row }) =>
+      new Date(row.original.endTime).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
   },
   {
     accessorKey: 'language',
     header: 'Language',
-    cell: ({ row }) => row.original.language ?? <span className="text-gray-400 italic">N/A</span>,
-  },
-  {
-    accessorKey: 'status',
-    header: 'Status',
-    cell: ({ row }) => row.original.status,
+    cell: ({ row }) =>
+      row.original.language ?? <span className="text-gray-400 italic">N/A</span>,
   },
   {
     accessorKey: 'notes',
     header: 'Notes',
-    cell: ({ row }) => row.original.notes ?? <span className="text-gray-400 italic">—</span>,
+    cell: ({ row }) =>
+      row.original.notes ?? <span className="text-gray-400 italic">—</span>,
   },
   {
     id: 'actions',
