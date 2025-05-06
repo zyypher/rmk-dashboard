@@ -11,6 +11,9 @@ export async function GET() {
         languages: true,
         courses: true,
       },
+      orderBy: {
+        createdAt: 'desc',
+      },
     })
     const formatted = trainers.map((trainer) => ({
       ...trainer,

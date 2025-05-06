@@ -177,7 +177,7 @@ const UsersPage = () => {
                             Role
                         </label>
                         <select
-                            className="mt-1 w-full rounded border p-2"
+                            className="border-1 mt-1 w-full rounded border border-[#f3f2f1] p-2"
                             {...register('role')}
                         >
                             <option value="">Select Role</option>
@@ -186,7 +186,7 @@ const UsersPage = () => {
                             <option value="VIEWER">Viewer</option>
                         </select>
                         {errors.role && (
-                            <p className="text-red-500 mt-1 text-sm">
+                            <p className="mt-1 text-sm text-red-500">
                                 {String(errors.role.message)}
                             </p>
                         )}
@@ -204,7 +204,7 @@ const UsersPage = () => {
             >
                 <div className="text-lg font-semibold">
                     Are you sure you want to delete{' '}
-                    <span className="text-red-600 font-bold">
+                    <span className="font-bold text-red-600">
                         {users.find((u) => u.id === userToDelete)?.email ||
                             'this user'}
                     </span>

@@ -6,7 +6,11 @@ const prisma = new PrismaClient()
 
 export async function GET(req: NextRequest) {
     try {
-        const users = await prisma.user.findMany()
+        const users = await prisma.user.findMany({
+            orderBy: {
+                createdAt: 'desc',
+            },
+        })
         return NextResponse.json(users)
     } catch (error) {
         console.error('Error fetching users:', error)

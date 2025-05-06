@@ -24,7 +24,7 @@ export async function GET() {
       prisma.category.count(),
       prisma.trainingSession.findMany({
         select: { createdAt: true },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: 'desc' },
       }),
     ])
 

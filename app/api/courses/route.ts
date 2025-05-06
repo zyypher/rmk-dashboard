@@ -10,6 +10,9 @@ export async function GET() {
         category: true,
         languages: true,
       },
+      orderBy: {
+        createdAt: 'desc',
+      },
     })
     return NextResponse.json(courses)
   } catch (error) {

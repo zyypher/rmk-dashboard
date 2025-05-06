@@ -50,21 +50,25 @@ async function uploadPhoto(photo: File, seatId: string) {
 
 export async function GET() {
     try {
-        const sessions = await prisma.trainingSession.findMany({
-            include: {
-                course: { include: { trainers: true } },
-                room: true,
-            },
-        })
-
-        return NextResponse.json(sessions)
+      const sessions = await prisma.trainingSession.findMany({
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          course: { include: { trainers: true } },
+          room: true,
+        },
+      })
+  
+      return NextResponse.json(sessions)
     } catch (error) {
-        return NextResponse.json(
-            { error: 'Failed to fetch sessions' },
-            { status: 500 },
-        )
+      return NextResponse.json(
+        { error: 'Failed to fetch sessions' },
+        { status: 500 },
+      )
     }
-}
+  }
+  
 
 export async function POST(req: NextRequest) {
     try {

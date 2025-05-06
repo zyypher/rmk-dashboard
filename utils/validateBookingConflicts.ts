@@ -45,6 +45,9 @@ export async function validateBookingConflicts(data: any): Promise<string[]> {
             date: sessionDate,
             ...(id && { NOT: { id } }),
         },
+        orderBy: {
+            createdAt: 'desc',
+        },
     })
 
     for (const session of overlappingSessions) {

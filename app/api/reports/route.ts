@@ -47,6 +47,9 @@ export async function GET(req: Request) {
                 },
             },
         },
+        orderBy: {
+            createdAt: 'desc',
+        },
     })
 
     const filtered = delegates.filter((d) => {

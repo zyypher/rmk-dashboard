@@ -9,7 +9,9 @@ export async function GET(
 ) {
     try {
         const delegates = await prisma.delegate.findMany({
-            where: { sessionId: params.id },
+            where: { sessionId: params.id }, orderBy: {
+                createdAt: 'desc',
+              },
         })
 
         return NextResponse.json(delegates)
