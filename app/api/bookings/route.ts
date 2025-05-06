@@ -57,6 +57,7 @@ export async function GET() {
         include: {
           course: { include: { trainers: true } },
           room: true,
+          trainer: true,
         },
       })
   
