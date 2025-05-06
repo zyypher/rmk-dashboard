@@ -104,6 +104,7 @@ model Client {
   email              String?
   contactPersonName  String?
   tradeLicenseNumber String?
+  delegates          Delegate[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
@@ -157,6 +158,8 @@ model Delegate {
   emiratesId  String
   phone       String
   email       String
+  clientId    String?  // ✅ Optional at first
+  client      Client?  @relation(fields: [clientId], references: [id])
   companyName String
   isCorporate Boolean
   photoUrl    String

@@ -1,3 +1,5 @@
+import { Delegate } from './delegate'
+
 export interface Booking {
   id: string
   courseId: string
@@ -22,4 +24,5 @@ export interface Booking {
   trainer: {
     name: string
   }
+  delegates: Delegate[] 
 }

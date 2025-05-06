@@ -15,6 +15,7 @@ import {
     Tags,
     MonitorSmartphone,
     CalendarDays,
+    FileBarChart2,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { Card } from '@/components/ui/card'
@@ -95,6 +96,10 @@ const Sidebar = () => {
                     <NavLink href="/bookings" className="nav-link">
                         <CalendarClock className="size-[18px]" />{' '}
                         <span>Bookings</span>
+                    </NavLink>
+                    <NavLink href="/reports" className="nav-link">
+                        <FileBarChart2 className="size-[18px]" />
+                        <span>Reports</span>
                     </NavLink>
 
                     <h3 className="mt-2.5 whitespace-nowrap rounded-lg bg-gray-400 px-5 py-2.5 text-xs font-semibold uppercase text-black">
