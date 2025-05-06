@@ -81,13 +81,13 @@ export default function Home() {
                         loading={loading}
                         iconColor="text-red-600"
                     />
-                    <SummaryCard
+                    {/* <SummaryCard
                         icon={<IconTrophy />}
                         label="Certificates Issued"
                         value={data?.certificatesIssued}
                         loading={loading}
                         iconColor="text-yellow-500"
-                    />
+                    /> */}
                     <SummaryCard
                         icon={<IconFile />}
                         label="Clients"
