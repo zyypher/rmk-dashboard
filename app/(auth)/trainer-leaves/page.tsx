@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select'
 import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
 import { DatePicker } from '@/components/ui/DatePicker'
+import { useUserRole } from '@/hooks/useUserRole'
 
 interface Trainer {
     id: string
@@ -55,6 +56,7 @@ export default function TrainerLeavesPage() {
     const [leaveToDelete, setLeaveToDelete] = useState<TrainerLeave | null>(
         null,
     )
+    const role = useUserRole()
 
     const {
         register,
@@ -158,20 +160,23 @@ export default function TrainerLeavesPage() {
     return (
         <div className="space-y-6 p-6">
             <PageHeading heading="Trainer Leaves" />
-            <div className="flex justify-end">
-                <Button
-                    onClick={() => {
-                        reset()
-                        setSelectedLeave(null)
-                        setDialogOpen(true)
-                    }}
-                >
-                    <Plus className="mr-2 h-4 w-4" /> Add Leave
-                </Button>
-            </div>
+
+            {(role === 'ADMIN' || role === 'EDITOR') && (
+                <div className="flex justify-end">
+                    <Button
+                        onClick={() => {
+                            reset()
+                            setSelectedLeave(null)
+                            setDialogOpen(true)
+                        }}
+                    >
+                        <Plus className="mr-2 h-4 w-4" /> Add Leave
+                    </Button>
+                </div>
+            )}
 
             <DataTable
-                columns={columns({ openEditDialog, confirmDelete })}
+                columns={columns({ role, openEditDialog, confirmDelete })}
                 data={leaves}
                 filterField="trainer.name"
                 loading={loading}
@@ -213,7 +218,7 @@ export default function TrainerLeavesPage() {
                             )}
                         />
                         {errors.trainerId && (
-                            <p className="text-red-600 text-sm">
+                            <p className="text-sm text-red-600">
                                 {errors.trainerId.message}
                             </p>
                         )}
@@ -235,7 +240,7 @@ export default function TrainerLeavesPage() {
                             )}
                         />
                         {errors.date && (
-                            <p className="text-red-600 text-sm">
+                            <p className="text-sm text-red-600">
                                 {errors.date.message as string}
                             </p>
                         )}
@@ -262,7 +267,7 @@ export default function TrainerLeavesPage() {
             >
                 <p className="text-sm">
                     Are you sure you want to delete{' '}
-                    <span className="text-red-600 font-semibold">
+                    <span className="font-semibold text-red-600">
                         {`${leaveToDelete?.trainer.name}'s`} leave
                     </span>
                     ?

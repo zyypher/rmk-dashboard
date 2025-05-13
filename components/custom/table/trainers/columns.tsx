@@ -2,13 +2,16 @@ import { ColumnDef } from '@tanstack/react-table'
 import { Trainer } from '@/types'
 import { Trash2, Pencil } from 'lucide-react'
 import { formatDayList } from '@/lib/constants'
+import { Role } from '@/types/roles' // ✅ Import the Role type
 
 interface ColumnActions {
+  role: Role
   openEditDialog: (trainer: Trainer) => void
   confirmDelete: (trainer: Trainer) => void
 }
 
 export function columns({
+  role,
   openEditDialog,
   confirmDelete,
 }: ColumnActions): ColumnDef<Trainer>[] {
@@ -63,14 +66,21 @@ export function columns({
       header: '',
       cell: ({ row }) => {
         const trainer = row.original
+        const canEdit = role === 'ADMIN' || role === 'EDITOR'
+        const canDelete = role === 'ADMIN'
+
         return (
           <div className="flex items-center gap-2">
-            <button onClick={() => openEditDialog(trainer)}>
-              <Pencil className="text-blue-500 h-4 w-4" />
-            </button>
-            <button onClick={() => confirmDelete(trainer)}>
-              <Trash2 className="text-red-500 h-4 w-4" />
-            </button>
+            {canEdit && (
+              <button onClick={() => openEditDialog(trainer)}>
+                <Pencil className="text-blue-500 h-4 w-4" />
+              </button>
+            )}
+            {canDelete && (
+              <button onClick={() => confirmDelete(trainer)}>
+                <Trash2 className="text-red-500 h-4 w-4" />
+              </button>
+            )}
           </div>
         )
       },

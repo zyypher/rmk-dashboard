@@ -23,6 +23,7 @@ import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { Course } from '@/types/course'
+import { useUserRole } from '@/hooks/useUserRole'
 
 interface Category {
     id: string
@@ -62,6 +63,7 @@ const CoursesPage = () => {
         bookings: number
         languages: number
     } | null>(null)
+    const role = useUserRole()
 
     const {
         register,
@@ -203,15 +205,18 @@ const CoursesPage = () => {
     return (
         <div className="space-y-6 p-6">
             <PageHeading heading="Courses" />
-            <div className="flex justify-end">
-                <Button onClick={openAddDialog}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Course
-                </Button>
-            </div>
+
+            {(role === 'ADMIN' || role === 'EDITOR') && (
+                <div className="flex justify-end">
+                    <Button onClick={openAddDialog}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Course
+                    </Button>
+                </div>
+            )}
 
             <DataTable
-                columns={columns({ openEditDialog, confirmDelete })}
+                columns={columns({ role, openEditDialog, confirmDelete })}
                 data={courses}
                 filterField="title"
                 loading={loading}
@@ -272,7 +277,7 @@ const CoursesPage = () => {
                             </SelectContent>
                         </Select>
                         {errors.categoryId && (
-                            <p className="text-red-600 mt-1 text-sm">
+                            <p className="mt-1 text-sm text-red-600">
                                 {errors.categoryId.message as string}
                             </p>
                         )}
@@ -307,7 +312,7 @@ const CoursesPage = () => {
                         </MultiSelect>
 
                         {errors.languages && (
-                            <p className="text-red-600 mt-1 text-sm">
+                            <p className="mt-1 text-sm text-red-600">
                                 {errors.languages.message as string}
                             </p>
                         )}
@@ -335,7 +340,7 @@ const CoursesPage = () => {
                             </div>
                         </RadioGroup>
                         {errors.isPublic && (
-                            <p className="text-red-600 text-sm">
+                            <p className="text-sm text-red-600">
                                 {errors.isPublic.message as string}
                             </p>
                         )}
@@ -363,7 +368,7 @@ const CoursesPage = () => {
                             </div>
                         </RadioGroup>
                         {errors.isCertified && (
-                            <p className="text-red-600 text-sm">
+                            <p className="text-sm text-red-600">
                                 {errors.isCertified.message as string}
                             </p>
                         )}
@@ -380,7 +385,7 @@ const CoursesPage = () => {
             >
                 <p className="text-sm">
                     Are you sure you want to delete{' '}
-                    <span className="text-red-600 font-semibold">
+                    <span className="font-semibold text-red-600">
                         {courseToDelete?.title}
                     </span>
                     ?
@@ -405,11 +410,11 @@ const CoursesPage = () => {
                     following:
                 </p>
                 {!dependencyInfo ? (
-                    <p className="text-red-600 text-sm">
+                    <p className="text-sm text-red-600">
                         Unable to determine dependencies.
                     </p>
                 ) : (
-                    <ul className="text-red-600 mt-4 list-disc space-y-1 pl-5 text-sm">
+                    <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-red-600">
                         {dependencyInfo.bookings > 0 && (
                             <li>
                                 {dependencyInfo.bookings} training session(s)

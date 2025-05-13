@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Plus } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useUserRole } from '@/hooks/useUserRole'
 
 type Language = {
     id: string
@@ -24,6 +25,8 @@ const LanguagesPage = () => {
     )
     const [addLoading, setAddLoading] = useState(false)
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const role = useUserRole()
+    const isAllowed = role === 'ADMIN' || role === 'EDITOR'
 
     const fetchLanguages = async () => {
         setLoading(true)
@@ -92,16 +95,19 @@ const LanguagesPage = () => {
                     value={newLanguage}
                     onChange={(e) => setNewLanguage(e.target.value)}
                 />
-                <Button onClick={handleAddLanguage} disabled={addLoading}>
-                    {addLoading ? (
-                        <div className="loader" />
-                    ) : (
-                        <>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Language
-                        </>
-                    )}
-                </Button>
+
+                {isAllowed && (
+                    <Button onClick={handleAddLanguage} disabled={addLoading}>
+                        {addLoading ? (
+                            <div className="loader" />
+                        ) : (
+                            <>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Language
+                            </>
+                        )}
+                    </Button>
+                )}
             </div>
 
             {loading ? (
@@ -115,17 +121,21 @@ const LanguagesPage = () => {
                     {languages.map((language) => (
                         <div
                             key={language.id}
-                            className="text-gray-800 flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-1 text-sm shadow-sm"
+                            className="flex items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-1 text-sm text-gray-800 shadow-sm"
                         >
                             <span>{language.name}</span>
-                            <button
-                                onClick={() => confirmDeleteLanguage(language)}
-                                className="text-red-500 hover:text-red-700 font-bold"
-                                title="Delete"
-                                style={{ color: '#de4141' }}
-                            >
-                                ✕
-                            </button>
+                            {isAllowed && (
+                                <button
+                                    onClick={() =>
+                                        confirmDeleteLanguage(language)
+                                    }
+                                    className="font-bold text-red-500 hover:text-red-700"
+                                    title="Delete"
+                                    style={{ color: '#de4141' }}
+                                >
+                                    ✕
+                                </button>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -136,11 +146,11 @@ const LanguagesPage = () => {
                 onClose={() => setDialogOpen(false)}
                 title="Delete Language"
                 onSubmit={handleDeleteLanguage}
-                buttonLoading={deleteLoading} // assuming your dialog supports this
+                buttonLoading={deleteLoading}
             >
                 <div className="text-sm">
                     Are you sure you want to delete{' '}
-                    <span className="text-red-600 font-semibold">
+                    <span className="font-semibold text-red-600">
                         {languageToDelete?.name}
                     </span>
                     ?

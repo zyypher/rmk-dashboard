@@ -19,6 +19,7 @@ import { Language } from '@/types/language'
 import { Category } from '@/types/category'
 import { Location } from '@/types/location'
 import { Delegate } from '@/types/delegate'
+import { useUserRole } from '@/hooks/useUserRole'
 
 export default function BookingsPage() {
     const [bookings, setBookings] = useState<Booking[]>([])
@@ -37,6 +38,7 @@ export default function BookingsPage() {
     const [selectedSeats, setSelectedSeats] = useState<string[]>([])
     const [conflictErrors, setConflictErrors] = useState<string[]>([])
     const [delegates, setDelegates] = useState<Record<string, Delegate>>({})
+    const role = useUserRole()
 
     useEffect(() => {
         fetchBookings()
@@ -122,58 +124,59 @@ export default function BookingsPage() {
 
     const handleFinalSubmit = async (seats: string[]) => {
         try {
-          const delegateArray = Object.entries(delegates).map(([seatId, delegate]) => ({
-            ...delegate,
-            seatId,
-          }))
-      
-          const payload = {
-            ...bookingData,
-            selectedSeats: seats,
-            participants: seats.length,
-            date: new Date(bookingData.date),
-            startTime: new Date(bookingData.startTime),
-            endTime: new Date(bookingData.endTime),
-            delegates: delegateArray.map(({ photo, ...rest }) => rest), // remove file from payload
-          }
-      
-          // ✅ Only for new bookings with photos
-          if (!bookingData?.id) {
-            const formData = new FormData()
-            formData.append('data', JSON.stringify(payload))
-      
-            delegateArray.forEach((d) => {
-                if (d.photo && typeof d.photo !== 'string') {
-                    formData.append(d.seatId, d.photo)
-                  }
-            })
-      
-            await fetch('/api/bookings', {
-              method: 'POST',
-              body: formData,
-            })
-      
-            toast.success('Booking created')
-          } else {
-            // ✅ For updates, just use PUT
-            await axios.put(`/api/bookings/${bookingData.id}`, payload)
-            toast.success('Booking updated')
-          }
-      
-          fetchBookings()
-          resetBookingFlow()
-        } catch (err: any) {
-          if (err?.response?.status === 409 && err?.response?.data?.reasons) {
-            setConflictErrors(err.response.data.reasons)
-            setStep('error')
-          } else {
-            toast.error('Failed to save booking')
-            console.error('Save error:', err)
+            const delegateArray = Object.entries(delegates).map(
+                ([seatId, delegate]) => ({
+                    ...delegate,
+                    seatId,
+                }),
+            )
+
+            const payload = {
+                ...bookingData,
+                selectedSeats: seats,
+                participants: seats.length,
+                date: new Date(bookingData.date),
+                startTime: new Date(bookingData.startTime),
+                endTime: new Date(bookingData.endTime),
+                delegates: delegateArray.map(({ photo, ...rest }) => rest), // remove file from payload
+            }
+
+            // ✅ Only for new bookings with photos
+            if (!bookingData?.id) {
+                const formData = new FormData()
+                formData.append('data', JSON.stringify(payload))
+
+                delegateArray.forEach((d) => {
+                    if (d.photo && typeof d.photo !== 'string') {
+                        formData.append(d.seatId, d.photo)
+                    }
+                })
+
+                await fetch('/api/bookings', {
+                    method: 'POST',
+                    body: formData,
+                })
+
+                toast.success('Booking created')
+            } else {
+                // ✅ For updates, just use PUT
+                await axios.put(`/api/bookings/${bookingData.id}`, payload)
+                toast.success('Booking updated')
+            }
+
+            fetchBookings()
             resetBookingFlow()
-          }
+        } catch (err: any) {
+            if (err?.response?.status === 409 && err?.response?.data?.reasons) {
+                setConflictErrors(err.response.data.reasons)
+                setStep('error')
+            } else {
+                toast.error('Failed to save booking')
+                console.error('Save error:', err)
+                resetBookingFlow()
+            }
         }
-      }
-      
+    }
 
     const handleDelete = async () => {
         if (!bookingToDelete) return
@@ -193,15 +196,18 @@ export default function BookingsPage() {
     return (
         <div className="space-y-6 p-6">
             <PageHeading heading="Bookings" />
-            <div className="flex justify-end">
-                <Button onClick={() => setStep('form')}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Booking
-                </Button>
-            </div>
+
+            {(role === 'ADMIN' || role === 'EDITOR') && (
+                <div className="flex justify-end">
+                    <Button onClick={() => setStep('form')}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Booking
+                    </Button>
+                </div>
+            )}
 
             <DataTable
-                columns={columns({ openEditDialog, confirmDelete })}
+                columns={columns({ role, openEditDialog, confirmDelete })}
                 data={bookings}
                 filterField="course.title"
                 loading={loading}

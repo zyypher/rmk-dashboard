@@ -15,257 +15,295 @@ import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select'
+import { useUserRole } from '@/hooks/useUserRole'
 
 const EMIRATES = [
-  'Abu Dhabi',
-  'Dubai',
-  'Sharjah',
-  'Ajman',
-  'Fujairah',
-  'Ras Al Khaimah',
-  'Umm Al Quwain',
+    'Abu Dhabi',
+    'Dubai',
+    'Sharjah',
+    'Ajman',
+    'Fujairah',
+    'Ras Al Khaimah',
+    'Umm Al Quwain',
 ]
 
 const LOCATION_TYPES = ['RMK', 'Client', 'Rented']
 
 const locationSchema = yup.object({
-  name: yup.string().required('Location name is required'),
-  emirate: yup.string().required('Emirate is required'),
-  deliveryApproach: yup.string().required(),
-  zoomLink: yup.string().when('deliveryApproach', {
-    is: 'Online',
-    then: (schema) =>
-      schema
-        .required('Zoom link is required')
-        .url('Zoom link must be a valid URL'),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-  locationType: yup.string().when('deliveryApproach', {
-    is: 'Offline',
-    then: (schema) => schema.required('Please select location type'),
-    otherwise: (schema) => schema.notRequired(),
-  }),
+    name: yup.string().required('Location name is required'),
+    emirate: yup.string().required('Emirate is required'),
+    deliveryApproach: yup.string().required(),
+    zoomLink: yup.string().when('deliveryApproach', {
+        is: 'Online',
+        then: (schema) =>
+            schema
+                .required('Zoom link is required')
+                .url('Zoom link must be a valid URL'),
+        otherwise: (schema) => schema.notRequired(),
+    }),
+    locationType: yup.string().when('deliveryApproach', {
+        is: 'Offline',
+        then: (schema) => schema.required('Please select location type'),
+        otherwise: (schema) => schema.notRequired(),
+    }),
 })
 
 export default function LocationsPage() {
-  const [locations, setLocations] = useState<Location[]>([])
-  const [loading, setLoading] = useState(true)
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [formLoading, setFormLoading] = useState(false)
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [locationToDelete, setLocationToDelete] = useState<Location | null>(null)
-  const [deleteLoading, setDeleteLoading] = useState(false)
+    const [locations, setLocations] = useState<Location[]>([])
+    const [loading, setLoading] = useState(true)
+    const [dialogOpen, setDialogOpen] = useState(false)
+    const [formLoading, setFormLoading] = useState(false)
+    const [selectedLocation, setSelectedLocation] = useState<Location | null>(
+        null,
+    )
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [locationToDelete, setLocationToDelete] = useState<Location | null>(
+        null,
+    )
+    const [deleteLoading, setDeleteLoading] = useState(false)
+    const role = useUserRole()
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    control,
-    watch,
-    formState: { errors },
-  } = useForm({
-    resolver: yupResolver(locationSchema),
-    defaultValues: {
-      deliveryApproach: '',
-    },
-  })
+    const {
+        register,
+        handleSubmit,
+        reset,
+        setValue,
+        control,
+        watch,
+        formState: { errors },
+    } = useForm({
+        resolver: yupResolver(locationSchema),
+        defaultValues: {
+            deliveryApproach: '',
+        },
+    })
 
-  const deliveryApproach = watch('deliveryApproach')
+    const deliveryApproach = watch('deliveryApproach')
 
-  const fetchLocations = async () => {
-    setLoading(true)
-    try {
-      const res = await axios.get('/api/locations')
-      setLocations(res.data)
-    } catch {
-      toast.error('Failed to fetch locations')
-    } finally {
-      setLoading(false)
+    const fetchLocations = async () => {
+        setLoading(true)
+        try {
+            const res = await axios.get('/api/locations')
+            setLocations(res.data)
+        } catch {
+            toast.error('Failed to fetch locations')
+        } finally {
+            setLoading(false)
+        }
     }
-  }
 
-  useEffect(() => {
-    fetchLocations()
-  }, [])
+    useEffect(() => {
+        fetchLocations()
+    }, [])
 
-  const openEditDialog = (location: Location) => {
-    setSelectedLocation(location)
-    setDialogOpen(true)
-    setValue('name', location.name)
-    setValue('emirate', location.emirate)
-    setValue('zoomLink', location.zoomLink || '')
-    setValue('locationType', location.locationType || '')
-    setValue('deliveryApproach', location.deliveryApproach || '')
-  }
-  
-
-  const handleAddOrEdit = async (data: any) => {
-    setFormLoading(true)
-    try {
-      if (selectedLocation) {
-        await axios.put(`/api/locations/${selectedLocation.id}`, data)
-        toast.success('Location updated')
-      } else {
-        await axios.post('/api/locations', data)
-        toast.success('Location added')
-      }
-      fetchLocations()
-      setDialogOpen(false)
-    } catch {
-      toast.error('Failed to submit')
-    } finally {
-      setFormLoading(false)
+    const openEditDialog = (location: Location) => {
+        setSelectedLocation(location)
+        setDialogOpen(true)
+        setValue('name', location.name)
+        setValue('emirate', location.emirate)
+        setValue('zoomLink', location.zoomLink || '')
+        setValue('locationType', location.locationType || '')
+        setValue('deliveryApproach', location.deliveryApproach || '')
     }
-  }
 
-  const confirmDelete = (location: Location) => {
-    setLocationToDelete(location)
-    setDeleteDialogOpen(true)
-  }
-
-  const handleDelete = async () => {
-    if (!locationToDelete) return
-    setDeleteLoading(true)
-    try {
-      await axios.delete(`/api/locations/${locationToDelete.id}`)
-      toast.success('Location deleted successfully')
-      fetchLocations()
-    } catch {
-      toast.error('Failed to delete location')
-    } finally {
-      setDeleteDialogOpen(false)
-      setLocationToDelete(null)
-      setDeleteLoading(false)
+    const handleAddOrEdit = async (data: any) => {
+        setFormLoading(true)
+        try {
+            if (selectedLocation) {
+                await axios.put(`/api/locations/${selectedLocation.id}`, data)
+                toast.success('Location updated')
+            } else {
+                await axios.post('/api/locations', data)
+                toast.success('Location added')
+            }
+            fetchLocations()
+            setDialogOpen(false)
+        } catch {
+            toast.error('Failed to submit')
+        } finally {
+            setFormLoading(false)
+        }
     }
-  }
 
-  return (
-    <div className="space-y-6 p-6">
-      <PageHeading heading="Locations" />
-      <div className="flex justify-end">
-        <Button
-          onClick={() => {
-            reset()
-            setSelectedLocation(null)
-            setDialogOpen(true)
-          }}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Location
-        </Button>
-      </div>
+    const confirmDelete = (location: Location) => {
+        setLocationToDelete(location)
+        setDeleteDialogOpen(true)
+    }
 
-      <DataTable
-        columns={columns({ openEditDialog, confirmDelete })}
-        data={locations}
-        filterField="name"
-        loading={loading}
-      />
+    const handleDelete = async () => {
+        if (!locationToDelete) return
+        setDeleteLoading(true)
+        try {
+            await axios.delete(`/api/locations/${locationToDelete.id}`)
+            toast.success('Location deleted successfully')
+            fetchLocations()
+        } catch {
+            toast.error('Failed to delete location')
+        } finally {
+            setDeleteDialogOpen(false)
+            setLocationToDelete(null)
+            setDeleteLoading(false)
+        }
+    }
 
-      <Dialog
-        isOpen={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        title={selectedLocation ? 'Edit Location' : 'Add Location'}
-        onSubmit={handleSubmit(handleAddOrEdit)}
-        buttonLoading={formLoading}
-      >
-        <div className="space-y-4">
-          <FloatingLabelInput
-            label="Location Name"
-            value={watch('name')}
-            onChange={(val) => setValue('name', val, { shouldValidate: true })}
-            name="name"
-            error={errors.name?.message as string}
-          />
+    return (
+        <div className="space-y-6 p-6">
+            <PageHeading heading="Locations" />
 
-          <Controller
-            name="emirate"
-            control={control}
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Emirate" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EMIRATES.map((e) => (
-                    <SelectItem key={e} value={e}>
-                      {e}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {(role === 'ADMIN' || role === 'EDITOR') && (
+                <div className="flex justify-end">
+                    <Button
+                        onClick={() => {
+                            reset()
+                            setSelectedLocation(null)
+                            setDialogOpen(true)
+                        }}
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Location
+                    </Button>
+                </div>
             )}
-          />
-          {errors.emirate && <p className="text-red-600 text-sm">{errors.emirate.message as string}</p>}
 
-          <Controller
-            name="deliveryApproach"
-            control={control}
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Delivery Approach" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Online">Online</SelectItem>
-                  <SelectItem value="Offline">Offline</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
+            <DataTable
+                columns={columns({ role, openEditDialog, confirmDelete })}
+                data={locations}
+                filterField="name"
+                loading={loading}
+            />
 
-          {deliveryApproach === 'Online' ? (
-            <FloatingLabelInput
-              label="Zoom Link"
-              value={watch('zoomLink')}
-              onChange={(val) => setValue('zoomLink', val, { shouldValidate: true })}
-              name="zoomLink"
-              error={errors.zoomLink?.message as string}
-            />
-          ) : (
-            <Controller
-              name="locationType"
-              control={control}
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Location Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LOCATION_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type} Location
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          )}
-          {errors.locationType && <p className="text-red-600 text-sm">{errors.locationType.message as string}</p>}
+            <Dialog
+                isOpen={dialogOpen}
+                onClose={() => setDialogOpen(false)}
+                title={selectedLocation ? 'Edit Location' : 'Add Location'}
+                onSubmit={handleSubmit(handleAddOrEdit)}
+                buttonLoading={formLoading}
+            >
+                <div className="space-y-4">
+                    <FloatingLabelInput
+                        label="Location Name"
+                        value={watch('name')}
+                        onChange={(val) =>
+                            setValue('name', val, { shouldValidate: true })
+                        }
+                        name="name"
+                        error={errors.name?.message as string}
+                    />
+
+                    <Controller
+                        name="emirate"
+                        control={control}
+                        render={({ field }) => (
+                            <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select Emirate" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {EMIRATES.map((e) => (
+                                        <SelectItem key={e} value={e}>
+                                            {e}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                    {errors.emirate && (
+                        <p className="text-sm text-red-600">
+                            {errors.emirate.message as string}
+                        </p>
+                    )}
+
+                    <Controller
+                        name="deliveryApproach"
+                        control={control}
+                        render={({ field }) => (
+                            <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select Delivery Approach" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Online">
+                                        Online
+                                    </SelectItem>
+                                    <SelectItem value="Offline">
+                                        Offline
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+
+                    {deliveryApproach === 'Online' ? (
+                        <FloatingLabelInput
+                            label="Zoom Link"
+                            value={watch('zoomLink')}
+                            onChange={(val) =>
+                                setValue('zoomLink', val, {
+                                    shouldValidate: true,
+                                })
+                            }
+                            name="zoomLink"
+                            error={errors.zoomLink?.message as string}
+                        />
+                    ) : (
+                        <Controller
+                            name="locationType"
+                            control={control}
+                            render={({ field }) => (
+                                <Select
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Location Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {LOCATION_TYPES.map((type) => (
+                                            <SelectItem key={type} value={type}>
+                                                {type} Location
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
+                    )}
+                    {errors.locationType && (
+                        <p className="text-sm text-red-600">
+                            {errors.locationType.message as string}
+                        </p>
+                    )}
+                </div>
+            </Dialog>
+
+            <Dialog
+                isOpen={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+                title="Delete Location"
+                onSubmit={handleDelete}
+                buttonLoading={deleteLoading}
+            >
+                <p className="text-sm">
+                    Are you sure you want to delete{' '}
+                    <span className="font-semibold text-red-600">
+                        {locationToDelete?.name}
+                    </span>
+                    ?
+                </p>
+            </Dialog>
         </div>
-      </Dialog>
-
-      <Dialog
-        isOpen={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        title="Delete Location"
-        onSubmit={handleDelete}
-        buttonLoading={deleteLoading}
-      >
-        <p className="text-sm">
-          Are you sure you want to delete{' '}
-          <span className="text-red-600 font-semibold">{locationToDelete?.name}</span>?
-        </p>
-      </Dialog>
-    </div>
-  )
+    )
 }

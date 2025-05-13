@@ -1,11 +1,14 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { Pencil, Trash2 } from 'lucide-react'
 import { Booking } from '@/types/booking'
+import { Role } from '@/types/roles'
 
 export const columns = ({
+    role,
     openEditDialog,
     confirmDelete,
 }: {
+    role: Role
     openEditDialog: (booking: Booking) => void
     confirmDelete: (booking: Booking) => void
 }): ColumnDef<Booking>[] => [
@@ -75,21 +78,33 @@ export const columns = ({
     {
         id: 'actions',
         header: 'Actions',
-        cell: ({ row }) => (
-            <div className="flex gap-2">
-                <button
-                    className="text-blue-600 hover:text-blue-800"
-                    onClick={() => openEditDialog(row.original)}
-                >
-                    <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => confirmDelete(row.original)}
-                >
-                    <Trash2 className="h-4 w-4" />
-                </button>
-            </div>
-        ),
+        cell: ({ row }) => {
+            console.log('##role', role)
+            const booking = row.original
+
+            if (role === 'VIEWER') return null // ❌ No actions
+
+            return (
+                <div className="flex gap-2">
+                    {/* ✏️ Edit allowed for both ADMIN and EDITOR */}
+                    <button
+                        className="text-blue-600 hover:text-blue-800"
+                        onClick={() => openEditDialog(booking)}
+                    >
+                        <Pencil className="h-4 w-4" />
+                    </button>
+
+                    {/* 🗑️ Delete only for ADMIN */}
+                    {role === 'ADMIN' && (
+                        <button
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => confirmDelete(booking)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
+            )
+        },
     },
 ]

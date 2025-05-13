@@ -36,14 +36,26 @@ export default function Login() {
     const onSubmit = async (data: LoginFormData) => {
         setLoading(true)
         try {
-            await api.post(routes.login, data)
-            toast.success('Login Successful!')
-            router.push('/')
+          await api.post(routes.login, data) // login successful, cookie with token is now set
+          toast.success('Login Successful!')
+      
+          // ✅ Fetch user profile from /api/users/me
+          const res = await fetch('/api/users/me')
+          const user = await res.json()
+      
+          if (res.ok && user.role) {
+            localStorage.setItem('userRole', user.role)
+          }
+      
+          router.push('/')
         } catch (error: any) {
+          toast.error('Login failed')
+          console.error(error)
         } finally {
-            setLoading(false)
+          setLoading(false)
         }
-    }
+      }
+      
 
     return (
         <div className="grid h-screen w-full gap-5 p-4 md:grid-cols-2">
@@ -110,7 +122,7 @@ export default function Login() {
                                     {...register('email')}
                                 />
                                 {errors.email && (
-                                    <p className="text-red-500 text-sm">
+                                    <p className="text-sm text-red-500">
                                         {errors.email.message}
                                     </p>
                                 )}
@@ -126,7 +138,7 @@ export default function Login() {
                                     {...register('password')}
                                 />
                                 {errors.password && (
-                                    <p className="text-red-500 text-sm">
+                                    <p className="text-sm text-red-500">
                                         {errors.password.message}
                                     </p>
                                 )}

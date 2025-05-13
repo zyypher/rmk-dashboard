@@ -22,6 +22,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
+import { useUserRole } from '@/hooks/useUserRole'
 
 const MAXIMUM_ROOM_CAPACITY = 30
 
@@ -56,6 +57,7 @@ export default function RoomsPage() {
     const [roomToDelete, setRoomToDelete] = useState<Room | null>(null)
     const [formLoading, setFormLoading] = useState(false)
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const role = useUserRole()
 
     const {
         register,
@@ -151,21 +153,24 @@ export default function RoomsPage() {
     return (
         <div className="space-y-6 p-6">
             <PageHeading heading="Rooms" />
-            <div className="flex justify-end">
-                <Button
-                    onClick={() => {
-                        reset()
-                        setSelectedRoom(null)
-                        setDialogOpen(true)
-                    }}
-                >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Room
-                </Button>
-            </div>
+
+            {(role === 'ADMIN' || role === 'EDITOR') && (
+                <div className="flex justify-end">
+                    <Button
+                        onClick={() => {
+                            reset()
+                            setSelectedRoom(null)
+                            setDialogOpen(true)
+                        }}
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Room
+                    </Button>
+                </div>
+            )}
 
             <DataTable
-                columns={columns({ openEditDialog, confirmDelete })}
+                columns={columns({ role, openEditDialog, confirmDelete })}
                 data={rooms}
                 filterField="name"
                 loading={loading}
@@ -208,7 +213,7 @@ export default function RoomsPage() {
                             )}
                         />
                         {errors.locationId && (
-                            <p className="text-red-600 text-sm">
+                            <p className="text-sm text-red-600">
                                 {errors.locationId.message as string}
                             </p>
                         )}
@@ -256,7 +261,7 @@ export default function RoomsPage() {
             >
                 <p className="text-sm">
                     Are you sure you want to delete{' '}
-                    <span className="text-red-600 font-semibold">
+                    <span className="font-semibold text-red-600">
                         {roomToDelete?.name}
                     </span>
                     ?

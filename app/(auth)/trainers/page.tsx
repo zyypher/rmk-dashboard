@@ -16,6 +16,7 @@ import { Day, daysList } from '@/lib/constants'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { TimePicker } from '@/components/ui/TimePicker'
+import { useUserRole } from '@/hooks/useUserRole'
 
 interface CourseOption {
     id: string
@@ -86,6 +87,7 @@ export default function TrainersPage() {
     const [trainerToDelete, setTrainerToDelete] = useState<Trainer | null>(null)
     const [formLoading, setFormLoading] = useState(false)
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const role = useUserRole()
 
     const {
         register,
@@ -215,15 +217,18 @@ export default function TrainersPage() {
     return (
         <div className="space-y-6 p-6">
             <PageHeading heading="Trainers" />
-            <div className="flex justify-end">
-                <Button onClick={openAddDialog}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Trainer
-                </Button>
-            </div>
+
+            {(role === 'ADMIN' || role === 'EDITOR') && (
+                <div className="flex justify-end">
+                    <Button onClick={openAddDialog}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Trainer
+                    </Button>
+                </div>
+            )}
 
             <DataTable
-                columns={columns({ openEditDialog, confirmDelete })}
+                columns={columns({ role, openEditDialog, confirmDelete })}
                 data={trainers}
                 filterField="name"
                 loading={loading}
@@ -292,7 +297,7 @@ export default function TrainersPage() {
                             ))}
                         </MultiSelect>
                         {errors.languages && (
-                            <p className="text-red-600 mt-1 text-sm">
+                            <p className="mt-1 text-sm text-red-600">
                                 {errors.languages.message as string}
                             </p>
                         )}
@@ -319,7 +324,7 @@ export default function TrainersPage() {
                             ))}
                         </MultiSelect>
                         {errors.availableDays && (
-                            <p className="text-red-600 mt-1 text-sm">
+                            <p className="mt-1 text-sm text-red-600">
                                 {errors.availableDays.message as string}
                             </p>
                         )}
@@ -345,7 +350,7 @@ export default function TrainersPage() {
                             ))}
                         </MultiSelect>
                         {errors.courses && (
-                            <p className="text-red-600 mt-1 text-sm">
+                            <p className="mt-1 text-sm text-red-600">
                                 {errors.courses.message as string}
                             </p>
                         )}
@@ -463,7 +468,7 @@ export default function TrainersPage() {
                         </Button>
 
                         {errors.dailyTimeSlots && (
-                            <p className="text-red-600 mt-1 text-sm">
+                            <p className="mt-1 text-sm text-red-600">
                                 {errors.dailyTimeSlots.message as string}
                             </p>
                         )}
@@ -480,7 +485,7 @@ export default function TrainersPage() {
             >
                 <p className="text-sm">
                     Are you sure you want to delete{' '}
-                    <span className="text-red-600 font-semibold">
+                    <span className="font-semibold text-red-600">
                         {trainerToDelete?.name}
                     </span>
                     ?

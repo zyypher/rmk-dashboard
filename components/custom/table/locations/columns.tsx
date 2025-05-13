@@ -2,11 +2,14 @@ import { ColumnDef } from '@tanstack/react-table'
 import { Pencil, Trash2 } from 'lucide-react'
 import { Location } from '@/types/location'
 import toast from 'react-hot-toast'
+import { Role } from '@/types/roles'
 
 export const columns = ({
+    role,
     openEditDialog,
     confirmDelete,
 }: {
+    role: Role
     openEditDialog: (location: Location) => void
     confirmDelete: (location: Location) => void
 }): ColumnDef<Location>[] => [
@@ -65,22 +68,31 @@ export const columns = ({
     {
         id: 'actions',
         header: 'Actions',
-        cell: ({ row }) => (
-            <div className="flex gap-2">
-                <button
-                    onClick={() => openEditDialog(row.original)}
-                    className="text-blue-600 hover:text-blue-800"
-                >
-                    <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                    onClick={() => confirmDelete(row.original)}
-                    className="text-red-500 hover:text-red-700"
-                >
-                    <Trash2 className="h-4 w-4" />
-                </button>
-            </div>
-        ),
+        cell: ({ row }) => {
+            const canEdit = role === 'ADMIN' || role === 'EDITOR'
+            const canDelete = role === 'ADMIN'
+
+            return (
+                <div className="flex gap-2">
+                    {canEdit && (
+                        <button
+                            onClick={() => openEditDialog(row.original)}
+                            className="text-blue-600 hover:text-blue-800"
+                        >
+                            <Pencil className="h-4 w-4" />
+                        </button>
+                    )}
+                    {canDelete && (
+                        <button
+                            onClick={() => confirmDelete(row.original)}
+                            className="text-red-500 hover:text-red-700"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
+            )
+        },
         enableSorting: false,
     },
 ]

@@ -14,6 +14,7 @@ import { DataTable } from '@/components/custom/table/data-table'
 import { columns } from '@/components/custom/table/clients/columns'
 import { Client } from '@/types/client'
 import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
+import { useUserRole } from '@/hooks/useUserRole'
 
 const clientSchema = yup.object({
     name: yup.string().required('Name is required'),
@@ -38,6 +39,7 @@ export default function ClientsPage() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const role = useUserRole()
 
     const {
         register,
@@ -128,21 +130,24 @@ export default function ClientsPage() {
     return (
         <div className="space-y-6 p-6">
             <PageHeading heading="Clients" />
-            <div className="flex justify-end">
-                <Button
-                    onClick={() => {
-                        reset()
-                        setSelectedClient(null)
-                        setDialogOpen(true)
-                    }}
-                >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Client
-                </Button>
-            </div>
+
+            {(role === 'ADMIN' || role === 'EDITOR') && (
+                <div className="flex justify-end">
+                    <Button
+                        onClick={() => {
+                            reset()
+                            setSelectedClient(null)
+                            setDialogOpen(true)
+                        }}
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Client
+                    </Button>
+                </div>
+            )}
 
             <DataTable
-                columns={columns({ openEditDialog, confirmDelete })}
+                columns={columns({ role, openEditDialog, confirmDelete })}
                 data={clients}
                 filterField="name"
                 loading={loading}
@@ -211,7 +216,7 @@ export default function ClientsPage() {
             >
                 <p className="text-sm">
                     Are you sure you want to delete{' '}
-                    <span className="text-red-600 font-semibold">
+                    <span className="font-semibold text-red-600">
                         {clientToDelete?.name}
                     </span>
                     ?

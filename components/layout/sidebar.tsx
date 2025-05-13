@@ -23,10 +23,12 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import NavLink from '@/components/layout/nav-link'
 import { logout } from '@/lib/auth'
+import { useUserRole } from '@/hooks/useUserRole'
 
 const Sidebar = () => {
     const pathName = usePathname()
     const router = useRouter()
+    const role = useUserRole()
 
     const toggleSidebarResponsive = () => {
         document.getElementById('sidebar')?.classList.remove('open')
@@ -101,6 +103,10 @@ const Sidebar = () => {
                         <FileBarChart2 className="size-[18px]" />
                         <span>Reports</span>
                     </NavLink>
+                    <NavLink href="/languages" className="nav-link">
+                        <Languages className="size-[18px]" />
+                        <span>Languages</span>
+                    </NavLink>
 
                     <h3 className="mt-2.5 whitespace-nowrap rounded-lg bg-gray-400 px-5 py-2.5 text-xs font-semibold uppercase text-black">
                         Management
@@ -115,16 +121,14 @@ const Sidebar = () => {
                     </NavLink>
 
                     <h3 className="mt-2.5 whitespace-nowrap rounded-lg bg-gray-400 px-5 py-2.5 text-xs font-semibold uppercase text-black">
-                        Admin Tools
+                        System Administration
                     </h3>
-                    <NavLink href="/users" className="nav-link">
-                        <CircleUserRound className="size-[18px]" />
-                        <span>Users</span>
-                    </NavLink>
-                    <NavLink href="/languages" className="nav-link">
-                        <Languages className="size-[18px]" />
-                        <span>Languages</span>
-                    </NavLink>
+                    {role === 'ADMIN' && (
+                        <NavLink href="/users" className="nav-link">
+                            <CircleUserRound className="size-[18px]" />
+                            <span>Users</span>
+                        </NavLink>
+                    )}
                     <NavLink href="/setting" className="nav-link">
                         <Settings className="size-[18px]" />
                         <span>Settings</span>
