@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 export async function validateBookingConflicts(data: any): Promise<string[]> {
     const { trainerId, roomId, date, startTime, endTime, id } = data
