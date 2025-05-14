@@ -1,82 +1,94 @@
+// lib/validateBookingConflicts.ts
 import { prisma } from '@/lib/prisma'
+import { TrainingSession } from '@prisma/client'
+import type { Day } from '@/lib/constants'
 
-export async function validateBookingConflicts(data: any): Promise<string[]> {
-    const { trainerId, roomId, date, startTime, endTime, id } = data
-    const conflicts: string[] = []
+interface BookingInput {
+    id?: string
+    date: Date
+    startTime: Date
+    endTime: Date
+    roomId: string
+    trainerId: string
+}
 
-    const sessionDate = new Date(date)
+export async function validateBookingConflicts(
+    input: BookingInput,
+): Promise<string[]> {
+    const { id, date, startTime, endTime, roomId, trainerId } = input
+
+    const sessionDate = date.toISOString().split('T')[0] // YYYY-MM-DD
     const start = new Date(startTime)
     const end = new Date(endTime)
+    const day = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase() as Day
 
-    // 1. Fetch trainer info (including time slots)
-    const trainer = await prisma.trainer.findUnique({
-        where: { id: trainerId },
-        select: { dailyTimeSlots: true },
-    })
 
-    if (!trainer) {
-        conflicts.push('Trainer not found.')
-        return conflicts
-    }
+    const conflicts: string[] = []
 
-    const dailySlots = trainer.dailyTimeSlots as {
-        start: string
-        end: string
-    }[]
-
-    // 2. Validate the booking time fits within one of the trainer's available time slots
-    const fitsInAnySlot = dailySlots?.some((slot) => {
-        const slotStart = new Date(
-            `${sessionDate.toDateString()} ${slot.start}`,
-        )
-        const slotEnd = new Date(`${sessionDate.toDateString()} ${slot.end}`)
-        return start >= slotStart && end <= slotEnd
-    })
-
-    if (!fitsInAnySlot) {
-        conflicts.push('Trainer is not available at the selected time.')
-    }
-
-    // 3. Check overlapping sessions for the same date (excluding this session if editing)
-    const overlappingSessions = await prisma.trainingSession.findMany({
+    // 1. Room Conflict
+    const roomConflicts = await prisma.trainingSession.findMany({
         where: {
-            date: sessionDate,
-            ...(id && { NOT: { id } }),
-        },
-        orderBy: {
-            createdAt: 'desc',
+            roomId,
+            date,
+            NOT: id ? { id } : undefined,
+            OR: [
+                {
+                    startTime: { lte: end },
+                    endTime: { gte: start },
+                },
+            ],
         },
     })
 
-    for (const session of overlappingSessions) {
-        const sessionStart = new Date(session.startTime)
-        const sessionEnd = new Date(session.endTime)
-        const overlaps = start < sessionEnd && end > sessionStart
-
-        if (overlaps && session.trainerId === trainerId) {
-            conflicts.push(
-                `Trainer is already booked from ${sessionStart.toLocaleTimeString()} to ${sessionEnd.toLocaleTimeString()}.`,
-            )
-        }
-
-        if (overlaps && session.roomId === roomId) {
-            conflicts.push(
-                `Room is already booked from ${sessionStart.toLocaleTimeString()} to ${sessionEnd.toLocaleTimeString()}.`,
-            )
-        }
+    if (roomConflicts.length > 0) {
+        conflicts.push('Selected room is already booked during this time.')
     }
 
-    // 4. Check if the trainer is on leave that day
+    // 2. Trainer Conflict
+    const trainerConflicts = await prisma.trainingSession.findMany({
+        where: {
+            trainerId,
+            date,
+            NOT: id ? { id } : undefined,
+            OR: [
+                {
+                    startTime: { lte: end },
+                    endTime: { gte: start },
+                },
+            ],
+        },
+    })
+
+    if (trainerConflicts.length > 0) {
+        conflicts.push('Selected trainer is already booked during this time.')
+    }
+
+    // 3. Trainer Leave
     const leave = await prisma.trainerLeave.findFirst({
         where: {
             trainerId,
-            date: sessionDate,
+            date,
         },
     })
 
     if (leave) {
-        conflicts.push(`Trainer is on leave on ${sessionDate.toDateString()}.`)
+        conflicts.push('Trainer is on leave on the selected date.')
     }
+
+    // 4. Trainer Available Days
+    const trainer = await prisma.trainer.findUnique({
+        where: { id: trainerId },
+    })
+
+    if (trainer) {
+        const day = new Date(date)
+          .toLocaleString('en-US', { weekday: 'short' })
+          .toUpperCase() as Day 
+      
+        if (!trainer.availableDays.includes(day)) {
+          conflicts.push(`Trainer is not available on ${day}.`)
+        }
+      }
 
     return conflicts
 }

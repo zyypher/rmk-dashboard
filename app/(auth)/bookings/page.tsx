@@ -152,12 +152,23 @@ export default function BookingsPage() {
                     }
                 })
 
-                await fetch('/api/bookings', {
+                const res = await fetch('/api/bookings', {
                     method: 'POST',
                     body: formData,
-                })
-
-                toast.success('Booking created')
+                  })
+                  
+                  if (!res.ok) {
+                    const err = await res.json()
+                    if (res.status === 409 && err?.reasons) {
+                      setConflictErrors(err.reasons)
+                      setStep('error')
+                      return
+                    }
+                    throw new Error(err?.error || 'Failed to create booking')
+                  }
+                  
+                  toast.success('Booking created')
+                  
             } else {
                 // ✅ For updates, just use PUT
                 await axios.put(`/api/bookings/${bookingData.id}`, payload)

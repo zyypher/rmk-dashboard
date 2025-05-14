@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { Upload } from '@aws-sdk/lib-storage'
 import { S3Client } from '@aws-sdk/client-s3'
 import { Readable } from 'stream'
+import { validateBookingConflicts } from '@/utils/validateBookingConflicts'
 
 const BUCKET_NAME = process.env.AWS_BUCKET_NAME!
 
@@ -97,20 +98,21 @@ export async function POST(req: NextRequest) {
         }
 
              // Optional: Validation for time/location conflicts
-        // const conflictReasons = await validateBookingConflicts({
-        //     id: undefined,
-        //     trainerId: body.trainerId,
-        //     roomId: body.roomId,
-        //     date,
-        //     startTime,
-        //     endTime,
-        // })
-        // if (conflictReasons.length > 0) {
-        //     return NextResponse.json(
-        //         { error: 'Booking conflict detected', reasons: conflictReasons },
-        //         { status: 409 }
-        //     )
-        // }
+             const conflictReasons = await validateBookingConflicts({
+                id: undefined,
+                trainerId: body.trainerId,
+                roomId: body.roomId,
+                date,
+                startTime,
+                endTime,
+              })
+              
+              if (conflictReasons.length > 0) {
+                return NextResponse.json(
+                  { error: 'Booking conflict detected', reasons: conflictReasons },
+                  { status: 409 }
+                )
+              }
 
         // 1. Create the session
 
