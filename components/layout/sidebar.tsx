@@ -16,6 +16,8 @@ import {
     MonitorSmartphone,
     CalendarDays,
     FileBarChart2,
+    CalendarX,
+    LayoutGrid,
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { Card } from '@/components/ui/card'
@@ -88,13 +90,18 @@ const Sidebar = () => {
                         <span>Trainers</span>
                     </NavLink>
                     <NavLink href="/trainer-leaves" className="nav-link">
-                        <CalendarDays className="size-[18px]" />{' '}
+                        <CalendarX className="size-[18px]" />{' '}
                         <span>Trainer Leaves</span>
                     </NavLink>
                     <NavLink href="/rooms" className="nav-link">
                         <MonitorSmartphone className="size-[18px]" />
                         <span>Rooms</span>
                     </NavLink>
+                    <NavLink href="/calendar" className="nav-link">
+                        <LayoutGrid className="size-[18px]" />
+                        <span>Calendar</span>
+                    </NavLink>
+
                     <NavLink href="/bookings" className="nav-link">
                         <CalendarClock className="size-[18px]" />{' '}
                         <span>Bookings</span>

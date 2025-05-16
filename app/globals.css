@@ -89,4 +89,19 @@
     .time-picker-popper {
         z-index: 50 !important;
     }
+
+    /* calender */
+    .fc .fc-toolbar-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+      
+      .fc-event {
+        background-color: #f3f4f6 !important;
+        border: none !important;
+        color: #111827 !important;
+        padding: 2px 4px;
+        font-size: 0.75rem;
+      }
+      
 }
