@@ -31,6 +31,7 @@ const EMIRATES = [
     'Fujairah',
     'Ras Al Khaimah',
     'Umm Al Quwain',
+    'Al Ain'
 ]
 
 const LOCATION_TYPES = ['RMK', 'Client', 'Rented']

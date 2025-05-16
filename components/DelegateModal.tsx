@@ -30,32 +30,52 @@ export type DelegateForm = {
 }
 
 const delegateSchema: yup.AnyObjectSchema = yup.object({
-    name: yup.string().required('Name is required'),
+    name: yup.string().nullable().notRequired(),
+  
     emiratesId: yup
-        .string()
-        .required('Emirates ID is required')
-        .matches(/^784\d{12}$/, 'Invalid Emirates ID format'),
+      .string()
+      .nullable()
+      .notRequired()
+      .test('is-valid-emirates-id', 'Invalid Emirates ID format', (val) => {
+        if (!val) return true // allow empty
+        return /^784\d{12}$/.test(val)
+      }),
+  
     phone: yup
-        .string()
-        .required('Phone is required')
-        .matches(/^[0-9]{9,15}$/, 'Invalid phone number'),
-    email: yup.string().email('Invalid email').required('Email is required'),
+      .string()
+      .nullable()
+      .notRequired()
+      .test('is-valid-phone', 'Invalid phone number', (val) => {
+        if (!val) return true
+        return /^[0-9]{9,15}$/.test(val)
+      }),
+  
+    email: yup
+      .string()
+      .nullable()
+      .notRequired()
+      .test('is-valid-email', 'Invalid email', (val) => {
+        if (!val) return true
+        return yup.string().email().isValidSync(val)
+      }),
+  
     photo: yup
-        .mixed<File>()
-        .test('fileType', 'Invalid file type', (value) => {
-            return (
-                value === null || // allow null
-                value instanceof File // or must be a File
-            )
-        })
-        .nullable(),
+      .mixed<File>()
+      .nullable()
+      .test('fileType', 'Invalid file type', (value) => {
+        return value === null || value instanceof File
+      }),
+  
     companyName: yup.string().required('Company name is required'),
+  
     isCorporate: yup.boolean().required('Corporate type is required'),
+  
     status: yup
-        .mixed<'CONFIRMED' | 'NOT_CONFIRMED'>()
-        .oneOf(['CONFIRMED', 'NOT_CONFIRMED'], 'Status is required')
-        .required('Status is required'),
-})
+      .mixed<'CONFIRMED' | 'NOT_CONFIRMED'>()
+      .oneOf(['CONFIRMED', 'NOT_CONFIRMED'], 'Status is required')
+      .required('Status is required'),
+  })
+  
 
 interface DelegateModalProps {
     isOpen: boolean

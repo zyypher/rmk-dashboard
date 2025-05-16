@@ -241,7 +241,7 @@ export default function TrainersPage() {
                 onSubmit={handleSubmit(handleAddOrEdit)}
                 buttonLoading={formLoading}
             >
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[80vh] overflow-y-auto px-4 py-2">
                     <FloatingLabelInput
                         label="Name"
                         value={watch('name')}

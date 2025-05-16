@@ -112,25 +112,35 @@ export default function BookingModal({
         resolver: yupResolver(bookingSchema) as any,
     })
 
-    console.log('##initial', initialData)
-
     useEffect(() => {
         if (initialData) {
-          reset({
-            courseId: initialData.courseId,
-            categoryId: initialData.categoryId || '',
-            language: initialData.language,
-            locationId: initialData.locationId,
-            roomId: initialData.roomId,
-            trainerId: initialData.trainerId,
-            date: initialData.date ? new Date(initialData.date) : null,
-            startTime: initialData.startTime ? new Date(initialData.startTime) : null,
-            endTime: initialData.endTime ? new Date(initialData.endTime) : null,
-            notes: initialData.notes || '',
-          })
+            reset({
+                courseId: initialData.courseId,
+                categoryId: initialData.categoryId || '',
+                language: initialData.language,
+                locationId: initialData.locationId,
+                roomId: initialData.roomId,
+                trainerId: initialData.trainerId,
+                date: initialData.date ? new Date(initialData.date) : null,
+                startTime: initialData.startTime
+                    ? new Date(initialData.startTime)
+                    : null,
+                endTime: initialData.endTime
+                    ? new Date(initialData.endTime)
+                    : null,
+                notes: initialData.notes || '',
+            })
         }
-      }, [initialData, reset])
-      
+    }, [initialData, reset])
+
+    const selectedLocationId = watch('locationId')
+    const filteredRooms = rooms.filter(
+        (room) =>
+            room.locationId === selectedLocationId &&
+            room.capacity &&
+            room.capacity > 0,
+    )
+
     return (
         <Dialog
             isOpen={isOpen}
@@ -159,7 +169,7 @@ export default function BookingModal({
                     </SelectContent>
                 </Select>
                 {errors.courseId && (
-                    <p className="text-red-500 text-sm">
+                    <p className="text-sm text-red-500">
                         {errors.courseId.message}
                     </p>
                 )}
@@ -183,7 +193,7 @@ export default function BookingModal({
                     </SelectContent>
                 </Select>
                 {errors.categoryId && (
-                    <p className="text-red-500 text-sm">
+                    <p className="text-sm text-red-500">
                         {errors.categoryId.message}
                     </p>
                 )}
@@ -207,7 +217,7 @@ export default function BookingModal({
                     </SelectContent>
                 </Select>
                 {errors.language && (
-                    <p className="text-red-500 text-sm">
+                    <p className="text-sm text-red-500">
                         {errors.language.message}
                     </p>
                 )}
@@ -231,7 +241,7 @@ export default function BookingModal({
                     </SelectContent>
                 </Select>
                 {errors.locationId && (
-                    <p className="text-red-500 text-sm">
+                    <p className="text-sm text-red-500">
                         {errors.locationId.message}
                     </p>
                 )}
@@ -247,15 +257,21 @@ export default function BookingModal({
                         <SelectValue placeholder="Select Room" />
                     </SelectTrigger>
                     <SelectContent>
-                        {rooms.map((room) => (
-                            <SelectItem key={room.id} value={room.id}>
-                                {room.name}
-                            </SelectItem>
-                        ))}
+                        {filteredRooms.length > 0 ? (
+                            filteredRooms.map((room) => (
+                                <SelectItem key={room.id} value={room.id}>
+                                    {`${room.name} – ${room.capacity} participants – ${room.location.name}`}
+                                </SelectItem>
+                            ))
+                        ) : (
+                            <div className="px-4 py-2 text-sm text-gray-500">
+                                No rooms available for the selected location.
+                            </div>
+                        )}
                     </SelectContent>
                 </Select>
                 {errors.roomId && (
-                    <p className="text-red-500 text-sm">
+                    <p className="text-sm text-red-500">
                         {errors.roomId.message}
                     </p>
                 )}
@@ -279,7 +295,7 @@ export default function BookingModal({
                     </SelectContent>
                 </Select>
                 {errors.trainerId && (
-                    <p className="text-red-500 text-sm">
+                    <p className="text-sm text-red-500">
                         {errors.trainerId.message}
                     </p>
                 )}
@@ -296,7 +312,7 @@ export default function BookingModal({
                     )}
                 />
                 {errors.date && (
-                    <p className="text-red-500 text-sm">
+                    <p className="text-sm text-red-500">
                         {errors.date.message}
                     </p>
                 )}
@@ -315,7 +331,7 @@ export default function BookingModal({
                             )}
                         />
                         {errors.startTime && (
-                            <p className="text-red-500 text-sm">
+                            <p className="text-sm text-red-500">
                                 {errors.startTime.message}
                             </p>
                         )}
@@ -334,7 +350,7 @@ export default function BookingModal({
                             )}
                         />
                         {errors.endTime && (
-                            <p className="text-red-500 text-sm">
+                            <p className="text-sm text-red-500">
                                 {errors.endTime.message}
                             </p>
                         )}
