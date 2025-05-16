@@ -241,7 +241,7 @@ export default function TrainersPage() {
                 onSubmit={handleSubmit(handleAddOrEdit)}
                 buttonLoading={formLoading}
             >
-                <div className="space-y-4 max-h-[80vh] overflow-y-auto px-4 py-2">
+                <div className="max-h-[80vh] space-y-4 overflow-y-auto px-4 py-2">
                     <FloatingLabelInput
                         label="Name"
                         value={watch('name')}
@@ -287,14 +287,16 @@ export default function TrainersPage() {
                                 trigger('languages')
                             }}
                         >
-                            {languagesList.map((lang) => (
-                                <MultiSelectItem
-                                    key={lang.id}
-                                    value={lang.name}
-                                >
-                                    {lang.name}
-                                </MultiSelectItem>
-                            ))}
+                            {[...languagesList]
+                                .sort((a, b) => a.name.localeCompare(b.name))
+                                .map((lang) => (
+                                    <MultiSelectItem
+                                        key={lang.id}
+                                        value={lang.name}
+                                    >
+                                        {lang.name}
+                                    </MultiSelectItem>
+                                ))}
                         </MultiSelect>
                         {errors.languages && (
                             <p className="mt-1 text-sm text-red-600">
@@ -340,14 +342,16 @@ export default function TrainersPage() {
                             )}
                             onChange={(vals) => setValue('courses', vals)}
                         >
-                            {coursesList.map((course) => (
-                                <MultiSelectItem
-                                    key={course.id}
-                                    value={course.id}
-                                >
-                                    {course.title}
-                                </MultiSelectItem>
-                            ))}
+                            {[...coursesList]
+                                .sort((a, b) => a.title.localeCompare(b.title))
+                                .map((course) => (
+                                    <MultiSelectItem
+                                        key={course.id}
+                                        value={course.id}
+                                    >
+                                        {course.title}
+                                    </MultiSelectItem>
+                                ))}
                         </MultiSelect>
                         {errors.courses && (
                             <p className="mt-1 text-sm text-red-600">
