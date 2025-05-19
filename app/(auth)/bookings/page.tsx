@@ -20,6 +20,8 @@ import { Category } from '@/types/category'
 import { Location } from '@/types/location'
 import { Delegate } from '@/types/delegate'
 import { useUserRole } from '@/hooks/useUserRole'
+import { Input } from '@/components/ui/input'
+import debounce from 'lodash/debounce'
 
 export default function BookingsPage() {
     const [bookings, setBookings] = useState<Booking[]>([])
@@ -38,6 +40,8 @@ export default function BookingsPage() {
     const [selectedSeats, setSelectedSeats] = useState<string[]>([])
     const [conflictErrors, setConflictErrors] = useState<string[]>([])
     const [delegates, setDelegates] = useState<Record<string, Delegate>>({})
+    const [search, setSearch] = useState('')
+
     const role = useUserRole()
 
     useEffect(() => {
@@ -55,6 +59,26 @@ export default function BookingsPage() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const debouncedSearch = debounce(async (query: string) => {
+        try {
+            setLoading(true)
+            const res = await axios.get('/api/bookings/search', {
+                params: { q: query },
+            })
+            setBookings(res.data)
+        } catch {
+            toast.error('Failed to search bookings')
+        } finally {
+            setLoading(false)
+        }
+    }, 500)
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value
+        setSearch(val)
+        debouncedSearch(val)
     }
 
     const fetchDropdowns = async () => {
@@ -138,7 +162,7 @@ export default function BookingsPage() {
                 date: new Date(bookingData.date),
                 startTime: new Date(bookingData.startTime),
                 endTime: new Date(bookingData.endTime),
-                delegates: delegateArray.map(({ photo, ...rest }) => rest), // remove file from payload
+                delegates: delegateArray.map(({ photo, ...rest }) => rest),
             }
 
             // ✅ Only for new bookings with photos
@@ -155,20 +179,19 @@ export default function BookingsPage() {
                 const res = await fetch('/api/bookings', {
                     method: 'POST',
                     body: formData,
-                  })
-                  
-                  if (!res.ok) {
+                })
+
+                if (!res.ok) {
                     const err = await res.json()
                     if (res.status === 409 && err?.reasons) {
-                      setConflictErrors(err.reasons)
-                      setStep('error')
-                      return
+                        setConflictErrors(err.reasons)
+                        setStep('error')
+                        return
                     }
                     throw new Error(err?.error || 'Failed to create booking')
-                  }
-                  
-                  toast.success('Booking created')
-                  
+                }
+
+                toast.success('Booking created')
             } else {
                 // ✅ For updates, just use PUT
                 await axios.put(`/api/bookings/${bookingData.id}`, payload)
@@ -208,14 +231,20 @@ export default function BookingsPage() {
         <div className="space-y-6 p-6">
             <PageHeading heading="Bookings" />
 
-            {(role === 'ADMIN' || role === 'EDITOR') && (
-                <div className="flex justify-end">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <Input
+                    placeholder="Search by course, trainer, room..."
+                    value={search}
+                    onChange={handleSearchChange}
+                    className="w-full min-w-[16rem] sm:max-w-lg"
+                />
+                {(role === 'ADMIN' || role === 'EDITOR') && (
                     <Button onClick={() => setStep('form')}>
                         <Plus className="mr-2 h-4 w-4" />
                         Add Booking
                     </Button>
-                </div>
-            )}
+                )}
+            </div>
 
             <DataTable
                 columns={columns({ role, openEditDialog, confirmDelete })}

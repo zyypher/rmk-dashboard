@@ -22,6 +22,8 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { useUserRole } from '@/hooks/useUserRole'
+import debounce from 'lodash/debounce'
+import { Input } from '@/components/ui/input'
 
 const EMIRATES = [
     'Abu Dhabi',
@@ -31,7 +33,7 @@ const EMIRATES = [
     'Fujairah',
     'Ras Al Khaimah',
     'Umm Al Quwain',
-    'Al Ain'
+    'Al Ain',
 ]
 
 const LOCATION_TYPES = ['RMK', 'Client', 'Rented']
@@ -68,6 +70,8 @@ export default function LocationsPage() {
         null,
     )
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const [search, setSearch] = useState('')
+
     const role = useUserRole()
 
     const {
@@ -111,6 +115,26 @@ export default function LocationsPage() {
         setValue('zoomLink', location.zoomLink || '')
         setValue('locationType', location.locationType || '')
         setValue('deliveryApproach', location.deliveryApproach || '')
+    }
+
+    const debouncedSearch = debounce(async (query: string) => {
+        try {
+            setLoading(true)
+            const res = await axios.get('/api/locations/search', {
+                params: { q: query },
+            })
+            setLocations(res.data)
+        } catch {
+            toast.error('Failed to search locations')
+        } finally {
+            setLoading(false)
+        }
+    }, 500)
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value
+        setSearch(val)
+        debouncedSearch(val)
     }
 
     const handleAddOrEdit = async (data: any) => {
@@ -157,8 +181,14 @@ export default function LocationsPage() {
         <div className="space-y-6 p-6">
             <PageHeading heading="Locations" />
 
-            {(role === 'ADMIN' || role === 'EDITOR') && (
-                <div className="flex justify-end">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <Input
+                    placeholder="Search by location name or emirate"
+                    value={search}
+                    onChange={handleSearchChange}
+                    className="w-full min-w-[18rem] sm:max-w-lg"
+                />
+                {(role === 'ADMIN' || role === 'EDITOR') && (
                     <Button
                         onClick={() => {
                             reset()
@@ -169,8 +199,8 @@ export default function LocationsPage() {
                         <Plus className="mr-2 h-4 w-4" />
                         Add Location
                     </Button>
-                </div>
-            )}
+                )}
+            </div>
 
             <DataTable
                 columns={columns({ role, openEditDialog, confirmDelete })}

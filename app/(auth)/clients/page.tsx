@@ -15,6 +15,8 @@ import { columns } from '@/components/custom/table/clients/columns'
 import { Client } from '@/types/client'
 import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
 import { useUserRole } from '@/hooks/useUserRole'
+import debounce from 'lodash/debounce'
+import { Input } from '@/components/ui/input'
 
 const clientSchema = yup.object({
     name: yup.string().required('Name is required'),
@@ -39,6 +41,8 @@ export default function ClientsPage() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const [search, setSearch] = useState('')
+
     const role = useUserRole()
 
     const {
@@ -59,6 +63,27 @@ export default function ClientsPage() {
         },
     })
 
+    const debouncedSearch = debounce(async (query: string) => {
+        try {
+            setLoading(true)
+            const res = await axios.get('/api/clients/search', {
+                params: { q: query },
+            })
+            setClients(res.data)
+        } catch {
+            toast.error('Failed to search clients')
+        } finally {
+            setLoading(false)
+        }
+    }, 500)
+
+    // Call debounce when input changes
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value
+        setSearch(val)
+        debouncedSearch(val)
+    }
+
     const fetchClients = async () => {
         setLoading(true)
         try {
@@ -72,8 +97,22 @@ export default function ClientsPage() {
     }
 
     useEffect(() => {
-        fetchClients()
-    }, [])
+        const delayDebounce = setTimeout(() => {
+            if (search.trim()) {
+                axios
+                    .get('/api/clients/search', {
+                        params: { q: search.trim() },
+                    })
+                    .then((res) => setClients(res.data))
+                    .catch(() => toast.error('Failed to search clients'))
+                    .finally(() => setLoading(false))
+            } else {
+                fetchClients()
+            }
+        }, 500) // 500ms debounce
+
+        return () => clearTimeout(delayDebounce)
+    }, [search])
 
     const openEditDialog = (client: Client) => {
         setSelectedClient(client)
@@ -131,8 +170,15 @@ export default function ClientsPage() {
         <div className="space-y-6 p-6">
             <PageHeading heading="Clients" />
 
-            {(role === 'ADMIN' || role === 'EDITOR') && (
-                <div className="flex justify-end">
+            {/* Search Field */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <Input
+                    placeholder="Search by name, email, or phone"
+                    value={search}
+                    onChange={handleSearchChange}
+                    className="w-full sm:max-w-lg min-w-[16rem]"
+                />
+                {(role === 'ADMIN' || role === 'EDITOR') && (
                     <Button
                         onClick={() => {
                             reset()
@@ -143,8 +189,8 @@ export default function ClientsPage() {
                         <Plus className="mr-2 h-4 w-4" />
                         Add Client
                     </Button>
-                </div>
-            )}
+                )}
+            </div>
 
             <DataTable
                 columns={columns({ role, openEditDialog, confirmDelete })}

@@ -23,6 +23,8 @@ import {
 } from '@/components/ui/select'
 import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
 import { useUserRole } from '@/hooks/useUserRole'
+import debounce from 'lodash/debounce'
+import { Input } from '@/components/ui/input'
 
 const MAXIMUM_ROOM_CAPACITY = 30
 
@@ -57,6 +59,8 @@ export default function RoomsPage() {
     const [roomToDelete, setRoomToDelete] = useState<Room | null>(null)
     const [formLoading, setFormLoading] = useState(false)
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const [search, setSearch] = useState('')
+
     const role = useUserRole()
 
     const {
@@ -90,6 +94,26 @@ export default function RoomsPage() {
         } catch {
             toast.error('Failed to fetch locations')
         }
+    }
+
+    const debouncedSearch = debounce(async (query: string) => {
+        try {
+            setLoading(true)
+            const res = await axios.get('/api/rooms/search', {
+                params: { q: query },
+            })
+            setRooms(res.data)
+        } catch {
+            toast.error('Failed to search rooms')
+        } finally {
+            setLoading(false)
+        }
+    }, 500)
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value
+        setSearch(val)
+        debouncedSearch(val)
     }
 
     useEffect(() => {
@@ -154,8 +178,14 @@ export default function RoomsPage() {
         <div className="space-y-6 p-6">
             <PageHeading heading="Rooms" />
 
-            {(role === 'ADMIN' || role === 'EDITOR') && (
-                <div className="flex justify-end">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <Input
+                    placeholder="Search by room number or notes"
+                    value={search}
+                    onChange={handleSearchChange}
+                    className="w-full min-w-[16rem] sm:max-w-lg"
+                />
+                {(role === 'ADMIN' || role === 'EDITOR') && (
                     <Button
                         onClick={() => {
                             reset()
@@ -166,8 +196,8 @@ export default function RoomsPage() {
                         <Plus className="mr-2 h-4 w-4" />
                         Add Room
                     </Button>
-                </div>
-            )}
+                )}
+            </div>
 
             <DataTable
                 columns={columns({ role, openEditDialog, confirmDelete })}

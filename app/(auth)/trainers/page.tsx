@@ -17,6 +17,8 @@ import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { TimePicker } from '@/components/ui/TimePicker'
 import { useUserRole } from '@/hooks/useUserRole'
+import debounce from 'lodash/debounce'
+import { Input } from '@/components/ui/input'
 
 interface CourseOption {
     id: string
@@ -87,6 +89,8 @@ export default function TrainersPage() {
     const [trainerToDelete, setTrainerToDelete] = useState<Trainer | null>(null)
     const [formLoading, setFormLoading] = useState(false)
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const [search, setSearch] = useState('')
+
     const role = useUserRole()
 
     const {
@@ -100,6 +104,27 @@ export default function TrainersPage() {
     } = useForm({
         resolver: yupResolver(trainerSchema),
     })
+
+    const debouncedSearch = debounce(async (query: string) => {
+        try {
+            setLoading(true)
+            const res = await axios.get('/api/trainers/search', {
+                params: { q: query },
+            })
+            setTrainers(res.data)
+        } catch {
+            toast.error('Failed to search trainers')
+        } finally {
+            setLoading(false)
+        }
+    }, 500)
+
+     // Call debounce when input changes
+     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value
+        setSearch(val)
+        debouncedSearch(val)
+    }
 
     const [slots, setSlots] = useState<
         { start: Date | null; end: Date | null }[]
@@ -218,14 +243,20 @@ export default function TrainersPage() {
         <div className="space-y-6 p-6">
             <PageHeading heading="Trainers" />
 
-            {(role === 'ADMIN' || role === 'EDITOR') && (
-                <div className="flex justify-end">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <Input
+                    placeholder="Search by name, email, or phone"
+                    value={search}
+                    onChange={handleSearchChange}
+                    className="w-full min-w-[20rem] sm:max-w-lg"
+                />
+                {(role === 'ADMIN' || role === 'EDITOR') && (
                     <Button onClick={openAddDialog}>
                         <Plus className="mr-2 h-4 w-4" />
                         Add Trainer
                     </Button>
-                </div>
-            )}
+                )}
+            </div>
 
             <DataTable
                 columns={columns({ role, openEditDialog, confirmDelete })}

@@ -13,6 +13,8 @@ import { Dialog } from '@/components/ui/dialog'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
+import { Input } from '@/components/ui/input'
+import debounce from 'lodash/debounce'
 
 const userSchema = yup.object({
     email: yup.string().email('Invalid email').required('Email is required'),
@@ -35,6 +37,7 @@ const UsersPage = () => {
     const [buttonLoading, setButtonLoading] = useState(false)
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const [search, setSearch] = useState('')
 
     const {
         register,
@@ -71,6 +74,26 @@ const UsersPage = () => {
             )
         }
     }, [])
+
+    const debouncedSearch = debounce(async (query: string) => {
+        try {
+            setLoading(true)
+            const res = await api.get('/api/users/search', {
+                params: { q: query },
+            })
+            setUsers(res.data)
+        } catch {
+            toast.error('Failed to search users')
+        } finally {
+            setLoading(false)
+        }
+    }, 500)
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value
+        setSearch(value)
+        debouncedSearch(value)
+    }
 
     const fetchUsers = async () => {
         setLoading(true)
@@ -139,7 +162,13 @@ const UsersPage = () => {
     return (
         <div className="space-y-4">
             <PageHeading heading="Users" />
-            <div className="flex items-center justify-end">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <Input
+                    placeholder="Search by email or role"
+                    value={search}
+                    onChange={handleSearchChange}
+                    className="w-full min-w-[16rem] sm:max-w-lg"
+                />
                 <Button variant="black" onClick={() => setIsDialogOpen(true)}>
                     <Plus className="mr-2" />
                     Add User

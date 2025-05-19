@@ -24,6 +24,8 @@ import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { Course } from '@/types/course'
 import { useUserRole } from '@/hooks/useUserRole'
+import debounce from 'lodash/debounce'
+import { Input } from '@/components/ui/input'
 
 interface Category {
     id: string
@@ -64,6 +66,8 @@ const CoursesPage = () => {
         bookings: number
         languages: number
     } | null>(null)
+    const [search, setSearch] = useState('')
+
     const role = useUserRole()
 
     const {
@@ -79,6 +83,27 @@ const CoursesPage = () => {
     useEffect(() => {
         register('languages')
     }, [register])
+
+    const debouncedSearch = debounce(async (query: string) => {
+        try {
+            setLoading(true)
+            const res = await axios.get('/api/courses/search', {
+                params: { q: query },
+            })
+            setCourses(res.data)
+        } catch {
+            toast.error('Failed to search courses')
+        } finally {
+            setLoading(false)
+        }
+    }, 500)
+
+    // Call debounce when input changes
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value
+        setSearch(val)
+        debouncedSearch(val)
+    }
 
     const fetchCourses = async () => {
         setLoading(true)
@@ -207,15 +232,23 @@ const CoursesPage = () => {
     return (
         <div className="space-y-6 p-6">
             <PageHeading heading="Courses" />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <Input
+                    placeholder="Search courses"
+                    value={search}
+                    onChange={handleSearchChange}
+                    className="w-full min-w-[16rem] sm:max-w-lg"
+                />
 
-            {(role === 'ADMIN' || role === 'EDITOR') && (
-                <div className="flex justify-end">
-                    <Button onClick={openAddDialog}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Course
-                    </Button>
-                </div>
-            )}
+                {(role === 'ADMIN' || role === 'EDITOR') && (
+                    <div className="flex justify-end">
+                        <Button onClick={openAddDialog}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Course
+                        </Button>
+                    </div>
+                )}
+            </div>
 
             <DataTable
                 columns={columns({ role, openEditDialog, confirmDelete })}
