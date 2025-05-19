@@ -1,6 +1,4 @@
-// lib/validateBookingConflicts.ts
 import { prisma } from '@/lib/prisma'
-import { TrainingSession } from '@prisma/client'
 import type { Day } from '@/lib/constants'
 
 interface BookingInput {
@@ -17,11 +15,12 @@ export async function validateBookingConflicts(
 ): Promise<string[]> {
     const { id, date, startTime, endTime, roomId, trainerId } = input
 
-    const sessionDate = date.toISOString().split('T')[0] // YYYY-MM-DD
+    const sessionDate = new Date(date)
     const start = new Date(startTime)
     const end = new Date(endTime)
-    const day = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase() as Day
-
+    const day = sessionDate
+        .toLocaleDateString('en-US', { weekday: 'short' })
+        .toUpperCase() as Day
 
     const conflicts: string[] = []
 
@@ -29,7 +28,7 @@ export async function validateBookingConflicts(
     const roomConflicts = await prisma.trainingSession.findMany({
         where: {
             roomId,
-            date,
+            date: sessionDate,
             NOT: id ? { id } : undefined,
             OR: [
                 {
@@ -48,7 +47,7 @@ export async function validateBookingConflicts(
     const trainerConflicts = await prisma.trainingSession.findMany({
         where: {
             trainerId,
-            date,
+            date: sessionDate,
             NOT: id ? { id } : undefined,
             OR: [
                 {
@@ -63,11 +62,12 @@ export async function validateBookingConflicts(
         conflicts.push('Selected trainer is already booked during this time.')
     }
 
-    // 3. Trainer Leave
+    // 3. Trainer Leave (check if session date is within any leave's startDate to endDate)
     const leave = await prisma.trainerLeave.findFirst({
         where: {
             trainerId,
-            date,
+            startDate: { lte: sessionDate },
+            endDate: { gte: sessionDate },
         },
     })
 
@@ -80,15 +80,9 @@ export async function validateBookingConflicts(
         where: { id: trainerId },
     })
 
-    if (trainer) {
-        const day = new Date(date)
-          .toLocaleString('en-US', { weekday: 'short' })
-          .toUpperCase() as Day 
-      
-        if (!trainer.availableDays.includes(day)) {
-          conflicts.push(`Trainer is not available on ${day}.`)
-        }
-      }
+    if (trainer && !trainer.availableDays.includes(day)) {
+        conflicts.push(`Trainer is not available on ${day}.`)
+    }
 
     return conflicts
 }

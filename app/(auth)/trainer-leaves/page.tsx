@@ -22,23 +22,20 @@ import {
 import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { useUserRole } from '@/hooks/useUserRole'
+import { TrainerLeave } from '@/types/trainer-leave'
 
 interface Trainer {
     id: string
     name: string
 }
 
-interface TrainerLeave {
-    id: string
-    trainerId: string
-    trainer: { name: string }
-    date: string
-    reason?: string
-}
-
 const leaveSchema = yup.object({
     trainerId: yup.string().required('Trainer is required'),
-    date: yup.date().required('Date is required').typeError('Date is required'),
+    startDate: yup.date().required('Start date is required'),
+    endDate: yup
+        .date()
+        .required('End date is required')
+        .min(yup.ref('startDate'), 'End date must be after start date'),
     reason: yup.string().optional(),
 })
 
@@ -70,7 +67,8 @@ export default function TrainerLeavesPage() {
         resolver: yupResolver(leaveSchema),
         defaultValues: {
             trainerId: '',
-            date: undefined,
+            startDate: undefined,
+            endDate: undefined,
             reason: '',
         },
     })
@@ -105,7 +103,8 @@ export default function TrainerLeavesPage() {
         setSelectedLeave(leave)
         setDialogOpen(true)
         setValue('trainerId', leave.trainerId)
-        setValue('date', new Date(leave.date))
+        setValue('startDate', new Date(leave.startDate))
+        setValue('endDate', new Date(leave.endDate))
         setValue('reason', leave.reason || '')
     }
 
@@ -133,8 +132,10 @@ export default function TrainerLeavesPage() {
     const handleAddOrEdit = async (data: any) => {
         setFormLoading(true)
         const payload = {
-            ...data,
-            date: data.date.toISOString(),
+            trainerId: data.trainerId,
+            startDate: data.startDate.toISOString(),
+            endDate: data.endDate.toISOString(),
+            reason: data.reason,
         }
 
         try {
@@ -224,13 +225,13 @@ export default function TrainerLeavesPage() {
                         )}
                     </div>
 
-                    {/* Date Picker */}
+                    {/* Start Date Picker */}
                     <div>
                         <label className="text-sm font-medium text-gray-700">
-                            Date
+                            Start Date
                         </label>
                         <Controller
-                            name="date"
+                            name="startDate"
                             control={control}
                             render={({ field }) => (
                                 <DatePicker
@@ -239,9 +240,31 @@ export default function TrainerLeavesPage() {
                                 />
                             )}
                         />
-                        {errors.date && (
+                        {errors.startDate && (
                             <p className="text-sm text-red-600">
-                                {errors.date.message as string}
+                                {errors.startDate.message as string}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* End Date Picker */}
+                    <div>
+                        <label className="text-sm font-medium text-gray-700">
+                            End Date
+                        </label>
+                        <Controller
+                            name="endDate"
+                            control={control}
+                            render={({ field }) => (
+                                <DatePicker
+                                    date={field.value}
+                                    onChange={field.onChange}
+                                />
+                            )}
+                        />
+                        {errors.endDate && (
+                            <p className="text-sm text-red-600">
+                                {errors.endDate.message as string}
                             </p>
                         )}
                     </div>

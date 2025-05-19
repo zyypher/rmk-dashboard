@@ -1,7 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { Pencil, Trash2 } from 'lucide-react'
 import { TrainerLeave } from '@/types/trainer-leave'
-import { Role } from '@/types/roles' // Make sure you have this Role type
+import { Role } from '@/types/roles'
 
 export const columns = ({
     role,
@@ -18,9 +18,16 @@ export const columns = ({
         cell: ({ row }) => row.original.trainer.name,
     },
     {
-        accessorKey: 'date',
-        header: 'Leave Date',
-        cell: ({ row }) => new Date(row.original.date).toLocaleDateString(),
+        accessorKey: 'startDate',
+        header: 'Start Date',
+        cell: ({ row }) =>
+            new Date(row.original.startDate).toLocaleDateString(),
+    },
+    {
+        accessorKey: 'endDate',
+        header: 'End Date',
+        cell: ({ row }) =>
+            new Date(row.original.endDate).toLocaleDateString(),
     },
     {
         accessorKey: 'reason',

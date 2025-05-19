@@ -6,11 +6,15 @@ export async function PUT(
     { params }: { params: { id: string } },
 ) {
     try {
-        const data = await req.json()
+        const { startDate, endDate, reason } = await req.json()
         const updated = await prisma.trainerLeave.update({
             where: { id: params.id },
-            data,
-        })
+            data: {
+              startDate: new Date(startDate),
+              endDate: new Date(endDate),
+              reason,
+            },
+          })
         return NextResponse.json(updated)
     } catch {
         return NextResponse.json(

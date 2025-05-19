@@ -1,9 +1,8 @@
 export interface TrainerLeave {
     id: string
     trainerId: string
-    date: string
+    trainer: { name: string }
+    startDate: string
+    endDate: string
     reason?: string
-    trainer: {
-        name: string
-    }
 }

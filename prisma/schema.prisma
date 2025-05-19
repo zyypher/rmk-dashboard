@@ -64,7 +64,8 @@ model Trainer {
 model TrainerLeave {
   id        String   @id @default(uuid())
   trainerId String
-  date      DateTime
+  startDate DateTime
+  endDate   DateTime
   reason    String?
   trainer   Trainer  @relation(fields: [trainerId], references: [id])
   createdAt DateTime @default(now())
