@@ -112,6 +112,7 @@ model Client {
 model Course {
   id          String            @id @default(uuid())
   title       String
+  shortname   String?
   categoryId  String
   category    Category          @relation(fields: [categoryId], references: [id])
   languages   Language[]        @relation("CourseLanguages")

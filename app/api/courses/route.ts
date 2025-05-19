@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
   try {
     const {
       title,
+      shortname,
       duration,
       isCertified,
       isPublic,
@@ -35,6 +36,7 @@ export async function POST(req: NextRequest) {
     const course = await prisma.course.create({
       data: {
         title,
+        shortname: shortname || null,
         duration,
         isCertified,
         isPublic,

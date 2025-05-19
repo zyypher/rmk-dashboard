@@ -14,7 +14,7 @@ interface Booking {
     endTime: string
     language: string
     notes?: string
-    course: { title: string }
+    course: { title: string; shortname?: string }
     trainer?: { name: string }
     location?: { name: string }
     room?: { name: string }
@@ -41,25 +41,25 @@ export default function CalendarPage() {
         fetchBookings()
     }, [])
 
+    const formatTime = (start: string, end: string) => {
+        const formattedStart = dayjs(start).format('hh:mm A')
+        const formattedEnd = dayjs(end).format('hh:mm A')
+        return `${formattedStart} - ${formattedEnd}`
+    }
+
     const events = bookings.map((b) => ({
         id: b.id,
-        title: b.course?.title || 'Training',
+        title: b.course?.shortname || b.course?.title || 'Training',
         start: b.date,
         extendedProps: {
             language: b.language,
             trainer: b.trainer?.name,
             location: b.location?.name,
             room: b.room?.name,
-            startTime: b.startTime,
-            endTime: b.endTime,
+            timeRange: formatTime(b.startTime, b.endTime),
+            fullTitle: b.course?.title,
         },
     }))
-
-    const formatTime = (start: string, end: string) => {
-        const formattedStart = dayjs(start).format('hh:mm A')
-        const formattedEnd = dayjs(end).format('hh:mm A')
-        return `${formattedStart} - ${formattedEnd}`
-    }
 
     if (loading) {
         return (
@@ -94,20 +94,38 @@ export default function CalendarPage() {
                     events={events}
                     height="auto"
                     eventMouseEnter={(info) => {
-                        const rect = info.el.getBoundingClientRect()
-                        setHoveredEvent({
-                            title: info.event.title,
-                            language: info.event.extendedProps.language,
-                            trainer: info.event.extendedProps.trainer,
-                            location: info.event.extendedProps.location,
-                            room: info.event.extendedProps.room,
-                            time: formatTime(
-                                info.event.extendedProps.startTime,
-                                info.event.extendedProps.endTime,
-                            ),
-                            x: rect.left + window.scrollX,
-                            y: rect.top + window.scrollY + rect.height + 6,
-                        })
+                      const rect = info.el.getBoundingClientRect()
+                      const tooltipHeight = 140
+                      const tooltipWidth = 250
+                    
+                      const spaceBelow = window.innerHeight - rect.bottom
+                      const spaceAbove = rect.top
+                      const spaceRight = window.innerWidth - rect.right
+                    
+                      const preferAbove = spaceBelow < tooltipHeight && spaceAbove > tooltipHeight
+                      const preferLeft = spaceRight < tooltipWidth
+                    
+                      const top = preferAbove
+                        ? rect.top + window.scrollY - tooltipHeight - 6
+                        : rect.bottom + window.scrollY + 6
+                    
+                      const left = preferLeft
+                        ? rect.right + window.scrollX - tooltipWidth
+                        : rect.left + window.scrollX
+                    
+                      setHoveredEvent({
+                        title: info.event.title,
+                        language: info.event.extendedProps.language,
+                        trainer: info.event.extendedProps.trainer,
+                        location: info.event.extendedProps.location,
+                        room: info.event.extendedProps.room,
+                        time: formatTime(
+                          info.event.extendedProps.startTime,
+                          info.event.extendedProps.endTime
+                        ),
+                        x: left,
+                        y: top,
+                      })
                     }}
                     eventMouseLeave={() => setHoveredEvent(null)}
                     eventContent={(arg) => (

@@ -41,6 +41,7 @@ const courseSchema = yup.object({
     categoryId: yup.string().required('Category is required'),
     isCertified: yup.string().required('Certification status is required'),
     isPublic: yup.string().required('Public status is required'),
+    shortname: yup.string().notRequired(),
     languages: yup
         .array()
         .of(yup.string())
@@ -100,6 +101,7 @@ const CoursesPage = () => {
                 isCertified: selectedCourse.isCertified ? 'yes' : 'no',
                 isPublic: selectedCourse.isPublic ? 'public' : 'inhouse',
                 languages: selectedCourse.languages.map((l: any) => l.name),
+                shortname: selectedCourse.shortname || '',
             })
         }
     }, [selectedCourse, reset])
@@ -238,6 +240,14 @@ const CoursesPage = () => {
                         }
                         name="title"
                         error={errors.title?.message as string}
+                    />
+
+                    <FloatingLabelInput
+                        label="Short Name"
+                        value={watch('shortname') || ''}
+                        onChange={(val) => setValue('shortname', val)}
+                        name="shortname"
+                        error={errors.shortname?.message as string}
                     />
 
                     <FloatingLabelInput

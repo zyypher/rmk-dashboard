@@ -17,6 +17,12 @@ export const columns = ({
         header: 'Title',
     },
     {
+        accessorKey: 'shortname',
+        header: 'Short Name',
+        cell: ({ row }) => row.original.shortname || '-',
+    },
+    
+    {
         accessorKey: 'category.name',
         header: 'Category',
         cell: ({ row }) => row.original.category.name,

@@ -49,6 +49,7 @@ export async function PUT(
     try {
         const {
             title,
+            shortname,
             duration,
             isCertified,
             isPublic,
@@ -64,6 +65,7 @@ export async function PUT(
             where: { id: params.id },
             data: {
                 title,
+                shortname: shortname || null,
                 duration,
                 isCertified,
                 isPublic,
