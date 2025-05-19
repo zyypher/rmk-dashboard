@@ -17,6 +17,15 @@ import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
 import { useUserRole } from '@/hooks/useUserRole'
 import debounce from 'lodash/debounce'
 import { Input } from '@/components/ui/input'
+import * as XLSX from 'xlsx'
+
+interface ImportedClient {
+    name: string
+    phone: string
+    email?: string
+    contactPersonName?: string
+    tradeLicenseNumber?: string
+}
 
 const clientSchema = yup.object({
     name: yup.string().required('Name is required'),
@@ -166,6 +175,54 @@ export default function ClientsPage() {
         }
     }
 
+    const handleImportClients = async (
+        e: React.ChangeEvent<HTMLInputElement>,
+    ) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        const data = await file.arrayBuffer()
+        const workbook = XLSX.read(data)
+        const sheetName = workbook.SheetNames[0]
+        const sheet = workbook.Sheets[sheetName]
+        const rows = XLSX.utils.sheet_to_json(sheet)
+
+        const missingFields: string[] = []
+        const validClients: ImportedClient[] = []
+
+        rows.forEach((row: any, index: number) => {
+            if (!row.name || !row.phone) {
+                missingFields.push(`Row ${index + 2}`)
+            } else {
+                validClients.push({
+                    name: String(row.name).trim(),
+                    phone: String(row.phone).trim(),
+                    email: row.email ? String(row.email).trim() : '',
+                    contactPersonName: row.contactPersonName ? String(row.contactPersonName).trim() : '',
+                    tradeLicenseNumber: row.tradeLicenseNumber ? String(row.tradeLicenseNumber).trim() : '',
+                  })
+                  
+            }
+        })
+
+        if (missingFields.length) {
+            toast.error(
+                `Some required fields missing: ${missingFields.join(', ')}. Please correct and try again.`,
+                { duration: 6000 },
+            )
+            return
+        }
+
+        try {
+            await axios.post('/api/clients/import', validClients)
+            toast.success('Clients imported successfully')
+            fetchClients()
+          } catch (err: any) {
+            const message = err?.response?.data?.error || 'Failed to import clients'
+            toast.error(message)
+          }
+    }
+
     return (
         <div className="space-y-6 p-6">
             <PageHeading heading="Clients" />
@@ -176,20 +233,45 @@ export default function ClientsPage() {
                     placeholder="Search by name, email, or phone"
                     value={search}
                     onChange={handleSearchChange}
-                    className="w-full sm:max-w-lg min-w-[16rem]"
+                    className="w-full min-w-[16rem] sm:max-w-lg"
                 />
-                {(role === 'ADMIN' || role === 'EDITOR') && (
+                <div className="flex gap-2">
                     <Button
-                        onClick={() => {
-                            reset()
-                            setSelectedClient(null)
-                            setDialogOpen(true)
-                        }}
+                        variant="outline"
+                        onClick={() =>
+                            window.open('/sample/clients.xlsx', '_blank')
+                        }
                     >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Client
+                        Download Sample Excel
                     </Button>
-                )}
+                    <Button
+                        variant="outline"
+                        onClick={() =>
+                            document.getElementById('import-clients')?.click()
+                        }
+                    >
+                        Import Clients
+                    </Button>
+                    <input
+                        id="import-clients"
+                        type="file"
+                        accept=".xlsx,.xls"
+                        className="hidden"
+                        onChange={handleImportClients}
+                    />
+                    {(role === 'ADMIN' || role === 'EDITOR') && (
+                        <Button
+                            onClick={() => {
+                                reset()
+                                setSelectedClient(null)
+                                setDialogOpen(true)
+                            }}
+                        >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Client
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <DataTable
