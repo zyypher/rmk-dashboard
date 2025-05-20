@@ -99,15 +99,17 @@ model Room {
 }
 
 model Client {
-  id                 String   @id @default(uuid())
-  name               String
-  phone              String
-  email              String?
-  contactPersonName  String?
-  tradeLicenseNumber String?
-  delegates          Delegate[]
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                    String     @id @default(uuid())
+  name                  String
+  phone                 String
+  landline              String?
+  email                 String?
+  contactPersonName     String?
+  contactPersonPosition String?
+  tradeLicenseNumber    String?
+  delegates             Delegate[]
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
 }
 
 model Course {
@@ -153,24 +155,23 @@ model TrainingSession {
 }
 
 model Delegate {
-  id          String   @id @default(uuid())
+  id          String          @id @default(uuid())
   seatId      String
   sessionId   String
   name        String
   emiratesId  String
   phone       String
   email       String
-  clientId    String?  // ✅ Optional at first
-  client      Client?  @relation(fields: [clientId], references: [id])
+  clientId    String? // ✅ Optional at first
+  client      Client?         @relation(fields: [clientId], references: [id])
   companyName String
   isCorporate Boolean
   photoUrl    String
   status      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
   session     TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
-
 
 model PasswordResetToken {
   id        String   @id @default(uuid())

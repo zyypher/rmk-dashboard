@@ -6,7 +6,6 @@ export async function GET(req: NextRequest) {
     const query = searchParams.get('q')?.trim()
 
     if (!query) {
-        // Return all if query is empty
         const all = await prisma.client.findMany({
             orderBy: { createdAt: 'desc' },
         })
@@ -22,6 +21,13 @@ export async function GET(req: NextRequest) {
                 { contactPersonName: { contains: query, mode: 'insensitive' } },
                 {
                     tradeLicenseNumber: {
+                        contains: query,
+                        mode: 'insensitive',
+                    },
+                },
+                { landline: { contains: query, mode: 'insensitive' } },
+                {
+                    contactPersonPosition: {
                         contains: query,
                         mode: 'insensitive',
                     },

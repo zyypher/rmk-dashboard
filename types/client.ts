@@ -6,5 +6,7 @@ export interface Client {
     createdAt: string
     contactPersonName?: string
     tradeLicenseNumber?: string
+    landline?: string
+    contactPersonPosition?: string
   }
   

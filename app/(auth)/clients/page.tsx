@@ -22,8 +22,10 @@ import * as XLSX from 'xlsx'
 interface ImportedClient {
     name: string
     phone: string
+    landline?: string
     email?: string
     contactPersonName?: string
+    contactPersonPosition?: string
     tradeLicenseNumber?: string
 }
 
@@ -36,8 +38,10 @@ const clientSchema = yup.object({
             /^(\+?\d{1,3}[- ]?)?\d{10}$/,
             'Invalid phone number (must be 10 digits or include country code)',
         ),
+    landline: yup.string().optional(),
     email: yup.string().email('Invalid email').optional(),
     contactPersonName: yup.string().optional(),
+    contactPersonPosition: yup.string().optional(),
     tradeLicenseNumber: yup.string().optional(),
 })
 
@@ -66,8 +70,10 @@ export default function ClientsPage() {
         defaultValues: {
             name: '',
             phone: '',
+            landline: '',
             email: '',
             contactPersonName: '',
+            contactPersonPosition: '',
             tradeLicenseNumber: '',
         },
     })
@@ -86,7 +92,6 @@ export default function ClientsPage() {
         }
     }, 500)
 
-    // Call debounce when input changes
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value
         setSearch(val)
@@ -118,7 +123,7 @@ export default function ClientsPage() {
             } else {
                 fetchClients()
             }
-        }, 500) // 500ms debounce
+        }, 500)
 
         return () => clearTimeout(delayDebounce)
     }, [search])
@@ -127,15 +132,16 @@ export default function ClientsPage() {
         setSelectedClient(client)
         setDialogOpen(true)
         setValue('name', client.name)
-        setValue('email', client.email ?? '')
         setValue('phone', client.phone)
+        setValue('landline', client.landline ?? '')
+        setValue('email', client.email ?? '')
         setValue('contactPersonName', client.contactPersonName ?? '')
+        setValue('contactPersonPosition', client.contactPersonPosition ?? '')
         setValue('tradeLicenseNumber', client.tradeLicenseNumber ?? '')
     }
 
     const handleAddOrEdit = async (data: any) => {
         setFormLoading(true)
-
         try {
             if (selectedClient) {
                 await axios.put(`/api/clients/${selectedClient.id}`, data)
@@ -161,7 +167,6 @@ export default function ClientsPage() {
     const handleDelete = async () => {
         if (!clientToDelete) return
         setDeleteLoading(true)
-
         try {
             await axios.delete(`/api/clients/${clientToDelete.id}`)
             toast.success('Client deleted successfully')
@@ -197,11 +202,18 @@ export default function ClientsPage() {
                 validClients.push({
                     name: String(row.name).trim(),
                     phone: String(row.phone).trim(),
+                    landline: row.landline ? String(row.landline).trim() : '',
                     email: row.email ? String(row.email).trim() : '',
-                    contactPersonName: row.contactPersonName ? String(row.contactPersonName).trim() : '',
-                    tradeLicenseNumber: row.tradeLicenseNumber ? String(row.tradeLicenseNumber).trim() : '',
-                  })
-                  
+                    contactPersonName: row.contactPersonName
+                        ? String(row.contactPersonName).trim()
+                        : '',
+                    contactPersonPosition: row.contactPersonPosition
+                        ? String(row.contactPersonPosition).trim()
+                        : '',
+                    tradeLicenseNumber: row.tradeLicenseNumber
+                        ? String(row.tradeLicenseNumber).trim()
+                        : '',
+                })
             }
         })
 
@@ -217,17 +229,16 @@ export default function ClientsPage() {
             await axios.post('/api/clients/import', validClients)
             toast.success('Clients imported successfully')
             fetchClients()
-          } catch (err: any) {
-            const message = err?.response?.data?.error || 'Failed to import clients'
+        } catch (err: any) {
+            const message =
+                err?.response?.data?.error || 'Failed to import clients'
             toast.error(message)
-          }
+        }
     }
 
     return (
         <div className="space-y-6 p-6">
             <PageHeading heading="Clients" />
-
-            {/* Search Field */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <Input
                     placeholder="Search by name, email, or phone"
@@ -298,7 +309,6 @@ export default function ClientsPage() {
                         }
                         error={errors.name?.message}
                     />
-
                     <FloatingLabelInput
                         label="Contact Person Name"
                         name="contactPersonName"
@@ -306,7 +316,15 @@ export default function ClientsPage() {
                         onChange={(val) => setValue('contactPersonName', val)}
                         error={errors.contactPersonName?.message}
                     />
-
+                    <FloatingLabelInput
+                        label="Contact Person Position"
+                        name="contactPersonPosition"
+                        value={watch('contactPersonPosition')}
+                        onChange={(val) =>
+                            setValue('contactPersonPosition', val)
+                        }
+                        error={errors.contactPersonPosition?.message}
+                    />
                     <FloatingLabelInput
                         label="Phone"
                         name="phone"
@@ -316,7 +334,13 @@ export default function ClientsPage() {
                         }
                         error={errors.phone?.message}
                     />
-
+                    <FloatingLabelInput
+                        label="Landline (optional)"
+                        name="landline"
+                        value={watch('landline')}
+                        onChange={(val) => setValue('landline', val)}
+                        error={errors.landline?.message}
+                    />
                     <FloatingLabelInput
                         label="Email (optional)"
                         name="email"
@@ -324,7 +348,6 @@ export default function ClientsPage() {
                         onChange={(val) => setValue('email', val)}
                         error={errors.email?.message}
                     />
-
                     <FloatingLabelInput
                         label="Trade License Number (optional)"
                         name="tradeLicenseNumber"

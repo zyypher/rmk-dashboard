@@ -8,7 +8,7 @@ export const columns = ({
   openEditDialog,
   confirmDelete,
 }: {
-  role: Role,
+  role: Role
   openEditDialog: (client: Client) => void
   confirmDelete: (client: Client) => void
 }): ColumnDef<Client>[] => [
@@ -22,8 +22,18 @@ export const columns = ({
     cell: ({ row }) => row.original.contactPersonName || '-',
   },
   {
+    accessorKey: 'contactPersonPosition',
+    header: 'Contact Person Position',
+    cell: ({ row }) => row.original.contactPersonPosition || '-',
+  },
+  {
     accessorKey: 'phone',
     header: 'Phone',
+  },
+  {
+    accessorKey: 'landline',
+    header: 'Landline',
+    cell: ({ row }) => row.original.landline || '-',
   },
   {
     accessorKey: 'email',
