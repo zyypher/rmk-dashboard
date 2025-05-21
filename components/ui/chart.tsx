@@ -79,8 +79,9 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return (
         <style
             dangerouslySetInnerHTML={{
-                __html: Object.entries(THEMES).map(
-                    ([theme, prefix]) => `
+                __html: Object.entries(THEMES)
+                    .map(([theme, prefix]) => {
+                        return `
 ${prefix} [data-chart=${id}] {
 ${colorConfig
     .map(([key, itemConfig]) => {
@@ -89,10 +90,12 @@ ${colorConfig
             itemConfig.color
         return color ? `  --color-${key}: ${color};` : null
     })
+    .filter(Boolean) // to remove nulls
     .join('\n')}
 }
-`,
-                ),
+`
+                    })
+                    .join(''), // ✅ Flatten array to a single string
             }}
         />
     )

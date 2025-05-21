@@ -11,6 +11,7 @@ import AttendantSheetModal from './AttendantSheetModal'
 import DelegateModal from './DelegateModal'
 import { uploadToS3 } from '@/lib/s3'
 import axios from 'axios'
+import { Booking } from '@/types/booking'
 
 interface SeatSelectionModalProps {
     isOpen: boolean
@@ -22,6 +23,7 @@ interface SeatSelectionModalProps {
     onConfirm: (seats: string[]) => void
     delegates: Record<string, Delegate>
     setDelegates: React.Dispatch<React.SetStateAction<Record<string, Delegate>>>
+    booking: Booking
 }
 
 interface ClientOption {
@@ -41,6 +43,7 @@ export default function SeatSelectionModal({
     onConfirm,
     delegates,
     setDelegates,
+    booking, // ✅ you missed this
 }: SeatSelectionModalProps) {
     const [capacity, setCapacity] = useState(0)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -281,6 +284,19 @@ export default function SeatSelectionModal({
                     onClose={() => setShowSheet(false)}
                     delegates={delegates}
                     large
+                    bookingInfo={{
+                        course: booking?.course?.title || '—',
+                        trainer: booking?.trainer?.name || '—',
+                        date: booking?.date
+                            ? new Date(booking.date).toLocaleDateString('en-GB')
+                            : '—',
+                        time:
+                            booking?.startTime && booking?.endTime
+                                ? `${new Date(booking.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(booking.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                : '—',
+                        venue: booking?.location?.name || '—',
+                        language: booking?.language || '—',
+                    }}
                 />
             </div>
         </Dialog>

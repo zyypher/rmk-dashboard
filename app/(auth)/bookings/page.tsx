@@ -44,6 +44,13 @@ export default function BookingsPage() {
 
     const role = useUserRole()
 
+    console.log('##b courses', courses)
+    console.log('##b bookings', bookings)
+    console.log('##b locations', locations)
+    console.log('##b rooms', rooms)
+    console.log('##b trainers', trainers)
+    console.log('##b bookingData', bookingData)
+
     useEffect(() => {
         fetchBookings()
         fetchDropdowns()
@@ -103,15 +110,35 @@ export default function BookingsPage() {
     }
 
     const openEditDialog = async (booking: Booking) => {
-        setSelectedBooking(booking)
+        // Wait until dropdowns are loaded
+        if (
+            !courses.length ||
+            !trainers.length ||
+            !locations.length ||
+            !rooms.length
+        ) {
+            await fetchDropdowns()
+        }
+
+        // Enrich with actual objects
         setBookingData({
-            ...booking, // ✅ includes `id`, needed for edit check
-            room: rooms.find((r) => r.id === booking.roomId) || null,
+            ...booking,
+            course:
+                courses.find((c) => c.id === booking.courseId) ||
+                booking.course,
+            trainer:
+                trainers.find((t) => t.id === booking.trainerId) ||
+                booking.trainer,
+            location:
+                locations.find((l) => l.id === booking.locationId) ||
+                booking.location,
+            room: rooms.find((r) => r.id === booking.roomId) || booking.room,
         })
+
         setSelectedSeats(booking.selectedSeats || [])
-        setDelegates({}) // optional reset
-        // Open modal immediately
+        setDelegates({})
         setStep('form')
+
         try {
             const res = await axios.get(`/api/bookings/${booking.id}/delegates`)
             const delegateMap: Record<string, Delegate> = {}
@@ -138,18 +165,19 @@ export default function BookingsPage() {
     }
 
     const handleNextStep = (data: any) => {
-        const selectedRoom = rooms.find((r) => r.id === data.roomId)
-        setBookingData({ ...data, room: selectedRoom })
-
-        if (!data.trainerId) {
-            toast.error('Trainer is required')
-            return
+        const enrichedData = {
+            ...data,
+            id: bookingData?.id, // preserve booking ID
+            course: courses.find((c) => c.id === data.courseId) || bookingData?.course,
+            trainer: trainers.find((t) => t.id === data.trainerId) || bookingData?.trainer,
+            location: locations.find((l) => l.id === data.locationId) || bookingData?.location,
+            room: rooms.find((r) => r.id === data.roomId) || bookingData?.room,
         }
-
-        const preservedId = bookingData?.id // ✅ carry over the ID
-        setBookingData({ ...data, room: selectedRoom, id: preservedId }) // ✅ include `id` again
+    
+        setBookingData(enrichedData)
         setStep('seats')
     }
+    
 
     const handleFinalSubmit = async (seats: string[]) => {
         try {
@@ -300,6 +328,7 @@ export default function BookingsPage() {
                     onConfirm={handleFinalSubmit}
                     delegates={delegates}
                     setDelegates={setDelegates}
+                    booking={bookingData}
                 />
             )}
 
