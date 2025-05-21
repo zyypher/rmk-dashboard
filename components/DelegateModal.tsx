@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 
 export type DelegateForm = {
@@ -25,7 +24,7 @@ export type DelegateForm = {
     phone: string
     email: string
     photo: File | null
-    companyName: string
+    companyName?: string
     isCorporate: boolean
     status: 'CONFIRMED' | 'NOT_CONFIRMED'
     quotation?: string
@@ -76,7 +75,7 @@ const schema: yup.AnyObjectSchema = yup.object({
         .test('fileType', 'Invalid file type', (value) => {
             return value === null || value instanceof File
         }),
-    companyName: yup.string().required('Company name is required'),
+    companyName: yup.string().optional(),
     isCorporate: yup.boolean().required('Corporate type is required'),
     status: yup
         .mixed<'CONFIRMED' | 'NOT_CONFIRMED'>()
@@ -301,9 +300,9 @@ export default function AddDelegateModal({
                     </p>
                 )}
 
-                <Textarea
+                <Input
                     {...register('quotation')}
-                    placeholder="Quotation / Notes"
+                    placeholder="Quotation"
                 />
                 <div className="flex items-center space-x-2">
                     <Checkbox id="paid" {...register('paid')} />

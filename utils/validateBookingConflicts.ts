@@ -29,13 +29,9 @@ export async function validateBookingConflicts(
         where: {
             roomId,
             date: sessionDate,
-            NOT: id ? { id } : undefined,
-            OR: [
-                {
-                    startTime: { lte: end },
-                    endTime: { gte: start },
-                },
-            ],
+            ...(id && { NOT: { id } }), // ✅ Exclude current session in edit mode
+            startTime: { lte: end },
+            endTime: { gte: start },
         },
     })
 
@@ -48,13 +44,9 @@ export async function validateBookingConflicts(
         where: {
             trainerId,
             date: sessionDate,
-            NOT: id ? { id } : undefined,
-            OR: [
-                {
-                    startTime: { lte: end },
-                    endTime: { gte: start },
-                },
-            ],
+            ...(id && { NOT: { id } }), // ✅ Same for trainer conflict
+            startTime: { lte: end },
+            endTime: { gte: start },
         },
     })
 
@@ -62,7 +54,7 @@ export async function validateBookingConflicts(
         conflicts.push('Selected trainer is already booked during this time.')
     }
 
-    // 3. Trainer Leave (check if session date is within any leave's startDate to endDate)
+    // 3. Trainer Leave
     const leave = await prisma.trainerLeave.findFirst({
         where: {
             trainerId,

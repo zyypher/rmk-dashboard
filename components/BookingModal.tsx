@@ -116,7 +116,10 @@ export default function BookingModal({
         if (initialData) {
             reset({
                 courseId: initialData.courseId,
-                categoryId: initialData.course?.categoryId || '',
+                categoryId:
+                    initialData.course?.categoryId ||
+                    initialData?.categoryId ||
+                    '',
                 language: initialData.language,
                 locationId: initialData.locationId,
                 roomId: initialData.roomId,

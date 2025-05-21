@@ -104,9 +104,12 @@ export default function BookingsPage() {
 
     const openEditDialog = async (booking: Booking) => {
         setSelectedBooking(booking)
-        setBookingData(booking)
+        setBookingData({
+            ...booking, // ✅ includes `id`, needed for edit check
+            room: rooms.find((r) => r.id === booking.roomId) || null,
+        })
         setSelectedSeats(booking.selectedSeats || [])
-        setDelegates({}) // optional reset for safety
+        setDelegates({}) // optional reset
         // Open modal immediately
         setStep('form')
         try {
@@ -136,13 +139,15 @@ export default function BookingsPage() {
 
     const handleNextStep = (data: any) => {
         const selectedRoom = rooms.find((r) => r.id === data.roomId)
+        setBookingData({ ...data, room: selectedRoom })
 
         if (!data.trainerId) {
             toast.error('Trainer is required')
             return
         }
 
-        setBookingData({ ...data, room: selectedRoom })
+        const preservedId = bookingData?.id // ✅ carry over the ID
+        setBookingData({ ...data, room: selectedRoom, id: preservedId }) // ✅ include `id` again
         setStep('seats')
     }
 
@@ -164,9 +169,11 @@ export default function BookingsPage() {
                 endTime: new Date(bookingData.endTime),
                 delegates: delegateArray.map(({ photo, ...rest }) => rest),
             }
+            console.log('##bookingdata', bookingData)
+            const isEditing = !!bookingData?.id
 
             // ✅ Only for new bookings with photos
-            if (!bookingData?.id) {
+            if (!isEditing) {
                 const formData = new FormData()
                 formData.append('data', JSON.stringify(payload))
 
@@ -194,7 +201,20 @@ export default function BookingsPage() {
                 toast.success('Booking created')
             } else {
                 // ✅ For updates, just use PUT
-                await axios.put(`/api/bookings/${bookingData.id}`, payload)
+                const formData = new FormData()
+                formData.append('data', JSON.stringify(payload))
+
+                delegateArray.forEach((d) => {
+                    if (d.photo && typeof d.photo !== 'string') {
+                        formData.append(d.seatId, d.photo)
+                    }
+                })
+
+                await fetch(`/api/bookings/${bookingData.id}`, {
+                    method: 'PUT',
+                    body: formData,
+                })
+
                 toast.success('Booking updated')
             }
 
