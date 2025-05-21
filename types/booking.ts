@@ -1,4 +1,4 @@
-import { Delegate } from './delegate'
+import { Delegate } from "./delegate"
 
 export interface Booking {
   id: string
@@ -17,6 +17,7 @@ export interface Booking {
 
   course: {
     title: string
+    shortname?: string // ✅ add this
     trainers: { name: string }[]
     category?: {
       name: string
@@ -25,6 +26,7 @@ export interface Booking {
 
   room: {
     name: string
+    capacity?: number // ✅ add this
   }
 
   trainer: {

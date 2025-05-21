@@ -68,6 +68,7 @@
         "react-hot-toast": "^2.5.2",
         "react-quill": "^2.0.0",
         "react-time-picker": "^7.0.0",
+        "react-tooltip": "^5.28.1",
         "recharts": "^2.12.7",
         "sonner": "^1.5.0",
         "sortablejs": "^1.15.2",

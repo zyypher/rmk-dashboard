@@ -62,6 +62,7 @@ export async function GET() {
                 room: true,
                 trainer: true,
                 location: true,
+                delegates: true,
             },
         })
 
