@@ -173,13 +173,36 @@ export default function AddDelegateModal({
 
     useEffect(() => {
         if (initialData) {
-            reset({ ...initialData, photo: null })
+            reset({
+                ...initialData,
+                photo: null,
+                addNewClient: initialData.addNewClient ?? false,
+                clientId: initialData.clientId ?? '',
+                newClient: initialData.newClient ?? undefined,
+            })
             setPhotoPreviewUrl(initialData.photoUrl ?? null)
         } else {
-            reset()
+            reset({
+                name: '',
+                emiratesId: '',
+                phone: '',
+                email: '',
+                photo: null,
+                companyName: '',
+                isCorporate: false,
+                status: 'NOT_CONFIRMED',
+                quotation: '',
+                paid: false,
+                addNewClient: false,
+                clientId: '',
+                newClient: undefined,
+            })
             setPhotoPreviewUrl(null)
         }
-    }, [initialData, reset])
+    }, [initialData, seatId, reset]) // <-- Include seatId in deps
+
+    console.log('##👀 clientOptions:', clientOptions)
+    console.log('##📌 initialData.clientId:', initialData?.clientId)
 
     const handleFormSubmit: SubmitHandler<DelegateForm> = async (data) => {
         setIsSubmitting(true)
@@ -202,6 +225,7 @@ export default function AddDelegateModal({
             key={seatId}
         >
             <form
+                key={seatId}
                 onSubmit={handleSubmit(handleFormSubmit)}
                 className="max-h-[90vh] space-y-4 overflow-y-auto p-4"
             >
@@ -380,7 +404,11 @@ export default function AddDelegateModal({
                                 <Select
                                     disabled={addNewClient}
                                     value={field.value}
-                                    onValueChange={field.onChange}
+                                    onValueChange={(val) => {
+                                        field.onChange(val)
+                                        const client = clientOptions.find(c => c.id === val)
+                                        setSelectedClient(client ?? null)
+                                      }}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select Client" />

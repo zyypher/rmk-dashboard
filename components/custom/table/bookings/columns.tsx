@@ -93,24 +93,6 @@ export const columns = ({
             ),
     },
     {
-        accessorKey: 'quotation',
-        header: 'Quotation',
-        cell: ({ row }) =>
-            row.original.delegates?.[0]?.quotation ?? (
-                <span className="italic text-gray-400">—</span>
-            ),
-    },
-    {
-        accessorKey: 'paid',
-        header: 'Paid',
-        cell: ({ row }) =>
-            row.original.delegates?.some((d) => d.paid) ? (
-                <span className="text-green-600 font-medium">Yes</span>
-            ) : (
-                <span className="text-red-500 font-medium">No</span>
-            ),
-    },
-    {
         id: 'actions',
         header: 'Actions',
         cell: ({ row }) => {

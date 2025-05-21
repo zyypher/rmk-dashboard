@@ -52,18 +52,17 @@ export default function SeatSelectionModal({
     console.log('## 🪑 activeSeat:', activeSeat)
     console.log('## 🎯 selectedSeats before:', selectedSeats)
 
-
     useEffect(() => {
         if (room?.capacity) setCapacity(room.capacity)
     }, [room])
 
     useEffect(() => {
         async function fetchClients() {
-          const res = await axios.get('/api/clients')
-          setClientOptions(res.data)
+            const res = await axios.get('/api/clients')
+            setClientOptions(res.data)
         }
         fetchClients()
-      }, [])
+    }, [])
 
     const toggleSeat = (seat: string) => {
         setActiveSeat(seat)
@@ -171,7 +170,7 @@ export default function SeatSelectionModal({
                 </div>
 
                 <DelegateModal
-                    key="delegate-modal"
+                    key={activeSeat}
                     isOpen={delegateModalOpen}
                     onClose={() => {
                         setDelegateModalOpen(false)
@@ -180,31 +179,52 @@ export default function SeatSelectionModal({
                     seatId={activeSeat || ''}
                     initialData={
                         activeSeat && delegates[activeSeat]
-                          ? {
-                              name: delegates[activeSeat].name,
-                              emiratesId: delegates[activeSeat].emiratesId,
-                              phone: delegates[activeSeat].phone,
-                              email: delegates[activeSeat].email,
-                              photo: null,
-                              companyName: delegates[activeSeat].companyName,
-                              isCorporate: delegates[activeSeat].isCorporate,
-                              status: delegates[activeSeat].status,
-                              photoUrl: delegates[activeSeat].photoUrl,
-                              addNewClient: false, // ✅ Required field added
-                              quotation: '',       // optional but you can include it
-                              paid: false,         // optional but safe to include
-                            }
-                          : undefined
-                      }
-                      clientOptions={clientOptions}
-                      
-                      onSave={async (formData) => {
+                            ? {
+                                  name: delegates[activeSeat].name,
+                                  emiratesId: delegates[activeSeat].emiratesId,
+                                  phone: delegates[activeSeat].phone,
+                                  email: delegates[activeSeat].email,
+                                  photo: null,
+                                  companyName:
+                                      delegates[activeSeat].companyName,
+                                  isCorporate:
+                                      delegates[activeSeat].isCorporate,
+                                  status: delegates[activeSeat].status,
+                                  photoUrl: delegates[activeSeat].photoUrl,
+                                  quotation: delegates[activeSeat].quotation,
+                                  paid: delegates[activeSeat].paid,
+                                  addNewClient:
+                                      delegates[activeSeat].addNewClient ??
+                                      false,
+                                  clientId:
+                                      delegates[activeSeat].clientId ?? '',
+                                  newClient:
+                                      delegates[activeSeat].newClient ??
+                                      undefined,
+                              }
+                            : undefined
+                    }
+                    clientOptions={clientOptions}
+                    onSave={async (formData) => {
                         if (!activeSeat) return
-                        console.log('## ✅ DelegateModal onSave called with:', formData)
+                        console.log(
+                            '## ✅ DelegateModal onSave called with:',
+                            formData,
+                        )
 
                         const seatId = activeSeat
                         if (!seatId) return
-                    
+
+                        if (formData.addNewClient && formData.newClient) {
+                            const res = await axios.post(
+                                '/api/clients',
+                                formData.newClient,
+                            )
+                            formData.clientId = res.data.id
+                            const newClient = res.data
+                            setClientOptions((prev) => [...prev, newClient])
+                            formData.clientId = newClient.id
+                        }
 
                         let photoUrl = delegates[activeSeat]?.photoUrl ?? ''
                         if (formData.photo) {
@@ -229,24 +249,26 @@ export default function SeatSelectionModal({
                             updatedAt: new Date(),
                             session: {} as any,
                             photo: '',
-                            clientId: formData.clientId || undefined,
-                            newClient: formData.addNewClient ? formData.newClient : undefined,
-                          }
-                          
-                          
-                        
+                            clientId: formData.clientId,
+                            newClient: undefined,
+                        }
 
-                          setDelegates((prev) => {
-                            console.log('## 🧠 Setting delegates for', activeSeat)
+                        setDelegates((prev) => {
+                            console.log(
+                                '## 🧠 Setting delegates for',
+                                activeSeat,
+                            )
                             return {
-                              ...prev,
-                              [activeSeat]: delegate,
+                                ...prev,
+                                [activeSeat]: delegate,
                             }
-                          })
-                          
+                        })
 
                         if (!selectedSeats.includes(activeSeat)) {
-                            console.log('## ➕ Adding seat to selectedSeats:', activeSeat)
+                            console.log(
+                                '## ➕ Adding seat to selectedSeats:',
+                                activeSeat,
+                            )
                             onSeatChange([...selectedSeats, activeSeat])
                         }
 

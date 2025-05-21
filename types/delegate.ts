@@ -19,6 +19,7 @@ export interface Delegate {
 
   // ✅ Add these fields:
   clientId?: string
+  addNewClient?: boolean
   newClient?: {
     name: string
     phone?: string
