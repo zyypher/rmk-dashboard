@@ -50,26 +50,29 @@ async function uploadPhoto(photo: File, seatId: string) {
 
 export async function GET() {
     try {
-      const sessions = await prisma.trainingSession.findMany({
-        orderBy: {
-          createdAt: 'desc',
-        },
-        include: {
-          course: { include: { trainers: true } },
-          room: true,
-          trainer: true,
-        },
-      })
-  
-      return NextResponse.json(sessions)
+        const sessions = await prisma.trainingSession.findMany({
+            orderBy: { createdAt: 'desc' },
+            include: {
+                course: {
+                    include: {
+                        trainers: true,
+                        category: true,
+                    },
+                },
+                room: true,
+                trainer: true,
+                location: true,
+            },
+        })
+
+        return NextResponse.json(sessions)
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Failed to fetch sessions' },
-        { status: 500 },
-      )
+        return NextResponse.json(
+            { error: 'Failed to fetch sessions' },
+            { status: 500 },
+        )
     }
-  }
-  
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -97,22 +100,25 @@ export async function POST(req: NextRequest) {
             )
         }
 
-             // Optional: Validation for time/location conflicts
-             const conflictReasons = await validateBookingConflicts({
-                id: undefined,
-                trainerId: body.trainerId,
-                roomId: body.roomId,
-                date,
-                startTime,
-                endTime,
-              })
-              
-              if (conflictReasons.length > 0) {
-                return NextResponse.json(
-                  { error: 'Booking conflict detected', reasons: conflictReasons },
-                  { status: 409 }
-                )
-              }
+        // Optional: Validation for time/location conflicts
+        const conflictReasons = await validateBookingConflicts({
+            id: undefined,
+            trainerId: body.trainerId,
+            roomId: body.roomId,
+            date,
+            startTime,
+            endTime,
+        })
+
+        if (conflictReasons.length > 0) {
+            return NextResponse.json(
+                {
+                    error: 'Booking conflict detected',
+                    reasons: conflictReasons,
+                },
+                { status: 409 },
+            )
+        }
 
         // 1. Create the session
 
@@ -135,6 +141,19 @@ export async function POST(req: NextRequest) {
         if (body.delegates?.length) {
             const delegateData = await Promise.all(
                 body.delegates.map(async (d: any) => {
+                    let clientId = d.clientId
+
+                    // 1. Create new client if needed
+                    if (d.addNewClient && d.newClient) {
+                        const client = await prisma.client.create({
+                            data: {
+                                ...d.newClient,
+                            },
+                        })
+                        clientId = client.id
+                    }
+
+                    // 2. Upload photo if provided
                     let photoUrl = d.photoUrl
                     const photoFile = formData.get(d.seatId) as File | null
                     if (photoFile) {
@@ -150,8 +169,11 @@ export async function POST(req: NextRequest) {
                         email: d.email,
                         companyName: d.companyName,
                         isCorporate: d.isCorporate,
-                        photoUrl,
                         status: d.status,
+                        quotation: d.quotation ?? '',
+                        paid: d.paid ?? false,
+                        photoUrl,
+                        clientId,
                         createdAt: new Date(),
                         updatedAt: new Date(),
                     }

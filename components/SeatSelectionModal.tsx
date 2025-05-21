@@ -8,8 +8,9 @@ import clsx from 'clsx'
 import { Room } from '@/types/room'
 import { Delegate } from '@/types/delegate'
 import AttendantSheetModal from './AttendantSheetModal'
-import DelegateModal, { DelegateForm } from './DelegateModal'
+import DelegateModal from './DelegateModal'
 import { uploadToS3 } from '@/lib/s3'
+import axios from 'axios'
 
 interface SeatSelectionModalProps {
     isOpen: boolean
@@ -21,6 +22,13 @@ interface SeatSelectionModalProps {
     onConfirm: (seats: string[]) => void
     delegates: Record<string, Delegate>
     setDelegates: React.Dispatch<React.SetStateAction<Record<string, Delegate>>>
+}
+
+interface ClientOption {
+    id: string
+    name: string
+    tradeLicenseNumber?: string
+    landline?: string
 }
 
 export default function SeatSelectionModal({
@@ -39,10 +47,23 @@ export default function SeatSelectionModal({
     const [showSheet, setShowSheet] = useState(false)
     const [delegateModalOpen, setDelegateModalOpen] = useState(false)
     const [activeSeat, setActiveSeat] = useState<string | null>(null)
+    const [clientOptions, setClientOptions] = useState<ClientOption[]>([])
+
+    console.log('## 🪑 activeSeat:', activeSeat)
+    console.log('## 🎯 selectedSeats before:', selectedSeats)
+
 
     useEffect(() => {
         if (room?.capacity) setCapacity(room.capacity)
     }, [room])
+
+    useEffect(() => {
+        async function fetchClients() {
+          const res = await axios.get('/api/clients')
+          setClientOptions(res.data)
+        }
+        fetchClients()
+      }, [])
 
     const toggleSeat = (seat: string) => {
         setActiveSeat(seat)
@@ -150,7 +171,7 @@ export default function SeatSelectionModal({
                 </div>
 
                 <DelegateModal
-                    key={activeSeat}
+                    key="delegate-modal"
                     isOpen={delegateModalOpen}
                     onClose={() => {
                         setDelegateModalOpen(false)
@@ -159,23 +180,31 @@ export default function SeatSelectionModal({
                     seatId={activeSeat || ''}
                     initialData={
                         activeSeat && delegates[activeSeat]
-                            ? {
-                                  name: delegates[activeSeat].name,
-                                  emiratesId: delegates[activeSeat].emiratesId,
-                                  phone: delegates[activeSeat].phone,
-                                  email: delegates[activeSeat].email,
-                                  photo: null,
-                                  companyName:
-                                      delegates[activeSeat].companyName,
-                                  isCorporate:
-                                      delegates[activeSeat].isCorporate,
-                                  status: delegates[activeSeat].status,
-                                  photoUrl: delegates[activeSeat].photoUrl,
-                              }
-                            : undefined
-                    }
-                    onSave={async (formData) => {
+                          ? {
+                              name: delegates[activeSeat].name,
+                              emiratesId: delegates[activeSeat].emiratesId,
+                              phone: delegates[activeSeat].phone,
+                              email: delegates[activeSeat].email,
+                              photo: null,
+                              companyName: delegates[activeSeat].companyName,
+                              isCorporate: delegates[activeSeat].isCorporate,
+                              status: delegates[activeSeat].status,
+                              photoUrl: delegates[activeSeat].photoUrl,
+                              addNewClient: false, // ✅ Required field added
+                              quotation: '',       // optional but you can include it
+                              paid: false,         // optional but safe to include
+                            }
+                          : undefined
+                      }
+                      clientOptions={clientOptions}
+                      
+                      onSave={async (formData) => {
                         if (!activeSeat) return
+                        console.log('## ✅ DelegateModal onSave called with:', formData)
+
+                        const seatId = activeSeat
+                        if (!seatId) return
+                    
 
                         let photoUrl = delegates[activeSeat]?.photoUrl ?? ''
                         if (formData.photo) {
@@ -185,27 +214,39 @@ export default function SeatSelectionModal({
                         const delegate: Delegate = {
                             id: '',
                             sessionId: '',
-                            name: formData.name,
-                            emiratesId: formData.emiratesId,
-                            phone: formData.phone,
-                            email: formData.email,
-                            companyName: formData.companyName,
+                            seatId,
+                            name: formData.name || '',
+                            emiratesId: formData.emiratesId || '',
+                            phone: formData.phone || '',
+                            email: formData.email || '',
+                            companyName: formData.companyName || '',
                             isCorporate: formData.isCorporate,
                             status: formData.status,
                             photoUrl,
+                            quotation: formData.quotation || '',
+                            paid: formData.paid ?? false,
                             createdAt: new Date(),
                             updatedAt: new Date(),
                             session: {} as any,
                             photo: '',
-                            seatId: activeSeat,
-                        }
+                            clientId: formData.clientId || undefined,
+                            newClient: formData.addNewClient ? formData.newClient : undefined,
+                          }
+                          
+                          
+                        
 
-                        setDelegates((prev) => ({
-                            ...prev,
-                            [activeSeat]: delegate,
-                        }))
+                          setDelegates((prev) => {
+                            console.log('## 🧠 Setting delegates for', activeSeat)
+                            return {
+                              ...prev,
+                              [activeSeat]: delegate,
+                            }
+                          })
+                          
 
                         if (!selectedSeats.includes(activeSeat)) {
+                            console.log('## ➕ Adding seat to selectedSeats:', activeSeat)
                             onSeatChange([...selectedSeats, activeSeat])
                         }
 

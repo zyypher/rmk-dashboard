@@ -50,22 +50,38 @@ export async function PUT(
         await prisma.delegate.deleteMany({ where: { sessionId: params.id } })
 
         if (delegates.length > 0) {
-            await prisma.delegate.createMany({
-                data: delegates.map((d: any) => ({
-                    sessionId: params.id,
-                    seatId: d.seatId,
-                    name: d.name,
-                    emiratesId: d.emiratesId,
-                    phone: d.phone,
-                    email: d.email,
-                    companyName: d.companyName,
-                    isCorporate: d.isCorporate,
-                    photoUrl: d.photoUrl,
-                    status: d.status,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                })),
-            })
+            const delegateData = await Promise.all(
+                delegates.map(async (d: any) => {
+                    let clientId = d.clientId
+
+                    // Create new client if necessary
+                    if (d.addNewClient && d.newClient) {
+                        const client = await prisma.client.create({
+                            data: { ...d.newClient },
+                        })
+                        clientId = client.id
+                    }
+
+                    return {
+                        sessionId: params.id,
+                        seatId: d.seatId,
+                        name: d.name,
+                        emiratesId: d.emiratesId,
+                        phone: d.phone,
+                        email: d.email,
+                        companyName: d.companyName,
+                        isCorporate: d.isCorporate,
+                        status: d.status,
+                        photoUrl: d.photoUrl,
+                        paid: d.paid ?? false,
+                        quotation: d.quotation ?? '',
+                        clientId,
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                    }
+                }),
+            )
+            await prisma.delegate.createMany({ data: delegateData })
         }
 
         return NextResponse.json(updated)

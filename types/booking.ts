@@ -14,15 +14,26 @@ export interface Booking {
   participants?: number
   notes?: string
   selectedSeats?: any[]
+
   course: {
     title: string
     trainers: { name: string }[]
+    category?: {
+      name: string
+    }
   }
+
   room: {
     name: string
   }
+
   trainer: {
     name: string
   }
-  delegates: Delegate[] 
+
+  location?: {
+    name: string
+  }
+
+  delegates: Delegate[]
 }

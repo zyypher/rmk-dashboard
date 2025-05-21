@@ -162,12 +162,14 @@ model Delegate {
   emiratesId  String
   phone       String
   email       String
-  clientId    String? // ✅ Optional at first
+  clientId    String?
   client      Client?         @relation(fields: [clientId], references: [id])
   companyName String
   isCorporate Boolean
   photoUrl    String
   status      String
+  quotation   String?
+  paid        Boolean?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   session     TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)

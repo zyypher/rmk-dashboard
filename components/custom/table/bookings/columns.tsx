@@ -21,10 +21,26 @@ export const columns = ({
             ),
     },
     {
-        accessorKey: 'trainer.name',
-        header: 'Trainer',
+        accessorKey: 'course.category.name',
+        header: 'Category',
         cell: ({ row }) =>
-            row.original.trainer?.name ?? (
+            row.original.course?.category?.name ?? (
+                <span className="italic text-gray-400">N/A</span>
+            ),
+    },
+    {
+        accessorKey: 'language',
+        header: 'Language',
+        cell: ({ row }) =>
+            row.original.language ?? (
+                <span className="italic text-gray-400">N/A</span>
+            ),
+    },
+    {
+        accessorKey: 'location.name',
+        header: 'Location',
+        cell: ({ row }) =>
+            row.original.location?.name ?? (
                 <span className="italic text-gray-400">N/A</span>
             ),
     },
@@ -37,9 +53,18 @@ export const columns = ({
             ),
     },
     {
+        accessorKey: 'trainer.name',
+        header: 'Trainer',
+        cell: ({ row }) =>
+            row.original.trainer?.name ?? (
+                <span className="italic text-gray-400">N/A</span>
+            ),
+    },
+    {
         accessorKey: 'date',
         header: 'Date',
-        cell: ({ row }) => new Date(row.original.date).toLocaleDateString(),
+        cell: ({ row }) =>
+            new Date(row.original.date).toLocaleDateString(),
     },
     {
         accessorKey: 'startTime',
@@ -60,14 +85,6 @@ export const columns = ({
             }),
     },
     {
-        accessorKey: 'language',
-        header: 'Language',
-        cell: ({ row }) =>
-            row.original.language ?? (
-                <span className="italic text-gray-400">N/A</span>
-            ),
-    },
-    {
         accessorKey: 'notes',
         header: 'Notes',
         cell: ({ row }) =>
@@ -76,17 +93,33 @@ export const columns = ({
             ),
     },
     {
+        accessorKey: 'quotation',
+        header: 'Quotation',
+        cell: ({ row }) =>
+            row.original.delegates?.[0]?.quotation ?? (
+                <span className="italic text-gray-400">—</span>
+            ),
+    },
+    {
+        accessorKey: 'paid',
+        header: 'Paid',
+        cell: ({ row }) =>
+            row.original.delegates?.some((d) => d.paid) ? (
+                <span className="text-green-600 font-medium">Yes</span>
+            ) : (
+                <span className="text-red-500 font-medium">No</span>
+            ),
+    },
+    {
         id: 'actions',
         header: 'Actions',
         cell: ({ row }) => {
-            console.log('##role', role)
             const booking = row.original
 
-            if (role === 'VIEWER') return null // ❌ No actions
+            if (role === 'VIEWER') return null
 
             return (
                 <div className="flex gap-2">
-                    {/* ✏️ Edit allowed for both ADMIN and EDITOR */}
                     <button
                         className="text-blue-600 hover:text-blue-800"
                         onClick={() => openEditDialog(booking)}
@@ -94,7 +127,6 @@ export const columns = ({
                         <Pencil className="h-4 w-4" />
                     </button>
 
-                    {/* 🗑️ Delete only for ADMIN */}
                     {role === 'ADMIN' && (
                         <button
                             className="text-red-500 hover:text-red-700"
