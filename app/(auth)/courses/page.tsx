@@ -153,6 +153,18 @@ const CoursesPage = () => {
         setSelectedCourse(null)
         reset()
         setDialogOpen(true)
+        // Delay reset so it runs after the modal and RHF form mount
+        setTimeout(() => {
+            reset({
+                title: '',
+                shortname: '',
+                duration: '',
+                categoryId: '',
+                isCertified: 'yes',
+                isPublic: 'public',
+                languages: [],
+            })
+        }, 0)
     }
 
     const openEditDialog = (course: Course) => {

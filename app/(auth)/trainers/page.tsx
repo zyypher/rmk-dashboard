@@ -75,7 +75,7 @@ const trainerSchema = yup.object({
                 end: yup.date().typeError('End time is required').required(),
             }),
         )
-        .min(1, 'At least one time slot is required'),
+        //.min(1, 'At least one time slot is required'),
 })
 
 export default function TrainersPage() {

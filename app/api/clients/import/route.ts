@@ -13,16 +13,16 @@ export async function POST(req: NextRequest) {
 
         const parsed = clients.map((c: any, i: number) => {
             const row = i + 2
-            if (!c.name || !c.phone) {
+            if (!c.name || !c.phone || !c.email) {
                 throw new Error(
-                    `Row ${row}: Missing required fields (name or phone)`,
+                    `Row ${row}: Missing required fields (name, phone, or email)`,
                 )
             }
 
             return {
                 name: String(c.name).trim(),
                 phone: String(c.phone).trim(),
-                email: c.email ? String(c.email).trim() : '',
+                email: String(c.email).trim(),
                 contactPersonName: c.contactPersonName
                     ? String(c.contactPersonName).trim()
                     : '',
@@ -35,6 +35,29 @@ export async function POST(req: NextRequest) {
                     : '',
             }
         })
+
+        // Check for existing email conflicts
+        const emails = parsed.map((c) => c.email)
+        const existingClients = await prisma.client.findMany({
+            where: { email: { in: emails } },
+            select: { email: true },
+        })
+
+        if (existingClients.length > 0) {
+            const existingEmails = existingClients
+                .map((c) => c.email)
+                .filter((email): email is string => !!email)
+        
+            const uniqueEmails = Array.from(new Set(existingEmails))
+        
+            return NextResponse.json(
+                {
+                    error: `The following email(s) already exist: ${uniqueEmails.join(', ')}`,
+                },
+                { status: 400 },
+            )
+        }
+        
 
         await prisma.client.createMany({
             data: parsed,

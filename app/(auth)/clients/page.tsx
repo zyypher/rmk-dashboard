@@ -23,7 +23,7 @@ interface ImportedClient {
     name: string
     phone: string
     landline?: string
-    email?: string
+    email: string
     contactPersonName?: string
     contactPersonPosition?: string
     tradeLicenseNumber?: string
@@ -38,8 +38,8 @@ const clientSchema = yup.object({
             /^(\+?\d{1,3}[- ]?)?\d{10}$/,
             'Invalid phone number (must be 10 digits or include country code)',
         ),
+    email: yup.string().email('Invalid email').required('Email is required'),
     landline: yup.string().optional(),
-    email: yup.string().email('Invalid email').optional(),
     contactPersonName: yup.string().optional(),
     contactPersonPosition: yup.string().optional(),
     tradeLicenseNumber: yup.string().optional(),
@@ -50,6 +50,7 @@ export default function ClientsPage() {
     const [loading, setLoading] = useState(true)
     const [dialogOpen, setDialogOpen] = useState(false)
     const [formLoading, setFormLoading] = useState(false)
+    const [importing, setImporting] = useState(false)
     const [selectedClient, setSelectedClient] = useState<Client | null>(null)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
@@ -186,6 +187,7 @@ export default function ClientsPage() {
         const file = e.target.files?.[0]
         if (!file) return
 
+        setImporting(true)
         const data = await file.arrayBuffer()
         const workbook = XLSX.read(data)
         const sheetName = workbook.SheetNames[0]
@@ -196,14 +198,15 @@ export default function ClientsPage() {
         const validClients: ImportedClient[] = []
 
         rows.forEach((row: any, index: number) => {
-            if (!row.name || !row.phone) {
-                missingFields.push(`Row ${index + 2}`)
+            const rowNumber = index + 2
+            if (!row.name || !row.phone || !row.email) {
+                missingFields.push(`Row ${rowNumber}`)
             } else {
                 validClients.push({
                     name: String(row.name).trim(),
                     phone: String(row.phone).trim(),
+                    email: String(row.email).trim(),
                     landline: row.landline ? String(row.landline).trim() : '',
-                    email: row.email ? String(row.email).trim() : '',
                     contactPersonName: row.contactPersonName
                         ? String(row.contactPersonName).trim()
                         : '',
@@ -218,8 +221,9 @@ export default function ClientsPage() {
         })
 
         if (missingFields.length) {
+            setImporting(false)
             toast.error(
-                `Some required fields missing: ${missingFields.join(', ')}. Please correct and try again.`,
+                `Missing required fields in: ${missingFields.join(', ')}`,
                 { duration: 6000 },
             )
             return
@@ -230,9 +234,9 @@ export default function ClientsPage() {
             toast.success('Clients imported successfully')
             fetchClients()
         } catch (err: any) {
-            const message =
-                err?.response?.data?.error || 'Failed to import clients'
-            toast.error(message)
+            toast.error(err?.response?.data?.error || 'Import failed')
+        } finally {
+            setImporting(false)
         }
     }
 
@@ -260,8 +264,9 @@ export default function ClientsPage() {
                         onClick={() =>
                             document.getElementById('import-clients')?.click()
                         }
+                        disabled={importing}
                     >
-                        Import Clients
+                        {importing ? 'Importing...' : 'Import Clients'}
                     </Button>
                     <input
                         id="import-clients"
@@ -342,7 +347,7 @@ export default function ClientsPage() {
                         error={errors.landline?.message}
                     />
                     <FloatingLabelInput
-                        label="Email (optional)"
+                        label="Email"
                         name="email"
                         value={watch('email')}
                         onChange={(val) => setValue('email', val)}
