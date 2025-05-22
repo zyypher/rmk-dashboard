@@ -18,6 +18,7 @@ import {
     FileBarChart2,
     CalendarX,
     LayoutGrid,
+    UserRound
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { Card } from '@/components/ui/card'
@@ -106,6 +107,11 @@ const Sidebar = () => {
                         <CalendarClock className="size-[18px]" />{' '}
                         <span>Bookings</span>
                     </NavLink>
+                    <NavLink href="/delegates" className="nav-link">
+                        <Users2 className="size-[18px]" />
+                        <span>Delegates</span>
+                    </NavLink>
+
                     <NavLink href="/reports" className="nav-link">
                         <FileBarChart2 className="size-[18px]" />
                         <span>Reports</span>
@@ -119,7 +125,7 @@ const Sidebar = () => {
                         Management
                     </h3>
                     <NavLink href="/clients" className="nav-link">
-                        <Users2 className="size-[18px]" />
+                        <UserRound className="size-[18px]" />
                         <span>Clients</span>
                     </NavLink>
                     <NavLink href="/locations" className="nav-link">
