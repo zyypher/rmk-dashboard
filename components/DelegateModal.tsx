@@ -59,7 +59,7 @@ const schema: yup.AnyObjectSchema = yup.object({
         .notRequired()
         .test('is-valid-phone', 'Invalid phone number', (val) => {
             if (!val) return true
-            return /^[0-9]{9,15}$/.test(val)
+            return /^\+?[0-9]{9,15}$/.test(val)
         }),
     email: yup
         .string()
@@ -300,10 +300,7 @@ export default function AddDelegateModal({
                     </p>
                 )}
 
-                <Input
-                    {...register('quotation')}
-                    placeholder="Quotation"
-                />
+                <Input {...register('quotation')} placeholder="Quotation" />
                 <div className="flex items-center space-x-2">
                     <Checkbox id="paid" {...register('paid')} />
                     <Label htmlFor="paid">Paid</Label>
@@ -405,9 +402,11 @@ export default function AddDelegateModal({
                                     value={field.value}
                                     onValueChange={(val) => {
                                         field.onChange(val)
-                                        const client = clientOptions.find(c => c.id === val)
+                                        const client = clientOptions.find(
+                                            (c) => c.id === val,
+                                        )
                                         setSelectedClient(client ?? null)
-                                      }}
+                                    }}
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select Client" />

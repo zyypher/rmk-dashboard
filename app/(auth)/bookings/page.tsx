@@ -41,6 +41,7 @@ export default function BookingsPage() {
     const [conflictErrors, setConflictErrors] = useState<string[]>([])
     const [delegates, setDelegates] = useState<Record<string, Delegate>>({})
     const [search, setSearch] = useState('')
+    const [deleteLoading, setDeleteLoading] = useState(false)
 
     const role = useUserRole()
 
@@ -262,6 +263,7 @@ export default function BookingsPage() {
 
     const handleDelete = async () => {
         if (!bookingToDelete) return
+        setDeleteLoading(true)
 
         try {
             await axios.delete(`/api/bookings/${bookingToDelete.id}`)
@@ -270,6 +272,7 @@ export default function BookingsPage() {
         } catch {
             toast.error('Failed to delete booking')
         } finally {
+            setDeleteLoading(false)
             setDeleteDialogOpen(false)
             setBookingToDelete(null)
         }
@@ -356,7 +359,7 @@ export default function BookingsPage() {
                 onClose={() => setDeleteDialogOpen(false)}
                 title="Delete Booking"
                 onSubmit={handleDelete}
-                buttonLoading={false}
+                buttonLoading={deleteLoading}
             >
                 <p className="text-sm">
                     Are you sure you want to delete{' '}

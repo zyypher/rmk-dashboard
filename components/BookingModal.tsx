@@ -260,7 +260,7 @@ export default function BookingModal({
                         <SelectValue placeholder="Select Room" />
                     </SelectTrigger>
                     <SelectContent>
-                        {filteredRooms.length > 0 ? (
+                    {filteredRooms.length > 0 ? (
                             filteredRooms.map((room) => (
                                 <SelectItem key={room.id} value={room.id}>
                                     {`${room.name} – ${room.capacity} participants – ${room.location.name}`}

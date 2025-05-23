@@ -38,13 +38,20 @@ export async function PUT(
         const updated = await prisma.trainingSession.update({
             where: { id: params.id },
             data: {
-                ...cleaned,
                 date,
                 startTime,
                 endTime,
                 participants: cleaned.selectedSeats?.length || 0,
                 selectedSeats: cleaned.selectedSeats ?? [],
-            },
+                notes: cleaned.notes ?? '',
+                language: cleaned.language ?? '',
+                course: { connect: { id: cleaned.courseId || course?.id } },
+                trainer: { connect: { id: cleaned.trainerId || trainer?.id } },
+                room: { connect: { id: cleaned.roomId || room?.id } },
+                location: cleaned.locationId
+                    ? { connect: { id: cleaned.locationId } }
+                    : undefined,
+            },            
         })
 
         await prisma.delegate.deleteMany({ where: { sessionId: params.id } })
