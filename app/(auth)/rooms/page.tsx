@@ -60,6 +60,8 @@ export default function RoomsPage() {
     const [formLoading, setFormLoading] = useState(false)
     const [deleteLoading, setDeleteLoading] = useState(false)
     const [search, setSearch] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
 
     const role = useUserRole()
 
@@ -75,11 +77,14 @@ export default function RoomsPage() {
         resolver: yupResolver(roomSchema),
     })
 
-    const fetchRooms = async () => {
+    const fetchRooms = async (page = 1, pageSize = 10) => {
         setLoading(true)
         try {
-            const res = await axios.get('/api/rooms')
-            setRooms(res.data)
+            const res = await axios.get('/api/rooms', {
+                params: { page, pageSize },
+            })
+            setRooms(res.data.rooms)
+            setTotalPages(res.data.totalPages)
         } catch {
             toast.error('Failed to fetch rooms')
         } finally {
@@ -117,9 +122,13 @@ export default function RoomsPage() {
     }
 
     useEffect(() => {
-        fetchRooms()
+        fetchRooms(currentPage)
         fetchLocations()
-    }, [])
+    }, [currentPage])
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page)
+    }
 
     const openEditDialog = (room: Room) => {
         setSelectedRoom(room)
@@ -204,6 +213,10 @@ export default function RoomsPage() {
                 data={rooms}
                 filterField="name"
                 loading={loading}
+                manualPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
             />
 
             <Dialog

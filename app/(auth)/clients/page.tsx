@@ -56,6 +56,8 @@ export default function ClientsPage() {
     const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
     const [deleteLoading, setDeleteLoading] = useState(false)
     const [search, setSearch] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
 
     const role = useUserRole()
 
@@ -99,16 +101,23 @@ export default function ClientsPage() {
         debouncedSearch(val)
     }
 
-    const fetchClients = async () => {
+    const fetchClients = async (page = 1, pageSize = 10) => {
         setLoading(true)
         try {
-            const res = await axios.get('/api/clients')
-            setClients(res.data)
+            const res = await axios.get('/api/clients', {
+                params: { page, pageSize },
+            })
+            setClients(res.data.clients)
+            setTotalPages(res.data.totalPages)
         } catch {
             toast.error('Failed to fetch clients')
         } finally {
             setLoading(false)
         }
+    }
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page)
     }
 
     useEffect(() => {
@@ -180,6 +189,10 @@ export default function ClientsPage() {
             setClientToDelete(null)
         }
     }
+
+    useEffect(() => {
+        fetchClients(currentPage)
+    }, [currentPage])
 
     const handleImportClients = async (
         e: React.ChangeEvent<HTMLInputElement>,
@@ -295,6 +308,10 @@ export default function ClientsPage() {
                 data={clients}
                 filterField="name"
                 loading={loading}
+                manualPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
             />
 
             <Dialog

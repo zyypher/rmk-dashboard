@@ -53,6 +53,9 @@ export default function TrainerLeavesPage() {
     const [leaveToDelete, setLeaveToDelete] = useState<TrainerLeave | null>(
         null,
     )
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+
     const role = useUserRole()
 
     const {
@@ -73,11 +76,14 @@ export default function TrainerLeavesPage() {
         },
     })
 
-    const fetchLeaves = async () => {
+    const fetchLeaves = async (page = 1, pageSize = 10) => {
         setLoading(true)
         try {
-            const res = await axios.get('/api/trainer-leaves')
-            setLeaves(res.data)
+            const res = await axios.get('/api/trainer-leaves', {
+                params: { page, pageSize },
+            })
+            setLeaves(res.data.leaves)
+            setTotalPages(res.data.totalPages)
         } catch {
             toast.error('Failed to fetch trainer leaves')
         } finally {
@@ -95,9 +101,13 @@ export default function TrainerLeavesPage() {
     }
 
     useEffect(() => {
-        fetchLeaves()
+        fetchLeaves(currentPage)
         fetchTrainers()
-    }, [])
+    }, [currentPage])
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page)
+    }
 
     const openEditDialog = (leave: TrainerLeave) => {
         setSelectedLeave(leave)
@@ -181,6 +191,10 @@ export default function TrainerLeavesPage() {
                 data={leaves}
                 filterField="trainer.name"
                 loading={loading}
+                manualPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
             />
 
             {/* Create/Edit Dialog */}

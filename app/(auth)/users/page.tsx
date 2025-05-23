@@ -38,6 +38,8 @@ const UsersPage = () => {
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
     const [deleteLoading, setDeleteLoading] = useState(false)
     const [search, setSearch] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
 
     const {
         register,
@@ -75,6 +77,14 @@ const UsersPage = () => {
         }
     }, [])
 
+    useEffect(() => {
+        fetchUsers(currentPage)
+    }, [currentPage])
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page)
+    }
+
     const debouncedSearch = debounce(async (query: string) => {
         try {
             setLoading(true)
@@ -95,11 +105,14 @@ const UsersPage = () => {
         debouncedSearch(value)
     }
 
-    const fetchUsers = async () => {
+    const fetchUsers = async (page = 1, pageSize = 10) => {
         setLoading(true)
         try {
-            const response = await api.get('/api/users')
-            setUsers(response.data)
+            const response = await api.get('/api/users', {
+                params: { page, pageSize },
+            })
+            setUsers(response.data.users)
+            setTotalPages(response.data.totalPages)
         } catch (error) {
             toast.error('Failed to load users')
         } finally {
@@ -180,6 +193,10 @@ const UsersPage = () => {
                 data={users}
                 filterField="email"
                 loading={loading}
+                manualPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
             />
 
             {/* Add/Edit User Dialog */}

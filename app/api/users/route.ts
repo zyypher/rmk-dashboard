@@ -4,18 +4,24 @@ import sendEmail from '@/app/api/auth/sendEmail'
 
 export async function GET(req: NextRequest) {
     try {
-        const users = await prisma.user.findMany({
-            orderBy: {
-                createdAt: 'desc',
-            },
-        })
-        return NextResponse.json(users)
+        const { searchParams } = new URL(req.url)
+        const page = parseInt(searchParams.get('page') || '1', 10)
+        const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
+
+        const [users, totalCount] = await Promise.all([
+            prisma.user.findMany({
+                skip: (page - 1) * pageSize,
+                take: pageSize,
+                orderBy: { createdAt: 'desc' },
+            }),
+            prisma.user.count(),
+        ])
+
+        const totalPages = Math.ceil(totalCount / pageSize)
+        return NextResponse.json({ users, totalPages })
     } catch (error) {
         console.error('Error fetching users:', error)
-        return NextResponse.json(
-            { error: 'Failed to fetch users' },
-            { status: 500 },
-        )
+        return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
     }
 }
 

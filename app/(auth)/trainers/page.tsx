@@ -64,18 +64,13 @@ const trainerSchema = yup.object({
         .array()
         .of(yup.string())
         .min(1, 'At least one course is required'),
-    dailyTimeSlots: yup
-        .array()
-        .of(
-            yup.object({
-                start: yup
-                    .date()
-                    .typeError('Start time is required')
-                    .required(),
-                end: yup.date().typeError('End time is required').required(),
-            }),
-        )
-        //.min(1, 'At least one time slot is required'),
+    dailyTimeSlots: yup.array().of(
+        yup.object({
+            start: yup.date().typeError('Start time is required').required(),
+            end: yup.date().typeError('End time is required').required(),
+        }),
+    ),
+    //.min(1, 'At least one time slot is required'),
 })
 
 export default function TrainersPage() {
@@ -90,6 +85,8 @@ export default function TrainersPage() {
     const [formLoading, setFormLoading] = useState(false)
     const [deleteLoading, setDeleteLoading] = useState(false)
     const [search, setSearch] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
 
     const role = useUserRole()
 
@@ -119,8 +116,8 @@ export default function TrainersPage() {
         }
     }, 500)
 
-     // Call debounce when input changes
-     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Call debounce when input changes
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value
         setSearch(val)
         debouncedSearch(val)
@@ -130,11 +127,14 @@ export default function TrainersPage() {
         { start: Date | null; end: Date | null }[]
     >([])
 
-    const fetchTrainers = async () => {
+    const fetchTrainers = async (page = 1, pageSize = 10) => {
         setLoading(true)
         try {
-            const res = await axios.get('/api/trainers')
-            setTrainers(res.data)
+            const res = await axios.get('/api/trainers', {
+                params: { page, pageSize },
+            })
+            setTrainers(res.data.trainers)
+            setTotalPages(res.data.totalPages)
         } catch {
             toast.error('Failed to fetch trainers')
         } finally {
@@ -161,10 +161,14 @@ export default function TrainersPage() {
     }
 
     useEffect(() => {
-        fetchTrainers()
+        fetchTrainers(currentPage)
         fetchLanguages()
         fetchCourses()
-    }, [])
+    }, [currentPage])
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page)
+    }
 
     const openAddDialog = () => {
         setSelectedTrainer(null)
@@ -263,6 +267,10 @@ export default function TrainersPage() {
                 data={trainers}
                 filterField="name"
                 loading={loading}
+                manualPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
             />
 
             <Dialog
@@ -373,16 +381,19 @@ export default function TrainersPage() {
                             )}
                             onChange={(vals) => setValue('courses', vals)}
                         >
-                            {[...coursesList]
-                                .sort((a, b) => a.title.localeCompare(b.title))
-                                .map((course) => (
-                                    <MultiSelectItem
-                                        key={course.id}
-                                        value={course.id}
-                                    >
-                                        {course.title}
-                                    </MultiSelectItem>
-                                ))}
+                            {Array.isArray(coursesList) &&
+                                [...coursesList]
+                                    .sort((a, b) =>
+                                        a.title.localeCompare(b.title),
+                                    )
+                                    .map((course) => (
+                                        <MultiSelectItem
+                                            key={course.id}
+                                            value={course.id}
+                                        >
+                                            {course.title}
+                                        </MultiSelectItem>
+                                    ))}
                         </MultiSelect>
                         {errors.courses && (
                             <p className="mt-1 text-sm text-red-600">

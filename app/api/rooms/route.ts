@@ -1,15 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
-        const rooms = await prisma.room.findMany({
-            include: { location: true },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        })
-        return NextResponse.json(rooms)
+        const { searchParams } = new URL(req.url)
+        const page = parseInt(searchParams.get('page') || '1', 10)
+        const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
+
+        const [rooms, totalCount] = await Promise.all([
+            prisma.room.findMany({
+                skip: (page - 1) * pageSize,
+                take: pageSize,
+                include: { location: true },
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            }),
+            prisma.room.count(),
+        ])
+
+        const totalPages = Math.ceil(totalCount / pageSize)
+
+        return NextResponse.json({ rooms, totalPages })
     } catch (error) {
         console.error('GET /api/rooms error:', error)
         return NextResponse.json(

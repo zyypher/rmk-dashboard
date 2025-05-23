@@ -48,25 +48,33 @@ async function uploadPhoto(photo: File, seatId: string) {
     return `https://${BUCKET_NAME}.s3.amazonaws.com/${key}`
 }
 
-export async function GET() {
-    try {
-        const sessions = await prisma.trainingSession.findMany({
-            orderBy: { createdAt: 'desc' },
-            include: {
-                course: {
-                    include: {
-                        trainers: true,
-                        category: true,
-                    },
-                },
-                room: true,
-                trainer: true,
-                location: true,
-                delegates: true,
-            },
-        })
+export async function GET(req: NextRequest) {
+    const { searchParams } = new URL(req.url)
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
+    const skip = (page - 1) * pageSize
 
-        return NextResponse.json(sessions)
+    try {
+        const [sessions, total] = await Promise.all([
+            prisma.trainingSession.findMany({
+                skip,
+                take: pageSize,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    course: { include: { trainers: true, category: true } },
+                    room: true,
+                    trainer: true,
+                    location: true,
+                    delegates: true,
+                },
+            }),
+            prisma.trainingSession.count(),
+        ])
+
+        return NextResponse.json({
+            bookings: sessions,
+            totalPages: Math.ceil(total / pageSize),
+        })
     } catch (error) {
         return NextResponse.json(
             { error: 'Failed to fetch sessions' },

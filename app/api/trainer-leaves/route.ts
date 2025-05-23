@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
-        const leaves = await prisma.trainerLeave.findMany({
-            include: { trainer: true },
-            orderBy: { startDate: 'desc' },
-        })
-        return NextResponse.json(leaves)
+        const { searchParams } = new URL(req.url)
+        const page = parseInt(searchParams.get('page') || '1', 10)
+        const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
+
+        const [leaves, totalCount] = await Promise.all([
+            prisma.trainerLeave.findMany({
+                skip: (page - 1) * pageSize,
+                take: pageSize,
+                include: { trainer: true },
+                orderBy: { startDate: 'desc' },
+            }),
+            prisma.trainerLeave.count(),
+        ])
+
+        const totalPages = Math.ceil(totalCount / pageSize)
+
+        return NextResponse.json({ leaves, totalPages })
     } catch {
         return NextResponse.json(
             { error: 'Failed to fetch leaves' },

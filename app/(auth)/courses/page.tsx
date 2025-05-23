@@ -67,6 +67,8 @@ const CoursesPage = () => {
         languages: number
     } | null>(null)
     const [search, setSearch] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
 
     const role = useUserRole()
 
@@ -105,11 +107,14 @@ const CoursesPage = () => {
         debouncedSearch(val)
     }
 
-    const fetchCourses = async () => {
+    const fetchCourses = async (page = 1, pageSize = 10) => {
         setLoading(true)
         try {
-            const res = await axios.get('/api/courses')
-            setCourses(res.data)
+            const res = await axios.get('/api/courses', {
+                params: { page, pageSize },
+            })
+            setCourses(res.data.courses)
+            setTotalPages(res.data.totalPages)
         } catch {
             toast.error('Failed to fetch courses')
         } finally {
@@ -144,10 +149,19 @@ const CoursesPage = () => {
         }
     }
 
+    // Fetch only once for dropdowns
     useEffect(() => {
-        fetchCourses()
         fetchDropdowns()
     }, [])
+
+    // Fetch courses whenever page changes
+    useEffect(() => {
+        fetchCourses(currentPage)
+    }, [currentPage])
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page)
+    }
 
     const openAddDialog = () => {
         setSelectedCourse(null)
@@ -267,6 +281,10 @@ const CoursesPage = () => {
                 data={courses}
                 filterField="title"
                 loading={loading}
+                manualPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
             />
 
             <Dialog

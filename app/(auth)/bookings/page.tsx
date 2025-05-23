@@ -42,26 +42,29 @@ export default function BookingsPage() {
     const [delegates, setDelegates] = useState<Record<string, Delegate>>({})
     const [search, setSearch] = useState('')
     const [deleteLoading, setDeleteLoading] = useState(false)
+    const [totalPages, setTotalPages] = useState(1)
+    const [currentPage, setCurrentPage] = useState(1)
 
     const role = useUserRole()
 
-    console.log('##b courses', courses)
-    console.log('##b bookings', bookings)
-    console.log('##b locations', locations)
-    console.log('##b rooms', rooms)
-    console.log('##b trainers', trainers)
-    console.log('##b bookingData', bookingData)
-
+    // Fetch only once for dropdowns
     useEffect(() => {
-        fetchBookings()
         fetchDropdowns()
     }, [])
 
-    const fetchBookings = async () => {
+    // Fetch bookings whenever page changes
+    useEffect(() => {
+        fetchBookings(currentPage)
+    }, [currentPage])
+
+    const fetchBookings = async (page = 1, pageSize = 10) => {
         setLoading(true)
         try {
-            const res = await axios.get('/api/bookings')
-            setBookings(res.data)
+            const res = await axios.get('/api/bookings', {
+                params: { page, pageSize },
+            })
+            setBookings(res.data.bookings)
+            setTotalPages(res.data.totalPages)
         } catch {
             toast.error('Failed to fetch bookings')
         } finally {
@@ -168,17 +171,22 @@ export default function BookingsPage() {
     const handleNextStep = (data: any) => {
         const enrichedData = {
             ...data,
-            id: bookingData?.id, // preserve booking ID
-            course: courses.find((c) => c.id === data.courseId) || bookingData?.course,
-            trainer: trainers.find((t) => t.id === data.trainerId) || bookingData?.trainer,
-            location: locations.find((l) => l.id === data.locationId) || bookingData?.location,
+            id: bookingData?.id,
+            course:
+                courses.find((c) => c.id === data.courseId) ||
+                bookingData?.course,
+            trainer:
+                trainers.find((t) => t.id === data.trainerId) ||
+                bookingData?.trainer,
+            location:
+                locations.find((l) => l.id === data.locationId) ||
+                bookingData?.location,
             room: rooms.find((r) => r.id === data.roomId) || bookingData?.room,
         }
-    
+
         setBookingData(enrichedData)
         setStep('seats')
     }
-    
 
     const handleFinalSubmit = async (seats: string[]) => {
         try {
@@ -302,6 +310,13 @@ export default function BookingsPage() {
                 data={bookings}
                 filterField="course.title"
                 loading={loading}
+                manualPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => {
+                    setCurrentPage(page)
+                    fetchBookings(page)
+                }}
             />
 
             {step === 'form' && (

@@ -6,7 +6,6 @@ import {
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
-    getPaginationRowModel,
     getSortedRowModel,
     SortingState,
     useReactTable,
@@ -25,8 +24,8 @@ import {
 import React, { useEffect } from 'react'
 import { InputSearch } from '@/components/ui/input-search'
 import { createPortal } from 'react-dom'
-import PaginationTable from '@/components/custom/pagination-table'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
 
 interface DataTableProps<TData extends { id: string; status?: string }> {
     columns: ColumnDef<TData>[]
@@ -38,6 +37,10 @@ interface DataTableProps<TData extends { id: string; status?: string }> {
     isAllRowKey?: string
     loading?: boolean
     rowSelectionCallback?: (selectedIds: string[]) => void
+    manualPagination?: boolean
+    currentPage?: number
+    totalPages?: number
+    onPageChange?: (page: number) => void
 }
 
 export function DataTable<TData extends { id: string; status?: string }>({
@@ -50,6 +53,10 @@ export function DataTable<TData extends { id: string; status?: string }>({
     isAllRowKey,
     loading = false,
     rowSelectionCallback,
+    manualPagination = false,
+    currentPage = 1,
+    totalPages = 1,
+    onPageChange,
 }: DataTableProps<TData>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] =
@@ -66,7 +73,6 @@ export function DataTable<TData extends { id: string; status?: string }>({
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
@@ -97,13 +103,11 @@ export function DataTable<TData extends { id: string; status?: string }>({
         return () => setMounted(false)
     }, [])
 
-    // Track row selection changes
     useEffect(() => {
         const selectedIds = Object.keys(rowSelection)
             .map((key) => table.getRow(key)?.original.id)
             .filter(Boolean)
-        console.log('Row selection updated. Selected IDs:', selectedIds)
-        if (rowSelectionCallback) rowSelectionCallback(selectedIds)
+        if (rowSelectionCallback) rowSelectionCallback(selectedIds as string[])
     }, [rowSelection, table])
 
     return (
@@ -133,22 +137,20 @@ export function DataTable<TData extends { id: string; status?: string }>({
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => {
-                                    return (
-                                        <TableHead
-                                            key={header.id}
-                                            className="last:w-0"
-                                        >
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                      header.column.columnDef
-                                                          .header,
-                                                      header.getContext(),
-                                                  )}
-                                        </TableHead>
-                                    )
-                                })}
+                                {headerGroup.headers.map((header) => (
+                                    <TableHead
+                                        key={header.id}
+                                        className="last:w-0"
+                                    >
+                                        {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                  header.column.columnDef
+                                                      .header,
+                                                  header.getContext(),
+                                              )}
+                                    </TableHead>
+                                ))}
                             </TableRow>
                         ))}
                     </TableHeader>
@@ -169,25 +171,23 @@ export function DataTable<TData extends { id: string; status?: string }>({
                                 </TableRow>
                             ))
                         ) : table.getRowModel().rows?.length ? (
-                            TableData.map((row) => {
-                                return (
-                                    <TableRow
-                                        key={row.id}
-                                        data-state={
-                                            row.getIsSelected() && 'selected'
-                                        }
-                                    >
-                                        {row.getVisibleCells().map((cell) => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext(),
-                                                )}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                )
-                            })
+                            TableData.map((row) => (
+                                <TableRow
+                                    key={row.id}
+                                    data-state={
+                                        row.getIsSelected() && 'selected'
+                                    }
+                                >
+                                    {row.getVisibleCells().map((cell) => (
+                                        <TableCell key={cell.id}>
+                                            {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext(),
+                                            )}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))
                         ) : (
                             <TableRow>
                                 <TableCell
@@ -201,8 +201,27 @@ export function DataTable<TData extends { id: string; status?: string }>({
                     </TableBody>
                 </Table>
             </div>
-            {isRemovePagination && (
-                <PaginationTable table={table} data={data} />
+
+            {manualPagination && totalPages > 1 && (
+                <div className="mt-4 flex justify-end gap-2 text-sm">
+                    <Button
+                        variant="outline"
+                        disabled={currentPage === 1}
+                        onClick={() => onPageChange?.(currentPage - 1)}
+                    >
+                        Previous
+                    </Button>
+                    <span className="px-2 pt-2">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                        variant="outline"
+                        disabled={currentPage === totalPages}
+                        onClick={() => onPageChange?.(currentPage + 1)}
+                    >
+                        Next
+                    </Button>
+                </div>
             )}
         </div>
     )

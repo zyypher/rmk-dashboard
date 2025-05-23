@@ -71,6 +71,8 @@ export default function LocationsPage() {
     )
     const [deleteLoading, setDeleteLoading] = useState(false)
     const [search, setSearch] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
 
     const role = useUserRole()
 
@@ -91,11 +93,14 @@ export default function LocationsPage() {
 
     const deliveryApproach = watch('deliveryApproach')
 
-    const fetchLocations = async () => {
+    const fetchLocations = async (page = 1, pageSize = 10) => {
         setLoading(true)
         try {
-            const res = await axios.get('/api/locations')
-            setLocations(res.data)
+            const res = await axios.get('/api/locations', {
+                params: { page, pageSize },
+            })
+            setLocations(res.data.locations)
+            setTotalPages(res.data.totalPages)
         } catch {
             toast.error('Failed to fetch locations')
         } finally {
@@ -103,9 +108,13 @@ export default function LocationsPage() {
         }
     }
 
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page)
+    }
+
     useEffect(() => {
-        fetchLocations()
-    }, [])
+        fetchLocations(currentPage)
+    }, [currentPage])
 
     const openEditDialog = (location: Location) => {
         setSelectedLocation(location)
@@ -207,6 +216,10 @@ export default function LocationsPage() {
                 data={locations}
                 filterField="name"
                 loading={loading}
+                manualPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
             />
 
             <Dialog
