@@ -89,21 +89,27 @@ const schema: yup.AnyObjectSchema = yup.object({
         then: (schema) => schema.required('Client is required'),
         otherwise: (schema) => schema.optional(),
     }),
-    newClient: yup
-        .object({
-            name: yup.string().when('addNewClient', {
-                is: true,
-                then: (schema) => schema.required('Client name is required'),
-                otherwise: (schema) => schema.optional(),
-            }),
-            phone: yup.string().optional(),
-            landline: yup.string().optional(),
-            email: yup.string().email().optional(),
-            contactPersonName: yup.string().optional(),
-            contactPersonPosition: yup.string().optional(),
-            tradeLicenseNumber: yup.string().optional(),
-        })
-        .optional(),
+    newClient: yup.lazy((_, context) => {
+        const { parent } = context
+        if (parent?.addNewClient) {
+            return yup.object({
+                name: yup.string().required('Client name is required'),
+                phone: yup
+                    .string()
+                    .required('Client phone is required')
+                    .matches(/^\+?[0-9]{9,15}$/, 'Invalid phone format'),
+                email: yup
+                    .string()
+                    .required('Client email is required')
+                    .email('Invalid email format'),
+                landline: yup.string().optional(),
+                contactPersonName: yup.string().optional(),
+                contactPersonPosition: yup.string().optional(),
+                tradeLicenseNumber: yup.string().optional(),
+            })
+        }
+        return yup.object().optional()
+    }),
 })
 
 interface Props {
@@ -475,6 +481,11 @@ export default function AddDelegateModal({
                             {...register('newClient.email')}
                             placeholder="Email"
                         />
+                        {errors.newClient?.email && (
+                            <p className="text-sm text-red-600">
+                                {errors.newClient.email.message}
+                            </p>
+                        )}
                         <Input
                             {...register('newClient.contactPersonName')}
                             placeholder="Contact Person Name"
