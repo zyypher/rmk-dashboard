@@ -30,8 +30,8 @@ export default function MonthlyReportPage() {
         axios.get('/api/courses'),
         axios.get('/api/locations'),
       ])
-      setCourses(courseRes.data)
-      setLocations(locationRes.data)
+      setCourses(courseRes.data.courses)
+      setLocations(locationRes.data.locations)
     }
 
     fetchDropdowns()

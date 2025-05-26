@@ -30,6 +30,19 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const data = await req.json()
+
+        // Check if a client with the same email already exists
+        const existingClient = await prisma.client.findUnique({
+            where: { email: data.email },
+        })
+
+        if (existingClient) {
+            return NextResponse.json(
+                { error: 'Client with this email already exists' },
+                { status: 409 },
+            )
+        }
+
         const client = await prisma.client.create({ data })
         return NextResponse.json(client, { status: 201 })
     } catch (error) {

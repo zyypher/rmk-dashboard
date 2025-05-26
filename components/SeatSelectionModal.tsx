@@ -62,7 +62,7 @@ export default function SeatSelectionModal({
     useEffect(() => {
         async function fetchClients() {
             const res = await axios.get('/api/clients')
-            setClientOptions(res.data)
+            setClientOptions(res.data.clients)
         }
         fetchClients()
     }, [])

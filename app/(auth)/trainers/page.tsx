@@ -154,7 +154,7 @@ export default function TrainersPage() {
     const fetchCourses = async () => {
         try {
             const res = await axios.get('/api/courses')
-            setCoursesList(res.data)
+            setCoursesList(res.data.courses)
         } catch {
             toast.error('Failed to fetch courses')
         }

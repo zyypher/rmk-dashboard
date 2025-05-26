@@ -95,7 +95,7 @@ export default function RoomsPage() {
     const fetchLocations = async () => {
         try {
             const res = await axios.get('/api/locations')
-            setLocations(res.data)
+            setLocations(res.data.locations)
         } catch {
             toast.error('Failed to fetch locations')
         }

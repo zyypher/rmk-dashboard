@@ -103,7 +103,7 @@ model Client {
   name                  String
   phone                 String
   landline              String?
-  email                 String?
+  email                 String     @unique
   contactPersonName     String?
   contactPersonPosition String?
   tradeLicenseNumber    String?

@@ -102,12 +102,14 @@ export default function BookingsPage() {
                 axios.get('/api/categories'),
                 axios.get('/api/locations'),
             ])
-            setCourses(c.data)
-            setTrainers(t.data)
-            setRooms(r.data)
+            setCourses(Array.isArray(c.data.courses) ? c.data.courses : [])
+            setTrainers(Array.isArray(t.data.trainers) ? t.data.trainers : [])
+            setRooms(Array.isArray(r.data.rooms) ? r.data.rooms : [])
             setLanguages(l.data)
             setCategories(cat.data)
-            setLocations(loc.data)
+            setLocations(
+                Array.isArray(loc.data.locations) ? loc.data.locations : [],
+            )
         } catch {
             toast.error('Failed to fetch dropdowns')
         }
