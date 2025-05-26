@@ -18,9 +18,9 @@ export default function CalendarPage() {
     useEffect(() => {
         const fetchBookings = async () => {
             try {
-                const res = await fetch('/api/bookings')
+                const res = await fetch('/api/bookings?page=1&pageSize=9999')
                 const data = await res.json()
-                setBookings(Array.isArray(data) ? data : [])
+                setBookings(Array.isArray(data.bookings) ? data.bookings : [])
             } catch (error) {
                 console.error('Error fetching bookings:', error)
             } finally {
