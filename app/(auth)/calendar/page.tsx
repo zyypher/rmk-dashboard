@@ -49,6 +49,9 @@ export default function CalendarPage() {
         const capacity = (b.room as any)?.capacity || 0
         const free = capacity - (confirmed + notConfirmed)
 
+        const backgroundColor = b.location?.backgroundColor || '#dbeafe'
+        const textColor = b.location?.textColor || '#1f3a8a'
+
         const tooltipId = `tooltip-${b.id}`
         const tooltipHTML = `
       <div style='font-weight: bold;'>${b.course?.shortname || b.course?.title} - ${(b.room as any)?.name || ''}</div>
@@ -79,6 +82,8 @@ export default function CalendarPage() {
             extendedProps: {
                 tooltipId,
                 tooltipHTML,
+                backgroundColor,
+                textColor,
             },
         }
     })
@@ -120,7 +125,13 @@ export default function CalendarPage() {
                         data-tooltip-id={arg.event.extendedProps.tooltipId}
                         data-tooltip-html={arg.event.extendedProps.tooltipHTML}
                     >
-                        <div className="rounded bg-blue-100 p-1 text-xs text-blue-900 shadow-sm">
+                        <div
+                            className="rounded p-1 text-xs shadow-sm"
+                            style={{
+                                backgroundColor: arg.event.extendedProps.backgroundColor,
+                                color: arg.event.extendedProps.textColor,
+                            }}
+                        >
                             <div className="font-semibold">
                                 {arg.event.title}
                             </div>

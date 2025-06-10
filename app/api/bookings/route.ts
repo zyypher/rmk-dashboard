@@ -64,7 +64,13 @@ export async function GET(req: NextRequest) {
                     course: { include: { trainers: true, category: true } },
                     room: true,
                     trainer: true,
-                    location: true,
+                    location: {
+                        select: {
+                            name: true,
+                            backgroundColor: true,
+                            textColor: true,
+                        },
+                    },
                     delegates: true,
                 },
             }),

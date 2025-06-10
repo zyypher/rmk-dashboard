@@ -32,7 +32,19 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const data = await req.json()
-        const location = await prisma.location.create({ data })
+        const { name, emirate, deliveryApproach, zoomLink, locationType, backgroundColor, textColor } = data
+
+        const location = await prisma.location.create({
+            data: {
+                name,
+                emirate,
+                deliveryApproach,
+                zoomLink,
+                locationType,
+                backgroundColor,
+                textColor,
+            },
+        })
         return NextResponse.json(location, { status: 201 })
     } catch (error) {
         console.error(error)

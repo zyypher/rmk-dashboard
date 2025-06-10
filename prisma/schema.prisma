@@ -79,6 +79,8 @@ model Location {
   deliveryApproach String?
   zoomLink         String?
   locationType     String?
+  backgroundColor  String?           @default("#dbeafe")
+  textColor        String?           @default("#1f3a8a")
   rooms            Room[]
   trainers         Trainer[]
   sessions         TrainingSession[]

@@ -5,6 +5,7 @@ import axios from 'axios'
 import { useForm, Controller } from 'react-hook-form'
 import { Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { HexColorPicker } from 'react-colorful'
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
@@ -24,6 +25,7 @@ import {
 import { useUserRole } from '@/hooks/useUserRole'
 import debounce from 'lodash/debounce'
 import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 const EMIRATES = [
     'Abu Dhabi',
@@ -55,6 +57,8 @@ const locationSchema = yup.object({
         then: (schema) => schema.required('Please select location type'),
         otherwise: (schema) => schema.notRequired(),
     }),
+    backgroundColor: yup.string().required('Background color is required'),
+    textColor: yup.string().required('Text color is required'),
 })
 
 export default function LocationsPage() {
@@ -73,6 +77,8 @@ export default function LocationsPage() {
     const [search, setSearch] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
+    const [isBgColorPickerOpen, setIsBgColorPickerOpen] = useState(false)
+    const [isTextColorPickerOpen, setIsTextColorPickerOpen] = useState(false)
 
     const role = useUserRole()
 
@@ -88,6 +94,8 @@ export default function LocationsPage() {
         resolver: yupResolver(locationSchema),
         defaultValues: {
             deliveryApproach: '',
+            backgroundColor: '#dbeafe',
+            textColor: '#1f3a8a',
         },
     })
 
@@ -124,6 +132,8 @@ export default function LocationsPage() {
         setValue('zoomLink', location.zoomLink || '')
         setValue('locationType', location.locationType || '')
         setValue('deliveryApproach', location.deliveryApproach || '')
+        setValue('backgroundColor', location.backgroundColor || '#dbeafe')
+        setValue('textColor', location.textColor || '#1f3a8a')
     }
 
     const debouncedSearch = debounce(async (query: string) => {
@@ -330,6 +340,84 @@ export default function LocationsPage() {
                             {errors.locationType.message as string}
                         </p>
                     )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Background Color</label>
+                            <Controller
+                                name="backgroundColor"
+                                control={control}
+                                render={({ field }) => (
+                                    <Popover open={isBgColorPickerOpen} onOpenChange={setIsBgColorPickerOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                className="w-full justify-start"
+                                                style={{ backgroundColor: field.value }}
+                                            >
+                                                {field.value || 'Select color'}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-3 pointer-events-auto" onPointerDownOutside={(e) => e.stopPropagation()}>
+                                            <div onPointerDown={(e) => e.stopPropagation()}>
+                                                <HexColorPicker
+                                                    color={field.value}
+                                                    onChange={(newColor) => {
+                                                        setValue('backgroundColor', newColor, { shouldValidate: true })
+                                                        // Keep popover open after selecting a color
+                                                        setIsBgColorPickerOpen(true)
+                                                    }}
+                                                />
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                )}
+                            />
+                            {errors.backgroundColor && (
+                                <p className="text-sm text-red-600">
+                                    {errors.backgroundColor.message as string}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Text Color</label>
+                            <Controller
+                                name="textColor"
+                                control={control}
+                                render={({ field }) => (
+                                    <Popover open={isTextColorPickerOpen} onOpenChange={setIsTextColorPickerOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                className="w-full justify-start"
+                                                style={{ color: field.value }}
+                                            >
+                                                {field.value || 'Select color'}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-3 pointer-events-auto" onPointerDownOutside={(e) => e.stopPropagation()}>
+                                            <div onPointerDown={(e) => e.stopPropagation()}>
+                                                <HexColorPicker
+                                                    color={field.value}
+                                                    onChange={(newColor) => {
+                                                        setValue('textColor', newColor, { shouldValidate: true })
+                                                        // Keep popover open after selecting a color
+                                                        setIsTextColorPickerOpen(true)
+                                                    }}
+                                                />
+                                            </div>
+                                        </PopoverContent>
+                                    </Popover>
+                                )}
+                            />
+                            {errors.textColor && (
+                                <p className="text-sm text-red-600">
+                                    {errors.textColor.message as string}
+                                </p>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </Dialog>
 

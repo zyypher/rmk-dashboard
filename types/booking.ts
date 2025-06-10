@@ -35,6 +35,8 @@ export interface Booking {
 
   location?: {
     name: string
+    backgroundColor?: string
+    textColor?: string
   }
 
   delegates: Delegate[]
