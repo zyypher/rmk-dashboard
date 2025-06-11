@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
           languages: true,
         },
         orderBy: {
-          createdAt: 'desc',
+          title: 'asc',
         },
       }),
       prisma.course.count(),
