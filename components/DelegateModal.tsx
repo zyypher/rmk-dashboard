@@ -96,11 +96,12 @@ const schema: yup.AnyObjectSchema = yup.object({
                 name: yup.string().required('Client name is required'),
                 phone: yup
                     .string()
-                    .required('Client phone is required')
-                    .matches(/^\+?[0-9]{9,15}$/, 'Invalid phone format'),
+                    .optional()
+                    .nullable(),
                 email: yup
                     .string()
-                    .required('Client email is required')
+                    .optional()
+                    .nullable()
                     .email('Invalid email format'),
                 landline: yup.string().optional(),
                 contactPersonName: yup.string().optional(),
@@ -205,9 +206,6 @@ export default function AddDelegateModal({
             setPhotoPreviewUrl(null)
         }
     }, [initialData, seatId, reset]) // <-- Include seatId in deps
-
-    console.log('##👀 clientOptions:', clientOptions)
-    console.log('##📌 initialData.clientId:', initialData?.clientId)
 
     const handleFormSubmit: SubmitHandler<DelegateForm> = async (data) => {
         setIsSubmitting(true)

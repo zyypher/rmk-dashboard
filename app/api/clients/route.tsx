@@ -32,9 +32,12 @@ export async function POST(req: NextRequest) {
         const data = await req.json()
 
         // Check if a client with the same email already exists
-        const existingClient = await prisma.client.findUnique({
-            where: { email: data.email },
-        })
+        let existingClient = null;
+        if (data.email) {
+            existingClient = await prisma.client.findFirst({
+                where: { email: data.email },
+            });
+        }
 
         if (existingClient) {
             return NextResponse.json(

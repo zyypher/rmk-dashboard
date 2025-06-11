@@ -103,9 +103,9 @@ model Room {
 model Client {
   id                    String     @id @default(uuid())
   name                  String
-  phone                 String
+  phone                 String?
   landline              String?
-  email                 String     @unique
+  email                 String?
   contactPersonName     String?
   contactPersonPosition String?
   tradeLicenseNumber    String?
