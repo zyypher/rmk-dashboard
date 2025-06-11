@@ -146,6 +146,29 @@ export default function SeatSelectionModal({
         return rows
     }
 
+    // Handle delegate deletion
+    const handleDeleteDelegate = async (delegateId: string) => {
+        try {
+            await axios.delete(`/api/delegates/${delegateId}`);
+            toast.success('Delegate deleted successfully');
+            // Remove from selectedSeats if it was a selected seat
+            setSelectedSeats((prev) => prev.filter((seat) => delegates[seat]?.id !== delegateId));
+            // Remove from delegates map
+            setDelegates((prev) => {
+                const newDelegates = { ...prev };
+                // Find the seatId associated with the deleted delegate
+                const seatIdToRemove = Object.keys(newDelegates).find(key => newDelegates[key].id === delegateId);
+                if (seatIdToRemove) {
+                    delete newDelegates[seatIdToRemove];
+                }
+                return newDelegates;
+            });
+        } catch (error) {
+            console.error('Error deleting delegate:', error);
+            toast.error('Failed to delete delegate');
+        }
+    };
+
     return (
         <Dialog
             isOpen={isOpen}
@@ -191,6 +214,7 @@ export default function SeatSelectionModal({
                     initialData={
                         activeSeat && delegates[activeSeat]
                             ? {
+                                  id: delegates[activeSeat].id, // Pass the delegate ID
                                   name: delegates[activeSeat].name || '',
                                   emiratesId: delegates[activeSeat].emiratesId || '',
                                   phone: delegates[activeSeat].phone || '',
@@ -286,6 +310,7 @@ export default function SeatSelectionModal({
                         setDelegateModalOpen(false)
                     }}
                     clientOptions={clientOptions}
+                    onDeleteDelegate={handleDeleteDelegate}
                 />
 
                 <AttendantSheetModal

@@ -30,6 +30,7 @@ type ClientDetails = {
 }
 
 export type DelegateForm = {
+    id?: string
     name?: string
     emiratesId: string
     phone: string | null
@@ -136,6 +137,7 @@ interface Props {
         tradeLicenseNumber?: string
         landline?: string
     }[]
+    onDeleteDelegate: (delegateId: string) => Promise<void>
 }
 
 export default function AddDelegateModal({
@@ -145,11 +147,13 @@ export default function AddDelegateModal({
     seatId,
     initialData,
     clientOptions,
+    onDeleteDelegate,
 }: Props) {
     const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
     const [selectedClient, setSelectedClient] = useState<any>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [fetchedClientData, setFetchedClientData] = useState<ClientDetails | null>(null)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
     const {
         register,
@@ -552,6 +556,15 @@ export default function AddDelegateModal({
                     >
                         Cancel
                     </Button>
+                    {initialData && initialData.id && (
+                        <Button
+                            variant="outline-black"
+                            type="button"
+                            onClick={() => setShowDeleteConfirm(true)}
+                        >
+                            Delete
+                        </Button>
+                    )}
                     <Button
                         variant="black"
                         type="submit"
@@ -561,6 +574,23 @@ export default function AddDelegateModal({
                     </Button>
                 </div>
             </form>
+
+            <Dialog
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                title="Confirm Delete Delegate"
+                onSubmit={async () => {
+                    if (initialData?.id) {
+                        await onDeleteDelegate(initialData.id);
+                        setShowDeleteConfirm(false);
+                        onClose(); // Close the delegate modal after deletion
+                    }
+                }}
+                submitLabel="Delete"
+                buttonLoading={isSubmitting} // Use isSubmitting for button loading
+            >
+                <p>Are you sure you want to delete this delegate?</p>
+            </Dialog>
         </Dialog>
     )
 }
