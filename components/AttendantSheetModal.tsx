@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import * as XLSX from 'xlsx'
 
 interface AttendantSheetModalProps {
     isOpen: boolean
@@ -37,6 +38,26 @@ export default function AttendantSheetModal({
 }: AttendantSheetModalProps) {
 
     console.log('##bookingInfo', bookingInfo)
+    const exportToExcel = () => {
+        const data = Object.entries(delegates).map(([seatId, d]) => ({
+            'Seat': seatId,
+            'Name': d.name || '',
+            'Emirates ID': d.emiratesId || '',
+            'Phone': d.phone || '',
+            'Email': d.email || '',
+            'Company': d.companyName || '',
+            'Type': d.isCorporate ? 'Corporate' : 'Public',
+            'Status': d.status === 'CONFIRMED' ? 'Confirmed' : 'Not Confirmed',
+            'Client Name': d.newClient?.name || '-',
+            'Trade License': d.newClient?.tradeLicenseNumber || '-',
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Attendant Sheet");
+        XLSX.writeFile(workbook, "attendant_sheet.xlsx");
+    };
+
     const exportToPDF = () => {
         const doc = new jsPDF({
             orientation: 'landscape',
@@ -169,8 +190,8 @@ export default function AttendantSheetModal({
             isOpen={isOpen}
             onClose={onClose}
             title="Attendant Sheet"
-            submitLabel="Export to PDF"
-            onSubmit={exportToPDF}
+            submitLabel="Export to Excel"
+            onSubmit={exportToExcel}
             className={large ? 'max-w-6xl' : ''}
         >
             <div className="max-h-[60vh] overflow-x-auto">
