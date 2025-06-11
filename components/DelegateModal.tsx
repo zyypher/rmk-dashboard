@@ -18,11 +18,22 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 
+type ClientDetails = {
+    id: string;
+    name: string;
+    phone?: string | null;
+    landline?: string | null;
+    email?: string | null;
+    contactPersonName?: string | null;
+    contactPersonPosition?: string | null;
+    tradeLicenseNumber?: string | null;
+}
+
 export type DelegateForm = {
     name?: string
     emiratesId: string
-    phone: string
-    email: string
+    phone: string | null
+    email: string | null
     photo: File | null
     companyName?: string
     isCorporate: boolean
@@ -33,12 +44,12 @@ export type DelegateForm = {
     clientId?: string
     newClient?: {
         name: string
-        phone?: string
-        landline?: string
-        email?: string
-        contactPersonName?: string
-        contactPersonPosition?: string
-        tradeLicenseNumber?: string
+        phone?: string | null
+        landline?: string | null
+        email?: string | null
+        contactPersonName?: string | null
+        contactPersonPosition?: string | null
+        tradeLicenseNumber?: string | null
     }
     photoUrl?: string // for preview
 }
@@ -103,10 +114,10 @@ const schema: yup.AnyObjectSchema = yup.object({
                     .optional()
                     .nullable()
                     .email('Invalid email format'),
-                landline: yup.string().optional(),
-                contactPersonName: yup.string().optional(),
-                contactPersonPosition: yup.string().optional(),
-                tradeLicenseNumber: yup.string().optional(),
+                landline: yup.string().optional().nullable(),
+                contactPersonName: yup.string().optional().nullable(),
+                contactPersonPosition: yup.string().optional().nullable(),
+                tradeLicenseNumber: yup.string().optional().nullable(),
             })
         }
         return yup.object().optional()
@@ -138,6 +149,7 @@ export default function AddDelegateModal({
     const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
     const [selectedClient, setSelectedClient] = useState<any>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [fetchedClientData, setFetchedClientData] = useState<ClientDetails | null>(null)
 
     const {
         register,
@@ -147,13 +159,15 @@ export default function AddDelegateModal({
         reset,
         watch,
         formState: { errors },
+        trigger,
+        getValues,
     } = useForm<DelegateForm>({
         resolver: yupResolver(schema),
         defaultValues: {
             name: '',
             emiratesId: '',
-            phone: '',
-            email: '',
+            phone: null,
+            email: null,
             photo: null,
             companyName: '',
             isCorporate: false,
@@ -175,14 +189,15 @@ export default function AddDelegateModal({
         } else {
             setSelectedClient(null)
         }
-    }, [addNewClient, clientId])
+    }, [addNewClient, clientId, clientOptions])
 
     useEffect(() => {
         if (initialData) {
+            const isNewClient = !!initialData.newClient?.name;
             reset({
                 ...initialData,
                 photo: null,
-                addNewClient: initialData.addNewClient ?? false,
+                addNewClient: isNewClient,
                 clientId: initialData.clientId ?? '',
                 newClient: initialData.newClient ?? undefined,
             })
@@ -191,8 +206,8 @@ export default function AddDelegateModal({
             reset({
                 name: '',
                 emiratesId: '',
-                phone: '',
-                email: '',
+                phone: null,
+                email: null,
                 photo: null,
                 companyName: '',
                 isCorporate: false,
@@ -205,7 +220,36 @@ export default function AddDelegateModal({
             })
             setPhotoPreviewUrl(null)
         }
-    }, [initialData, seatId, reset]) // <-- Include seatId in deps
+    }, [initialData, seatId, reset, setValue])
+
+    useEffect(() => {
+        if (initialData?.clientId && !initialData?.newClient?.name) {
+            const fetchClient = async () => {
+                try {
+                    const res = await fetch(`/api/clients?id=${initialData.clientId}`);
+                    if (res.ok) {
+                        const client: ClientDetails = await res.json();
+                        setFetchedClientData(client);
+                        setValue('newClient', {
+                            name: client.name,
+                            phone: client.phone,
+                            landline: client.landline,
+                            email: client.email,
+                            contactPersonName: client.contactPersonName,
+                            contactPersonPosition: client.contactPersonPosition,
+                            tradeLicenseNumber: client.tradeLicenseNumber,
+                        }, { shouldValidate: true });
+                        setValue('addNewClient', true, { shouldValidate: true });
+                    } else {
+                        console.error('Failed to fetch client details', await res.text());
+                    }
+                } catch (error) {
+                    console.error('Error fetching client details:', error);
+                }
+            };
+            fetchClient();
+        }
+    }, [initialData?.clientId, initialData?.newClient?.name, setValue]);
 
     const handleFormSubmit: SubmitHandler<DelegateForm> = async (data) => {
         setIsSubmitting(true)
@@ -376,6 +420,7 @@ export default function AddDelegateModal({
                     <Checkbox
                         id="addNewClient"
                         checked={addNewClient}
+                        disabled={!!initialData}
                         onCheckedChange={(val) => {
                             setValue('addNewClient', val === true, {
                                 shouldValidate: true,
