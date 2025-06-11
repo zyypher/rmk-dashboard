@@ -136,8 +136,12 @@ const UsersPage = () => {
             reset()
             setIsDialogOpen(false)
             fetchUsers()
-        } catch (error) {
-            toast.error('Failed to submit user')
+        } catch (error: any) {
+            if (error.response && error.response.status === 400 && error.response.data && error.response.data.error) {
+                toast.error(error.response.data.error)
+            } else {
+                toast.error('Failed to submit user')
+            }
             console.error(error)
         } finally {
             setButtonLoading(false)
