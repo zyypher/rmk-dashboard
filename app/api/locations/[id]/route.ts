@@ -4,11 +4,20 @@ import { prisma } from '@/lib/prisma'
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params
   const body = await req.json()
+  const { name, emirate, deliveryApproach, zoomLink, locationType, backgroundColor, textColor } = body
 
   try {
     const updated = await prisma.location.update({
       where: { id },
-      data: body,
+      data: {
+        name,
+        emirate,
+        deliveryApproach,
+        zoomLink,
+        locationType,
+        backgroundColor,
+        textColor,
+      },
     })
     return NextResponse.json(updated)
   } catch (error) {

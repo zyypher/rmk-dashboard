@@ -31,6 +31,40 @@ export const columns = ({
         cell: ({ row }) => row.original.locationType || '-',
     },
     {
+        accessorKey: 'backgroundColor',
+        header: 'Background Color',
+        cell: ({ row }) => {
+            const color = row.original.backgroundColor
+            if (!color) return '—'
+            return (
+                <div className="flex items-center gap-2">
+                    <div
+                        className="h-6 w-6 rounded border"
+                        style={{ backgroundColor: color }}
+                    />
+                    <span>{color}</span>
+                </div>
+            )
+        },
+    },
+    {
+        accessorKey: 'textColor',
+        header: 'Text Color',
+        cell: ({ row }) => {
+            const color = row.original.textColor
+            if (!color) return '—'
+            return (
+                <div className="flex items-center gap-2">
+                    <div
+                        className="h-6 w-6 rounded border"
+                        style={{ backgroundColor: color }}
+                    />
+                    <span>{color}</span>
+                </div>
+            )
+        },
+    },
+    {
         accessorKey: 'zoomLink',
         header: 'Zoom Link',
         cell: ({ row }) => {

@@ -7,5 +7,7 @@ export interface Location {
     zoomLink?: string
     locationType: string
     deliveryApproach?: string
-  }
+    backgroundColor?: string
+    textColor?: string
+}
   

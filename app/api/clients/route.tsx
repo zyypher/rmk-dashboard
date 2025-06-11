@@ -4,6 +4,20 @@ import { prisma } from '@/lib/prisma'
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url)
+        const id = searchParams.get('id')
+
+        if (id) {
+            // Fetch a single client by ID
+            const client = await prisma.client.findUnique({
+                where: { id: id },
+            });
+            if (client) {
+                return NextResponse.json(client, { status: 200 });
+            } else {
+                return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+            }
+        }
+
         const page = parseInt(searchParams.get('page') || '1', 10)
         const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
 
@@ -32,9 +46,12 @@ export async function POST(req: NextRequest) {
         const data = await req.json()
 
         // Check if a client with the same email already exists
-        const existingClient = await prisma.client.findUnique({
-            where: { email: data.email },
-        })
+        let existingClient = null;
+        if (data.email) {
+            existingClient = await prisma.client.findFirst({
+                where: { email: data.email },
+            });
+        }
 
         if (existingClient) {
             return NextResponse.json(

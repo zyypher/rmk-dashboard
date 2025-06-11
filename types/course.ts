@@ -8,6 +8,6 @@ export interface Course {
     trainerId: string
     categoryId: string
     trainer: { name: string }
-    category: { name: string }
+    category: { id: string; name: string }
     shortname?: string
 }

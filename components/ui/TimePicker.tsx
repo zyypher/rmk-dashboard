@@ -7,6 +7,7 @@ import 'react-datepicker/dist/react-datepicker.css'
 interface Props {
   time: Date | null
   onChange: (date: Date | null) => void
+  placeholderText?: string
 }
 
 export const TimePicker = ({ time, onChange }: Props) => {

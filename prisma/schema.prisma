@@ -79,6 +79,8 @@ model Location {
   deliveryApproach String?
   zoomLink         String?
   locationType     String?
+  backgroundColor  String?           @default("#dbeafe")
+  textColor        String?           @default("#1f3a8a")
   rooms            Room[]
   trainers         Trainer[]
   sessions         TrainingSession[]
@@ -101,9 +103,9 @@ model Room {
 model Client {
   id                    String     @id @default(uuid())
   name                  String
-  phone                 String
+  phone                 String?
   landline              String?
-  email                 String     @unique
+  email                 String?
   contactPersonName     String?
   contactPersonPosition String?
   tradeLicenseNumber    String?

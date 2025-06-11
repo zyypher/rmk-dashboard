@@ -36,6 +36,21 @@ export async function GET(req: NextRequest) {
                             mode: 'insensitive',
                         },
                     },
+                    {
+                        delegates: {
+                            some: {
+                                OR: [
+                                    { name: { contains: q, mode: 'insensitive' } },
+                                    { emiratesId: { contains: q, mode: 'insensitive' } },
+                                    { phone: { contains: q, mode: 'insensitive' } },
+                                    { email: { contains: q, mode: 'insensitive' } },
+                                    { client: { name: { contains: q, mode: 'insensitive' } } },
+                                    { client: { phone: { contains: q, mode: 'insensitive' } } },
+                                    { client: { email: { contains: q, mode: 'insensitive' } } },
+                                ],
+                            },
+                        },
+                    },
                 ],
             },
             include: {
@@ -43,6 +58,11 @@ export async function GET(req: NextRequest) {
                 trainer: true,
                 room: true,
                 location: true,
+                delegates: {
+                    include: {
+                        client: true,
+                    },
+                },
             },
             orderBy: { createdAt: 'desc' },
         })
