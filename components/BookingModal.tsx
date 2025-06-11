@@ -1,10 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
-import { Dialog } from '@/components/ui/dialog'
 import {
     Select,
     SelectContent,
@@ -22,19 +21,20 @@ import { Language } from '@/types/language'
 import { Category } from '@/types/category'
 import { Location } from '@/types/location'
 import { Label } from '@/components/ui/label'
+import { Booking } from '@/types/booking'
+import { Button } from '@/components/ui/button'
 
 interface BookingModalProps {
-    isOpen: boolean
-    onClose: () => void
     onNext: (data: any) => void
     loading?: boolean
-    initialData?: any
+    booking?: Booking | null
     courses: Course[]
     trainers: Trainer[]
     rooms: Room[]
     languages: Language[]
     categories: Category[]
     locations: Location[]
+    onClose: () => void
 }
 
 type BookingFormValues = {
@@ -76,17 +76,16 @@ export const bookingSchema = yup.object({
 })
 
 export default function BookingModal({
-    isOpen,
-    onClose,
     onNext,
     loading,
-    initialData,
+    booking,
     courses,
     trainers,
     rooms,
     languages,
     categories,
     locations,
+    onClose,
 }: BookingModalProps) {
     const {
         register,
@@ -112,29 +111,45 @@ export default function BookingModal({
         resolver: yupResolver(bookingSchema) as any,
     })
 
+    const [displayRoomName, setDisplayRoomName] = useState('Select Room')
+
     useEffect(() => {
-        if (initialData) {
+        if (booking) {
             reset({
-                courseId: initialData.courseId,
-                categoryId:
-                    initialData.course?.categoryId ||
-                    initialData?.categoryId ||
-                    '',
-                language: initialData.language,
-                locationId: initialData.locationId,
-                roomId: initialData.roomId,
-                trainerId: initialData.trainerId,
-                date: initialData.date ? new Date(initialData.date) : null,
-                startTime: initialData.startTime
-                    ? new Date(initialData.startTime)
+                courseId: booking.courseId || '',
+                categoryId: booking.course?.category?.id || '',
+                language: booking.language || '',
+                locationId: booking.locationId || '',
+                trainerId: booking.trainerId || '',
+                date: booking.date ? new Date(booking.date) : null,
+                startTime: booking.startTime
+                    ? new Date(booking.startTime)
                     : null,
-                endTime: initialData.endTime
-                    ? new Date(initialData.endTime)
-                    : null,
-                notes: initialData.notes || '',
+                endTime: booking.endTime ? new Date(booking.endTime) : null,
+                notes: booking.notes || '',
+                roomId: rooms.some(
+                    (room) =>
+                        room.id === booking.roomId &&
+                        room.locationId === booking.locationId,
+                )
+                    ? booking.roomId
+                    : '',
             })
+            console.log(
+                '##BookingModal: booking updated, roomId:',
+                booking.roomId,
+                'locationId:',
+                booking.locationId,
+                'filteredRooms length (after reset):',
+                rooms.filter(
+                    (room) =>
+                        room.locationId === booking.locationId &&
+                        room.capacity &&
+                        room.capacity > 0,
+                ).length,
+            )
         }
-    }, [initialData, reset])
+    }, [booking, reset, rooms])
 
     const selectedLocationId = watch('locationId')
     const filteredRooms = rooms.filter(
@@ -144,33 +159,80 @@ export default function BookingModal({
             room.capacity > 0,
     )
 
+    // Effect to reset roomId if selectedLocationId changes and current roomId is not valid for new location
+    useEffect(() => {
+        const currentRoomId = watch('roomId')
+        if (selectedLocationId && currentRoomId) {
+            const roomExistsInFiltered = filteredRooms.some(
+                (room) => room.id === currentRoomId,
+            )
+            if (!roomExistsInFiltered) {
+                console.log(
+                    'BookingModal: Resetting roomId because it is not valid for the new location.',
+                    {
+                        selectedLocationId,
+                        currentRoomId,
+                        filteredRoomsLength: filteredRooms.length,
+                    },
+                )
+                setValue('roomId', '', { shouldValidate: true })
+            }
+        }
+    }, [selectedLocationId, filteredRooms, setValue, watch])
+
+    // Effect to update displayRoomName
+    useEffect(() => {
+        const currentRoomId = watch('roomId')
+        const currentSelectedLocationId = watch('locationId')
+        const foundRoom = rooms.find(
+            (room) =>
+                room.id === currentRoomId &&
+                room.locationId === currentSelectedLocationId,
+        )
+
+        if (foundRoom) {
+            setDisplayRoomName(foundRoom.name)
+        } else {
+            setDisplayRoomName('Select Room')
+        }
+    }, [watch('roomId'), watch('locationId'), rooms])
+
     return (
-        <Dialog
-            isOpen={isOpen}
-            onClose={onClose}
-            title={initialData ? 'Edit Booking' : 'Add Booking'}
-            onSubmit={handleSubmit(onNext)}
-            submitLabel="Next"
-        >
-            <div className="max-h-[75vh] space-y-4 overflow-y-auto">
+        <form onSubmit={handleSubmit(onNext)} className="space-y-4">
+            <div className="max-h-[75vh] space-y-4 overflow-y-auto px-1">
                 {/* Course */}
-                <Select
-                    value={watch('courseId')}
-                    onValueChange={(val) =>
-                        setValue('courseId', val, { shouldValidate: true })
-                    }
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select Course" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {courses.map((course) => (
-                            <SelectItem key={course.id} value={course.id}>
-                                {course.title}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <Controller
+                    name="courseId"
+                    control={control}
+                    render={({ field }) => (
+                        <Select
+                            key={field.value}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Course">
+                                    {field.value
+                                        ? courses.find(
+                                              (course) =>
+                                                  course.id === field.value,
+                                          )?.title
+                                        : 'Select Course'}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {courses.map((course) => (
+                                    <SelectItem
+                                        key={course.id}
+                                        value={course.id}
+                                    >
+                                        {course.title}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                />
                 {errors.courseId && (
                     <p className="text-sm text-red-500">
                         {errors.courseId.message}
@@ -178,23 +240,34 @@ export default function BookingModal({
                 )}
 
                 {/* Category */}
-                <Select
-                    value={watch('categoryId')}
-                    onValueChange={(val) =>
-                        setValue('categoryId', val, { shouldValidate: true })
-                    }
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                                {cat.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <Controller
+                    name="categoryId"
+                    control={control}
+                    render={({ field }) => (
+                        <Select
+                            key={field.value}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Category">
+                                    {field.value
+                                        ? categories.find(
+                                              (cat) => cat.id === field.value,
+                                          )?.name
+                                        : 'Select Category'}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {categories.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.id}>
+                                        {cat.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                />
                 {errors.categoryId && (
                     <p className="text-sm text-red-500">
                         {errors.categoryId.message}
@@ -202,23 +275,35 @@ export default function BookingModal({
                 )}
 
                 {/* Language */}
-                <Select
-                    value={watch('language')}
-                    onValueChange={(val) =>
-                        setValue('language', val, { shouldValidate: true })
-                    }
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select Language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {languages.map((lang) => (
-                            <SelectItem key={lang.id} value={lang.name}>
-                                {lang.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <Controller
+                    name="language"
+                    control={control}
+                    render={({ field }) => (
+                        <Select
+                            key={field.value}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Language">
+                                    {field.value
+                                        ? languages.find(
+                                              (lang) =>
+                                                  lang.name === field.value,
+                                          )?.name
+                                        : 'Select Language'}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {languages.map((lang) => (
+                                    <SelectItem key={lang.id} value={lang.name}>
+                                        {lang.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                />
                 {errors.language && (
                     <p className="text-sm text-red-500">
                         {errors.language.message}
@@ -226,23 +311,42 @@ export default function BookingModal({
                 )}
 
                 {/* Location */}
-                <Select
-                    value={watch('locationId')}
-                    onValueChange={(val) =>
-                        setValue('locationId', val, { shouldValidate: true })
-                    }
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select Location" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {locations.map((loc) => (
-                            <SelectItem key={loc.id} value={loc.id}>
-                                {loc.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <Controller
+                    name="locationId"
+                    control={control}
+                    render={({ field }) => (
+                        <Select
+                            key={field.value}
+                            value={field.value}
+                            onValueChange={(val) => {
+                                if (val) {
+                                    field.onChange(val)
+                                    // Also reset roomId when location changes to ensure valid room selection
+                                    setValue('roomId', '', {
+                                        shouldValidate: true,
+                                    })
+                                }
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Location">
+                                    {field.value
+                                        ? locations.find(
+                                              (loc) => loc.id === field.value,
+                                          )?.name
+                                        : 'Select Location'}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {locations.map((loc) => (
+                                    <SelectItem key={loc.id} value={loc.id}>
+                                        {loc.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                />
                 {errors.locationId && (
                     <p className="text-sm text-red-500">
                         {errors.locationId.message}
@@ -250,29 +354,49 @@ export default function BookingModal({
                 )}
 
                 {/* Room */}
-                <Select
-                    value={watch('roomId')}
-                    onValueChange={(val) =>
-                        setValue('roomId', val, { shouldValidate: true })
-                    }
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select Room" />
-                    </SelectTrigger>
-                    <SelectContent>
-                    {filteredRooms.length > 0 ? (
-                            filteredRooms.map((room) => (
-                                <SelectItem key={room.id} value={room.id}>
-                                    {`${room.name} – ${room.capacity} participants – ${room.location.name}`}
-                                </SelectItem>
-                            ))
-                        ) : (
-                            <div className="px-4 py-2 text-sm text-gray-500">
-                                No rooms available for the selected location.
-                            </div>
-                        )}
-                    </SelectContent>
-                </Select>
+                <Controller
+                    name="roomId"
+                    control={control}
+                    render={({ field }) => (
+                        <Select
+                            key={field.value}
+                            value={field.value}
+                            onValueChange={(val) => {
+                                if (val) {
+                                    field.onChange(val)
+                                }
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Room">
+                                    {displayRoomName}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {/* {filteredRooms.map((room) => (
+                                    <SelectItem key={room.id} value={room.id}>
+                                        {room.name}
+                                    </SelectItem>
+                                ))} */}
+                                {filteredRooms.length > 0 ? (
+                                    filteredRooms.map((room) => (
+                                        <SelectItem
+                                            key={room.id}
+                                            value={room.id}
+                                        >
+                                            {`${room.name} – ${room.capacity} participants – ${room.location.name}`}
+                                        </SelectItem>
+                                    ))
+                                ) : (
+                                    <div className="px-4 py-2 text-sm text-gray-500">
+                                        No rooms available for the selected
+                                        location.
+                                    </div>
+                                )}
+                            </SelectContent>
+                        </Select>
+                    )}
+                />
                 {errors.roomId && (
                     <p className="text-sm text-red-500">
                         {errors.roomId.message}
@@ -280,40 +404,66 @@ export default function BookingModal({
                 )}
 
                 {/* Trainer */}
-                <Select
-                    value={watch('trainerId')}
-                    onValueChange={(val) =>
-                        setValue('trainerId', val, { shouldValidate: true })
-                    }
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select Trainer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {trainers.map((trainer) => (
-                            <SelectItem key={trainer.id} value={trainer.id}>
-                                {trainer.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <Controller
+                    name="trainerId"
+                    control={control}
+                    render={({ field }) => (
+                        <Select
+                            key={field.value}
+                            value={field.value}
+                            onValueChange={(val) => {
+                                if (val) {
+                                    field.onChange(val)
+                                } else {
+                                    field.onChange('')
+                                }
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Trainer">
+                                    {field.value
+                                        ? trainers.find(
+                                              (trainer) =>
+                                                  trainer.id === field.value,
+                                          )?.name
+                                        : 'Select Trainer'}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {trainers.map((trainer) => (
+                                    <SelectItem
+                                        key={trainer.id}
+                                        value={trainer.id}
+                                    >
+                                        {trainer.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                />
                 {errors.trainerId && (
                     <p className="text-sm text-red-500">
                         {errors.trainerId.message}
                     </p>
                 )}
 
-                <Label>Date</Label>
-                <Controller
-                    name="date"
-                    control={control}
-                    render={({ field }) => (
-                        <DatePicker
-                            date={field.value}
-                            onChange={(val) => field.onChange(val)}
-                        />
-                    )}
-                />
+                {/* Date */}
+                <div className="space-y-1">
+                    <Label className="mb-1">Date</Label>
+                    <Controller
+                        control={control}
+                        name="date"
+                        render={({ field }) => (
+                            <DatePicker
+                                date={field.value}
+                                onChange={(d: Date | null) => field.onChange(d)}
+                                placeholderText="Select Date"
+                                className="w-full"
+                            />
+                        )}
+                    />
+                </div>
                 {errors.date && (
                     <p className="text-sm text-red-500">
                         {errors.date.message}
@@ -324,12 +474,15 @@ export default function BookingModal({
                     <div className="flex-1">
                         <Label>Start Time</Label>
                         <Controller
-                            name="startTime"
                             control={control}
+                            name="startTime"
                             render={({ field }) => (
                                 <TimePicker
                                     time={field.value}
-                                    onChange={(val) => field.onChange(val)}
+                                    onChange={(d: Date | null) =>
+                                        field.onChange(d)
+                                    }
+                                    placeholderText="Select Start Time"
                                 />
                             )}
                         />
@@ -343,12 +496,15 @@ export default function BookingModal({
                     <div className="flex-1">
                         <Label>End Time</Label>
                         <Controller
-                            name="endTime"
                             control={control}
+                            name="endTime"
                             render={({ field }) => (
                                 <TimePicker
                                     time={field.value}
-                                    onChange={(val) => field.onChange(val)}
+                                    onChange={(d: Date | null) =>
+                                        field.onChange(d)
+                                    }
+                                    placeholderText="Select End Time"
                                 />
                             )}
                         />
@@ -360,11 +516,22 @@ export default function BookingModal({
                     </div>
                 </div>
 
+                {/* Notes */}
                 <Textarea
-                    placeholder="Notes (optional)"
                     {...register('notes')}
+                    placeholder="Notes (optional)"
+                    rows={3}
                 />
             </div>
-        </Dialog>
+
+            <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={onClose}>
+                    Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                    Next
+                </Button>
+            </div>
+        </form>
     )
 }

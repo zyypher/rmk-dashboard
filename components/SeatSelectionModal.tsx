@@ -12,18 +12,20 @@ import DelegateModal from './DelegateModal'
 import { uploadToS3 } from '@/lib/s3'
 import axios from 'axios'
 import { Booking } from '@/types/booking'
+import { toast } from 'react-hot-toast'
 
 interface SeatSelectionModalProps {
     isOpen: boolean
     onClose: () => void
     onBack: () => void
-    room: Room | undefined
+    room?: Room
     selectedSeats: string[]
-    onSeatChange: (seats: string[]) => void
-    onConfirm: (seats: string[]) => void
+    setSelectedSeats: React.Dispatch<React.SetStateAction<string[]>>
+    onFinalSubmit: (seats: string[]) => Promise<void>
     delegates: Record<string, Delegate>
     setDelegates: React.Dispatch<React.SetStateAction<Record<string, Delegate>>>
-    booking: Booking
+    bookingData: Booking
+    loading?: boolean
 }
 
 interface ClientOption {
@@ -39,11 +41,12 @@ export default function SeatSelectionModal({
     onBack,
     room,
     selectedSeats,
-    onSeatChange,
-    onConfirm,
+    setSelectedSeats,
+    onFinalSubmit,
     delegates,
     setDelegates,
-    booking, // ✅ you missed this
+    bookingData,
+    loading,
 }: SeatSelectionModalProps) {
     const [capacity, setCapacity] = useState(0)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -68,9 +71,14 @@ export default function SeatSelectionModal({
     }, [])
 
     const toggleSeat = (seat: string) => {
+        if (selectedSeats.includes(seat)) {
+            setSelectedSeats(selectedSeats.filter((s) => s !== seat))
+        } else {
+            setSelectedSeats([...selectedSeats, seat])
+        }
+
         setActiveSeat(seat)
         setDelegateModalOpen(false)
-        // Wait for modal unmount
         setTimeout(() => {
             setActiveSeat(seat)
             setDelegateModalOpen(true)
@@ -80,7 +88,7 @@ export default function SeatSelectionModal({
     const handleConfirm = async () => {
         setIsSubmitting(true)
         try {
-            await onConfirm(selectedSeats)
+            await onFinalSubmit(selectedSeats)
         } finally {
             setIsSubmitting(false)
         }
@@ -165,7 +173,7 @@ export default function SeatSelectionModal({
                         <Button
                             variant="black"
                             onClick={handleConfirm}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || loading}
                         >
                             {isSubmitting ? 'Saving...' : 'Confirm'}
                         </Button>
@@ -177,106 +185,107 @@ export default function SeatSelectionModal({
                     isOpen={delegateModalOpen}
                     onClose={() => {
                         setDelegateModalOpen(false)
-                        setActiveSeat(null) // ✅ reset
+                        setActiveSeat(null)
                     }}
                     seatId={activeSeat || ''}
                     initialData={
                         activeSeat && delegates[activeSeat]
                             ? {
-                                  name: delegates[activeSeat].name,
-                                  emiratesId: delegates[activeSeat].emiratesId,
-                                  phone: delegates[activeSeat].phone,
-                                  email: delegates[activeSeat].email,
+                                  name: delegates[activeSeat].name || '',
+                                  emiratesId: delegates[activeSeat].emiratesId || '',
+                                  phone: delegates[activeSeat].phone || '',
+                                  email: delegates[activeSeat].email || '',
                                   photo: null,
                                   companyName:
-                                      delegates[activeSeat].companyName,
+                                      delegates[activeSeat].companyName || '',
                                   isCorporate:
-                                      delegates[activeSeat].isCorporate,
-                                  status: delegates[activeSeat].status,
-                                  photoUrl: delegates[activeSeat].photoUrl,
-                                  quotation: delegates[activeSeat].quotation,
-                                  paid: delegates[activeSeat].paid,
+                                      delegates[activeSeat].isCorporate ?? false,
+                                  status: delegates[activeSeat].status || 'NOT_CONFIRMED',
+                                  photoUrl: delegates[activeSeat].photoUrl || '',
+                                  quotation: delegates[activeSeat].quotation || '',
+                                  paid: delegates[activeSeat].paid ?? false,
                                   addNewClient:
-                                      delegates[activeSeat].addNewClient ??
-                                      false,
-                                  clientId:
-                                      delegates[activeSeat].clientId ?? '',
-                                  newClient:
-                                      delegates[activeSeat].newClient ??
-                                      undefined,
+                                      delegates[activeSeat].addNewClient ?? false,
+                                  clientId: delegates[activeSeat].clientId || '',
+                                  newClient: delegates[activeSeat].newClient ? { 
+                                    name: delegates[activeSeat].newClient?.name || '',
+                                    phone: delegates[activeSeat].newClient?.phone || '',
+                                    landline: delegates[activeSeat].newClient?.landline || '',
+                                    email: delegates[activeSeat].newClient?.email || '',
+                                    contactPersonName: delegates[activeSeat].newClient?.contactPersonName || '',
+                                    contactPersonPosition: delegates[activeSeat].newClient?.contactPersonPosition || '',
+                                    tradeLicenseNumber: delegates[activeSeat].newClient?.tradeLicenseNumber || '',
+                                  } : undefined,
                               }
                             : undefined
                     }
-                    clientOptions={clientOptions}
-                    onSave={async (formData) => {
-                        if (!activeSeat) return
-                        console.log(
-                            '## ✅ DelegateModal onSave called with:',
-                            formData,
-                        )
+                    onSave={async (delegateData) => {
+                        if (activeSeat) {
+                            let newPhotoUrl = delegateData.photoUrl
 
-                        const seatId = activeSeat
-                        if (!seatId) return
-
-                        if (formData.addNewClient && formData.newClient) {
-                            const res = await axios.post(
-                                '/api/clients',
-                                formData.newClient,
-                            )
-                            formData.clientId = res.data.id
-                            const newClient = res.data
-                            setClientOptions((prev) => [...prev, newClient])
-                            formData.clientId = newClient.id
-                        }
-
-                        let photoUrl = delegates[activeSeat]?.photoUrl ?? ''
-                        if (formData.photo) {
-                            photoUrl = await uploadToS3(formData.photo)
-                        }
-
-                        const delegate: Delegate = {
-                            id: '',
-                            sessionId: '',
-                            seatId,
-                            name: formData.name || '',
-                            emiratesId: formData.emiratesId || '',
-                            phone: formData.phone || '',
-                            email: formData.email || '',
-                            companyName: formData.companyName || '',
-                            isCorporate: formData.isCorporate,
-                            status: formData.status,
-                            photoUrl,
-                            quotation: formData.quotation || '',
-                            paid: formData.paid ?? false,
-                            createdAt: new Date(),
-                            updatedAt: new Date(),
-                            session: {} as any,
-                            photo: '',
-                            clientId: formData.clientId,
-                            newClient: undefined,
-                        }
-
-                        setDelegates((prev) => {
-                            console.log(
-                                '## 🧠 Setting delegates for',
-                                activeSeat,
-                            )
-                            return {
-                                ...prev,
-                                [activeSeat]: delegate,
+                            if (
+                                delegateData.photo &&
+                                typeof delegateData.photo !== 'string'
+                            ) {
+                                newPhotoUrl = await uploadToS3(delegateData.photo)
                             }
-                        })
 
-                        if (!selectedSeats.includes(activeSeat)) {
-                            console.log(
-                                '## ➕ Adding seat to selectedSeats:',
-                                activeSeat,
-                            )
-                            onSeatChange([...selectedSeats, activeSeat])
+                            let clientIdToUse = delegateData.clientId; // Default to existing clientId
+
+                            if (delegateData.addNewClient && delegateData.newClient) {
+                                try {
+                                    const res = await axios.post(
+                                        '/api/clients',
+                                        delegateData.newClient,
+                                    );
+                                    clientIdToUse = res.data.id; // Use the newly created client's ID
+                                    // Update client options if necessary (assuming clientOptions is in scope)
+                                    // setClientOptions((prev) => [...prev, res.data]);
+                                } catch (error) {
+                                    console.error('Error creating new client:', error);
+                                    toast.error('Failed to create new client.');
+                                    // Optionally, handle this error more gracefully, e.g., prevent delegate save
+                                }
+                            }
+
+                            const newDelegate: Delegate = {
+                                id: delegates[activeSeat]?.id || '',
+                                sessionId: delegates[activeSeat]?.sessionId || '',
+                                seatId: activeSeat,
+                                name: delegateData.name || '',
+                                emiratesId: delegateData.emiratesId || '',
+                                phone: delegateData.phone || '',
+                                email: delegateData.email || '',
+                                companyName: delegateData.companyName || '',
+                                isCorporate: delegateData.isCorporate,
+                                status: delegateData.status,
+                                photoUrl: newPhotoUrl || '',
+                                quotation: delegateData.quotation || '',
+                                paid: delegateData.paid ?? false,
+                                createdAt: delegates[activeSeat]?.createdAt || new Date(),
+                                updatedAt: new Date(),
+                                session: delegates[activeSeat]?.session || {} as any,
+                                photo: '',
+                                clientId: clientIdToUse || '',
+                                newClient: delegateData.newClient ? {
+                                    name: delegateData.newClient.name || '',
+                                    phone: delegateData.newClient.phone || '',
+                                    landline: delegateData.newClient.landline || '',
+                                    email: delegateData.newClient.email || '',
+                                    contactPersonName: delegateData.newClient.contactPersonName || '',
+                                    contactPersonPosition: delegateData.newClient.contactPersonPosition || '',
+                                    tradeLicenseNumber: delegateData.newClient.tradeLicenseNumber || '',
+                                } : undefined,
+                            };
+
+                            setDelegates((prev) => ({
+                                ...prev,
+                                [activeSeat]: newDelegate,
+                            }))
                         }
-
                         setDelegateModalOpen(false)
                     }}
+                    clientOptions={clientOptions}
                 />
 
                 <AttendantSheetModal
@@ -285,17 +294,17 @@ export default function SeatSelectionModal({
                     delegates={delegates}
                     large
                     bookingInfo={{
-                        course: booking?.course?.title || '—',
-                        trainer: booking?.trainer?.name || '—',
-                        date: booking?.date
-                            ? new Date(booking.date).toLocaleDateString('en-GB')
+                        course: bookingData?.course?.title || '—',
+                        trainer: bookingData?.trainer?.name || '—',
+                        date: bookingData?.date
+                            ? new Date(bookingData.date).toLocaleDateString('en-GB')
                             : '—',
                         time:
-                            booking?.startTime && booking?.endTime
-                                ? `${new Date(booking.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(booking.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                            bookingData?.startTime && bookingData?.endTime
+                                ? `${new Date(bookingData.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(bookingData.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
                                 : '—',
-                        venue: booking?.location?.name || '—',
-                        language: booking?.language || '—',
+                        venue: bookingData?.location?.name || '—',
+                        language: bookingData?.language || '—',
                     }}
                 />
             </div>

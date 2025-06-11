@@ -10,8 +10,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { DataTable } from '@/components/custom/table/data-table'
 import { columns } from '@/components/custom/table/bookings/columns'
 import { Booking } from '@/types/booking'
-import BookingModal from '@/components/BookingModal'
-import SeatSelectionModal from '@/components/SeatSelectionModal'
+import BookingFlowDialog from '@/components/custom/booking-flow-dialog'
 import { Course } from '@/types/course'
 import { Trainer } from '@/types'
 import { Room } from '@/types/room'
@@ -115,47 +114,17 @@ export default function BookingsPage() {
         }
     }
 
-    const openEditDialog = async (booking: Booking) => {
-        // Wait until dropdowns are loaded
-        if (
-            !courses.length ||
-            !trainers.length ||
-            !locations.length ||
-            !rooms.length
-        ) {
-            await fetchDropdowns()
-        }
+    const openEditDialog = (booking: Booking) => {
+        console.log('BookingsPage: openEditDialog - setting selectedBooking and step to form', booking);
+        setSelectedBooking(booking);
+        setStep('form'); // Set step to 'form' to open the dialog
+    };
 
-        // Enrich with actual objects
-        setBookingData({
-            ...booking,
-            course:
-                courses.find((c) => c.id === booking.courseId) ||
-                booking.course,
-            trainer:
-                trainers.find((t) => t.id === booking.trainerId) ||
-                booking.trainer,
-            location:
-                locations.find((l) => l.id === booking.locationId) ||
-                booking.location,
-            room: rooms.find((r) => r.id === booking.roomId) || booking.room,
-        })
-
-        setSelectedSeats(booking.selectedSeats || [])
-        setDelegates({})
-        setStep('form')
-
-        try {
-            const res = await axios.get(`/api/bookings/${booking.id}/delegates`)
-            const delegateMap: Record<string, Delegate> = {}
-            res.data.forEach((d: Delegate) => {
-                delegateMap[d.seatId] = d
-            })
-            setDelegates(delegateMap)
-        } catch {
-            toast.error('Failed to fetch delegates')
-        }
-    }
+    const openAddDialog = () => {
+        console.log('BookingsPage: openAddDialog - setting selectedBooking to null and step to form');
+        setSelectedBooking(null); // Clear selected booking for add mode
+        setStep('form'); // Set step to 'form' to open the dialog
+    };
 
     const confirmDelete = (booking: Booking) => {
         setBookingToDelete(booking)
@@ -164,111 +133,10 @@ export default function BookingsPage() {
 
     const resetBookingFlow = () => {
         setStep(null)
-        setBookingData(null)
-        setSelectedSeats([])
-        setDelegates({})
         setSelectedBooking(null)
-    }
-
-    const handleNextStep = (data: any) => {
-        const enrichedData = {
-            ...data,
-            id: bookingData?.id,
-            course:
-                courses.find((c) => c.id === data.courseId) ||
-                bookingData?.course,
-            trainer:
-                trainers.find((t) => t.id === data.trainerId) ||
-                bookingData?.trainer,
-            location:
-                locations.find((l) => l.id === data.locationId) ||
-                bookingData?.location,
-            room: rooms.find((r) => r.id === data.roomId) || bookingData?.room,
-        }
-
-        setBookingData(enrichedData)
-        setStep('seats')
-    }
-
-    const handleFinalSubmit = async (seats: string[]) => {
-        try {
-            const delegateArray = Object.entries(delegates).map(
-                ([seatId, delegate]) => ({
-                    ...delegate,
-                    seatId,
-                }),
-            )
-
-            const payload = {
-                ...bookingData,
-                selectedSeats: seats,
-                participants: seats.length,
-                date: new Date(bookingData.date),
-                startTime: new Date(bookingData.startTime),
-                endTime: new Date(bookingData.endTime),
-                delegates: delegateArray.map(({ photo, ...rest }) => rest),
-            }
-            console.log('##bookingdata', bookingData)
-            const isEditing = !!bookingData?.id
-
-            // ✅ Only for new bookings with photos
-            if (!isEditing) {
-                const formData = new FormData()
-                formData.append('data', JSON.stringify(payload))
-
-                delegateArray.forEach((d) => {
-                    if (d.photo && typeof d.photo !== 'string') {
-                        formData.append(d.seatId, d.photo)
-                    }
-                })
-
-                const res = await fetch('/api/bookings', {
-                    method: 'POST',
-                    body: formData,
-                })
-
-                if (!res.ok) {
-                    const err = await res.json()
-                    if (res.status === 409 && err?.reasons) {
-                        setConflictErrors(err.reasons)
-                        setStep('error')
-                        return
-                    }
-                    throw new Error(err?.error || 'Failed to create booking')
-                }
-
-                toast.success('Booking created')
-            } else {
-                // ✅ For updates, just use PUT
-                const formData = new FormData()
-                formData.append('data', JSON.stringify(payload))
-
-                delegateArray.forEach((d) => {
-                    if (d.photo && typeof d.photo !== 'string') {
-                        formData.append(d.seatId, d.photo)
-                    }
-                })
-
-                await fetch(`/api/bookings/${bookingData.id}`, {
-                    method: 'PUT',
-                    body: formData,
-                })
-
-                toast.success('Booking updated')
-            }
-
-            fetchBookings()
-            resetBookingFlow()
-        } catch (err: any) {
-            if (err?.response?.status === 409 && err?.response?.data?.reasons) {
-                setConflictErrors(err.response.data.reasons)
-                setStep('error')
-            } else {
-                toast.error('Failed to save booking')
-                console.error('Save error:', err)
-                resetBookingFlow()
-            }
-        }
+        setBookingData(null) // Only reset bookingData if it's no longer used for BookingModal directly
+        setSelectedSeats([]) // Only reset if not handled by BookingFlowDialog internal state
+        setDelegates({}) // Only reset if not handled by BookingFlowDialog internal state
     }
 
     const handleDelete = async () => {
@@ -289,7 +157,7 @@ export default function BookingsPage() {
     }
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-6 relative z-10">
             <PageHeading heading="Bookings" />
 
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -300,7 +168,7 @@ export default function BookingsPage() {
                     className="w-full min-w-[16rem] sm:max-w-lg"
                 />
                 {(role === 'ADMIN' || role === 'EDITOR') && (
-                    <Button onClick={() => setStep('form')}>
+                    <Button onClick={openAddDialog}>
                         <Plus className="mr-2 h-4 w-4" />
                         Add Booking
                     </Button>
@@ -321,55 +189,20 @@ export default function BookingsPage() {
                 }}
             />
 
-            {step === 'form' && (
-                <BookingModal
-                    isOpen={step === 'form'}
-                    onClose={resetBookingFlow}
-                    onNext={handleNextStep}
-                    loading={false}
-                    initialData={bookingData}
-                    courses={courses}
-                    trainers={trainers}
-                    rooms={rooms}
-                    languages={languages}
-                    categories={categories}
-                    locations={locations}
-                />
-            )}
-
-            {step === 'seats' && (
-                <SeatSelectionModal
-                    isOpen={step === 'seats'}
-                    onClose={resetBookingFlow}
-                    onBack={() => setStep('form')}
-                    room={bookingData?.room}
-                    selectedSeats={selectedSeats}
-                    onSeatChange={(seats) => setSelectedSeats(seats)}
-                    onConfirm={handleFinalSubmit}
-                    delegates={delegates}
-                    setDelegates={setDelegates}
-                    booking={bookingData}
-                />
-            )}
-
-            {step === 'error' && (
-                <Dialog
-                    isOpen={step === 'error'}
-                    onClose={resetBookingFlow}
-                    title="Booking Conflict Detected"
-                    onSubmit={() => setStep('form')}
-                    submitLabel="Go Back and Edit"
-                >
-                    <ul className="list-disc space-y-2 pl-5 text-sm text-red-600">
-                        {conflictErrors.map((reason, idx) => (
-                            <li key={idx}>{reason}</li>
-                        ))}
-                    </ul>
-                    <p className="mt-4 text-sm text-gray-500">
-                        Please adjust the trainer, room, or time and try again.
-                    </p>
-                </Dialog>
-            )}
+            <BookingFlowDialog
+                isOpen={step === 'form' || step === 'seats' || step === 'error'}
+                onClose={() => {
+                    console.log('BookingsPage: BookingFlowDialog onClose called');
+                    resetBookingFlow();
+                }}
+                initialBooking={selectedBooking}
+                courses={courses}
+                trainers={trainers}
+                rooms={rooms}
+                languages={languages}
+                categories={categories}
+                locations={locations}
+            />
 
             <Dialog
                 isOpen={deleteDialogOpen}

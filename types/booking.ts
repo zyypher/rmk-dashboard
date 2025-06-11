@@ -20,13 +20,16 @@ export interface Booking {
     shortname?: string // ✅ add this
     trainers: { name: string }[]
     category?: {
+      id: string
       name: string
     }
   }
 
   room: {
+    id: string
     name: string
     capacity?: number // ✅ add this
+    locationId: string
   }
 
   trainer: {
