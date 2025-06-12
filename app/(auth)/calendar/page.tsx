@@ -11,20 +11,22 @@ import { Tooltip as ReactTooltip } from 'react-tooltip'
 import 'react-tooltip/dist/react-tooltip.css'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import BookingFlowDialog from '@/components/custom/booking-flow-dialog'
-import { Course } from '@/types/course';
-import { Trainer } from '@/types';
-import { Room } from '@/types/room';
-import { Language } from '@/types/language';
-import { Category } from '@/types/category';
-import { Location } from '@/types/location';
-import axios from 'axios';
-import toast from 'react-hot-toast';
+import { Course } from '@/types/course'
+import { Trainer } from '@/types'
+import { Room } from '@/types/room'
+import { Language } from '@/types/language'
+import { Category } from '@/types/category'
+import { Location } from '@/types/location'
+import axios from 'axios'
+import toast from 'react-hot-toast'
 
 export default function CalendarPage() {
     const [bookings, setBookings] = useState<Booking[]>([])
     const [loading, setLoading] = useState(true)
-    const [isBookingFlowDialogOpen, setIsBookingFlowDialogOpen] = useState(false)
-    const [selectedBookingForDialog, setSelectedBookingForDialog] = useState<Booking | null>(null)
+    const [isBookingFlowDialogOpen, setIsBookingFlowDialogOpen] =
+        useState(false)
+    const [selectedBookingForDialog, setSelectedBookingForDialog] =
+        useState<Booking | null>(null)
     const [courses, setCourses] = useState<Course[]>([])
     const [trainers, setTrainers] = useState<Trainer[]>([])
     const [rooms, setRooms] = useState<Room[]>([])
@@ -82,54 +84,73 @@ export default function CalendarPage() {
 
     if (!Array.isArray(bookings)) return null
 
-    const events = bookings.map((b) => {
-        const confirmed =
-            b.delegates?.filter((d) => d.status === 'CONFIRMED')?.length || 0
-        const notConfirmed =
-            b.delegates?.filter((d) => d.status === 'NOT_CONFIRMED')?.length ||
-            0
-        const capacity = (b.room as any)?.capacity || 0
-        const free = capacity - (confirmed + notConfirmed)
+    const bookingsByDate: Record<string, Booking[]> = {}
 
-        const backgroundColor = b.location?.backgroundColor || '#dbeafe'
-        const textColor = b.location?.textColor || '#1f3a8a'
+    for (const b of bookings) {
+        const dateKey = dayjs(b.date).format('YYYY-MM-DD')
+        if (!bookingsByDate[dateKey]) bookingsByDate[dateKey] = []
+        bookingsByDate[dateKey].push(b)
+    }
 
-        const tooltipId = `tooltip-${b.id}`
-        const tooltipHTML = `
-      <div style='font-weight: bold;'>${b.course?.shortname || b.course?.title} - ${(b.room as any)?.name || ''}</div>
-      <div><span style='color:#4B5563;'>Language:</span> ${b.language}</div>
-      <div><span style='color:#4B5563;'>Trainer:</span> ${b.trainer?.name}</div>
-      <div><span style='color:#4B5563;'>Location:</span> ${b.location?.name}</div>
-      <div><span style='color:#4B5563;'>Room:</span> ${(b.room as any)?.name}</div>
-      <div><span style='color:#4B5563;'>Category:</span> ${b.course?.category?.name}</div>
-      <div><span style='color:#4B5563;'>Time:</span> ${formatTime(b.startTime, b.endTime)}</div>
-      <div style='margin-top:5px;'>
-        <span style='background:#D1FAE5;color:#065F46;padding:2px 5px;border-radius:4px;'>Confirmed: ${confirmed}</span>
-        <span style='background:#FEE2E2;color:#991B1B;padding:2px 5px;border-radius:4px;margin-left:4px;'>Not Confirmed: ${notConfirmed}</span>
-        <span style='background:#DBEAFE;color:#1E40AF;padding:2px 5px;border-radius:4px;margin-left:4px;'>Free: ${free}</span>
-      </div>
-    `
+    const events = Object.entries(bookingsByDate).flatMap(
+        ([_, bookingsForDate]) =>
+            bookingsForDate
+                .sort((a, b) => {
+                    const colorA = a.location?.backgroundColor || ''
+                    const colorB = b.location?.backgroundColor || ''
+                    return colorA.localeCompare(colorB)
+                })
+                .map((b) => {
+                    const confirmed =
+                        b.delegates?.filter((d) => d.status === 'CONFIRMED')
+                            ?.length || 0
+                    const notConfirmed =
+                        b.delegates?.filter((d) => d.status === 'NOT_CONFIRMED')
+                            ?.length || 0
+                    const capacity = (b.room as any)?.capacity || 0
+                    const free = capacity - (confirmed + notConfirmed)
 
-        return {
-            id: b.id,
-            title: `${b.course?.shortname || b.course?.title} - ${(b.room as any)?.name || ''}`,
-            start: dayjs(b.date)
-                .hour(dayjs(b.startTime).hour())
-                .minute(dayjs(b.startTime).minute())
-                .toISOString(),
-            end: dayjs(b.date)
-                .hour(dayjs(b.endTime).hour())
-                .minute(dayjs(b.endTime).minute())
-                .toISOString(),
-            extendedProps: {
-                ...b,
-                tooltipId,
-                tooltipHTML,
-                backgroundColor,
-                textColor,
-            },
-        }
-    })
+                    const backgroundColor =
+                        b.location?.backgroundColor || '#dbeafe'
+                    const textColor = b.location?.textColor || '#1f3a8a'
+                    const tooltipId = `tooltip-${b.id}`
+                    const tooltipHTML = `
+                    <div style='font-weight: bold;'>${b.course?.shortname || b.course?.title} - ${(b.room as any)?.name || ''}</div>
+                    <div><span style='color:#4B5563;'>Language:</span> ${b.language}</div>
+                    <div><span style='color:#4B5563;'>Trainer:</span> ${b.trainer?.name}</div>
+                    <div><span style='color:#4B5563;'>Location:</span> ${b.location?.name}</div>
+                    <div><span style='color:#4B5563;'>Room:</span> ${(b.room as any)?.name}</div>
+                    <div><span style='color:#4B5563;'>Category:</span> ${b.course?.category?.name}</div>
+                    <div><span style='color:#4B5563;'>Time:</span> ${formatTime(b.startTime, b.endTime)}</div>
+                    <div style='margin-top:5px;'>
+                        <span style='background:#D1FAE5;color:#065F46;padding:2px 5px;border-radius:4px;'>Confirmed: ${confirmed}</span>
+                        <span style='background:#FEE2E2;color:#991B1B;padding:2px 5px;border-radius:4px;margin-left:4px;'>Not Confirmed: ${notConfirmed}</span>
+                        <span style='background:#DBEAFE;color:#1E40AF;padding:2px 5px;border-radius:4px;margin-left:4px;'>Free: ${free}</span>
+                    </div>
+                `
+
+                    return {
+                        id: b.id,
+                        title: `${b.course?.shortname || b.course?.title} - ${(b.room as any)?.name || ''}`,
+                        start: dayjs(b.date)
+                            .hour(dayjs(b.startTime).hour())
+                            .minute(dayjs(b.startTime).minute())
+                            .toISOString(),
+                        end: dayjs(b.date)
+                            .hour(dayjs(b.endTime).hour())
+                            .minute(dayjs(b.endTime).minute())
+                            .toISOString(),
+                        extendedProps: {
+                            ...b,
+                            tooltipId: 'global-tooltip',
+                            tooltipHTML,
+                            backgroundColor,
+                            textColor,
+                            sortOrder: b.location?.backgroundColor || '' // this is the key!
+                        },
+                    }
+                }),
+    )
 
     if (loading) {
         return (
@@ -161,27 +182,38 @@ export default function CalendarPage() {
                     right: 'dayGridMonth,timeGridWeek,timeGridDay',
                 }}
                 events={events}
+                eventOrder="extendedProps.sortOrder"
                 height="auto"
                 dayMaxEvents={4} // 👈 show up to 4 items per day
                 eventClick={(arg) => {
-                    const clickedBooking = arg.event.extendedProps as Booking;
+                    const clickedBooking = arg.event.extendedProps as Booking
                     // Explicitly reconstruct the booking object to ensure reactivity and full data
                     setSelectedBookingForDialog({
                         ...clickedBooking,
-                        room: clickedBooking.room ? { ...clickedBooking.room } : { id: '', name: '', capacity: 0, locationId: '' }, // Ensure room is always a complete object
-                        location: clickedBooking.location ? { ...clickedBooking.location } : { name: '' }, // Ensure location is always an object
-                    });
+                        room: clickedBooking.room
+                            ? { ...clickedBooking.room }
+                            : { id: '', name: '', capacity: 0, locationId: '' }, // Ensure room is always a complete object
+                        location: clickedBooking.location
+                            ? { ...clickedBooking.location }
+                            : { name: '' }, // Ensure location is always an object
+                    })
                     setIsBookingFlowDialogOpen(true)
                 }}
                 eventContent={(arg) => (
                     <div
+                        style={{
+                            position: 'relative',
+                            zIndex: 1,
+                            isolation: 'isolate',
+                        }}
                         data-tooltip-id={arg.event.extendedProps.tooltipId}
                         data-tooltip-html={arg.event.extendedProps.tooltipHTML}
                     >
                         <div
                             className="rounded p-1 text-xs shadow-sm"
                             style={{
-                                backgroundColor: arg.event.extendedProps.backgroundColor,
+                                backgroundColor:
+                                    arg.event.extendedProps.backgroundColor,
                                 color: arg.event.extendedProps.textColor,
                             }}
                         >
@@ -189,17 +221,6 @@ export default function CalendarPage() {
                                 {arg.event.title}
                             </div>
                         </div>
-                        <ReactTooltip
-                            id={arg.event.extendedProps.tooltipId}
-                            place="top"
-                            className="z-[9999] !border !border-gray-200 !bg-white !text-gray-900 !shadow-lg"
-                            style={{
-                                padding: '10px',
-                                maxWidth: '280px',
-                                fontSize: '12px',
-                                lineHeight: '1.5',
-                            }}
-                        />
                     </div>
                 )}
             />
@@ -213,9 +234,15 @@ export default function CalendarPage() {
                     // Re-fetch bookings to ensure calendar is updated after add/edit
                     const fetchBookings = async () => {
                         try {
-                            const res = await fetch('/api/bookings?page=1&pageSize=9999')
+                            const res = await fetch(
+                                '/api/bookings?page=1&pageSize=9999',
+                            )
                             const data = await res.json()
-                            setBookings(Array.isArray(data.bookings) ? data.bookings : [])
+                            setBookings(
+                                Array.isArray(data.bookings)
+                                    ? data.bookings
+                                    : [],
+                            )
                         } catch (error) {
                             console.error('Error fetching bookings:', error)
                         }
@@ -229,6 +256,19 @@ export default function CalendarPage() {
                 languages={languages}
                 categories={categories}
                 locations={locations}
+            />
+            <ReactTooltip
+                id="global-tooltip"
+                place="top"
+                float={true}
+                className="tooltip-solid !z-[9999] !border !border-gray-200 !text-gray-900 !shadow-lg"
+                style={{
+                    padding: '10px',
+                    maxWidth: '280px',
+                    fontSize: '12px',
+                    lineHeight: '1.5',
+                    zIndex: 9999,
+                }}
             />
         </div>
     )
