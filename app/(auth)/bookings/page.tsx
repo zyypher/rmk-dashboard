@@ -93,38 +93,42 @@ export default function BookingsPage() {
 
     const fetchDropdowns = async () => {
         try {
-            const [c, t, r, l, cat, loc] = await Promise.all([
-                axios.get('/api/courses'),
-                axios.get('/api/trainers'),
-                axios.get('/api/rooms'),
-                axios.get('/api/languages'),
-                axios.get('/api/categories'),
-                axios.get('/api/locations'),
-            ])
-            setCourses(Array.isArray(c.data.courses) ? c.data.courses : [])
-            setTrainers(Array.isArray(t.data.trainers) ? t.data.trainers : [])
-            setRooms(Array.isArray(r.data.rooms) ? r.data.rooms : [])
-            setLanguages(l.data)
-            setCategories(cat.data)
-            setLocations(
-                Array.isArray(loc.data.locations) ? loc.data.locations : [],
-            )
+            const res = await axios.get('/api/bookings/dropdowns')
+            const {
+                courses,
+                trainers,
+                rooms,
+                languages,
+                categories,
+                locations,
+            } = res.data
+            setCourses(courses)
+            setTrainers(trainers)
+            setRooms(rooms)
+            setLanguages(languages)
+            setCategories(categories)
+            setLocations(locations)
         } catch {
             toast.error('Failed to fetch dropdowns')
         }
     }
 
     const openEditDialog = (booking: Booking) => {
-        console.log('BookingsPage: openEditDialog - setting selectedBooking and step to form', booking);
-        setSelectedBooking(booking);
-        setStep('form'); // Set step to 'form' to open the dialog
-    };
+        console.log(
+            'BookingsPage: openEditDialog - setting selectedBooking and step to form',
+            booking,
+        )
+        setSelectedBooking(booking)
+        setStep('form') // Set step to 'form' to open the dialog
+    }
 
     const openAddDialog = () => {
-        console.log('BookingsPage: openAddDialog - setting selectedBooking to null and step to form');
-        setSelectedBooking(null); // Clear selected booking for add mode
-        setStep('form'); // Set step to 'form' to open the dialog
-    };
+        console.log(
+            'BookingsPage: openAddDialog - setting selectedBooking to null and step to form',
+        )
+        setSelectedBooking(null) // Clear selected booking for add mode
+        setStep('form') // Set step to 'form' to open the dialog
+    }
 
     const confirmDelete = (booking: Booking) => {
         setBookingToDelete(booking)
@@ -157,7 +161,7 @@ export default function BookingsPage() {
     }
 
     return (
-        <div className="space-y-6 p-6 relative z-10">
+        <div className="relative z-10 space-y-6 p-6">
             <PageHeading heading="Bookings" />
 
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -192,8 +196,10 @@ export default function BookingsPage() {
             <BookingFlowDialog
                 isOpen={step === 'form' || step === 'seats' || step === 'error'}
                 onClose={() => {
-                    console.log('BookingsPage: BookingFlowDialog onClose called');
-                    resetBookingFlow();
+                    console.log(
+                        'BookingsPage: BookingFlowDialog onClose called',
+                    )
+                    resetBookingFlow()
                 }}
                 initialBooking={selectedBooking}
                 courses={courses}
