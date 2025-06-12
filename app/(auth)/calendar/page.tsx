@@ -84,54 +84,73 @@ export default function CalendarPage() {
 
     if (!Array.isArray(bookings)) return null
 
-    const events = bookings.map((b) => {
-        const confirmed =
-            b.delegates?.filter((d) => d.status === 'CONFIRMED')?.length || 0
-        const notConfirmed =
-            b.delegates?.filter((d) => d.status === 'NOT_CONFIRMED')?.length ||
-            0
-        const capacity = (b.room as any)?.capacity || 0
-        const free = capacity - (confirmed + notConfirmed)
+    const bookingsByDate: Record<string, Booking[]> = {}
 
-        const backgroundColor = b.location?.backgroundColor || '#dbeafe'
-        const textColor = b.location?.textColor || '#1f3a8a'
+    for (const b of bookings) {
+        const dateKey = dayjs(b.date).format('YYYY-MM-DD')
+        if (!bookingsByDate[dateKey]) bookingsByDate[dateKey] = []
+        bookingsByDate[dateKey].push(b)
+    }
 
-        const tooltipId = `tooltip-${b.id}`
-        const tooltipHTML = `
-      <div style='font-weight: bold;'>${b.course?.shortname || b.course?.title} - ${(b.room as any)?.name || ''}</div>
-      <div><span style='color:#4B5563;'>Language:</span> ${b.language}</div>
-      <div><span style='color:#4B5563;'>Trainer:</span> ${b.trainer?.name}</div>
-      <div><span style='color:#4B5563;'>Location:</span> ${b.location?.name}</div>
-      <div><span style='color:#4B5563;'>Room:</span> ${(b.room as any)?.name}</div>
-      <div><span style='color:#4B5563;'>Category:</span> ${b.course?.category?.name}</div>
-      <div><span style='color:#4B5563;'>Time:</span> ${formatTime(b.startTime, b.endTime)}</div>
-      <div style='margin-top:5px;'>
-        <span style='background:#D1FAE5;color:#065F46;padding:2px 5px;border-radius:4px;'>Confirmed: ${confirmed}</span>
-        <span style='background:#FEE2E2;color:#991B1B;padding:2px 5px;border-radius:4px;margin-left:4px;'>Not Confirmed: ${notConfirmed}</span>
-        <span style='background:#DBEAFE;color:#1E40AF;padding:2px 5px;border-radius:4px;margin-left:4px;'>Free: ${free}</span>
-      </div>
-    `
+    const events = Object.entries(bookingsByDate).flatMap(
+        ([_, bookingsForDate]) =>
+            bookingsForDate
+                .sort((a, b) => {
+                    const colorA = a.location?.backgroundColor || ''
+                    const colorB = b.location?.backgroundColor || ''
+                    return colorA.localeCompare(colorB)
+                })
+                .map((b) => {
+                    const confirmed =
+                        b.delegates?.filter((d) => d.status === 'CONFIRMED')
+                            ?.length || 0
+                    const notConfirmed =
+                        b.delegates?.filter((d) => d.status === 'NOT_CONFIRMED')
+                            ?.length || 0
+                    const capacity = (b.room as any)?.capacity || 0
+                    const free = capacity - (confirmed + notConfirmed)
 
-        return {
-            id: b.id,
-            title: `${b.course?.shortname || b.course?.title} - ${(b.room as any)?.name || ''}`,
-            start: dayjs(b.date)
-                .hour(dayjs(b.startTime).hour())
-                .minute(dayjs(b.startTime).minute())
-                .toISOString(),
-            end: dayjs(b.date)
-                .hour(dayjs(b.endTime).hour())
-                .minute(dayjs(b.endTime).minute())
-                .toISOString(),
-            extendedProps: {
-                ...b,
-                tooltipId: 'global-tooltip',
-                tooltipHTML,
-                backgroundColor,
-                textColor,
-            },
-        }
-    })
+                    const backgroundColor =
+                        b.location?.backgroundColor || '#dbeafe'
+                    const textColor = b.location?.textColor || '#1f3a8a'
+                    const tooltipId = `tooltip-${b.id}`
+                    const tooltipHTML = `
+                    <div style='font-weight: bold;'>${b.course?.shortname || b.course?.title} - ${(b.room as any)?.name || ''}</div>
+                    <div><span style='color:#4B5563;'>Language:</span> ${b.language}</div>
+                    <div><span style='color:#4B5563;'>Trainer:</span> ${b.trainer?.name}</div>
+                    <div><span style='color:#4B5563;'>Location:</span> ${b.location?.name}</div>
+                    <div><span style='color:#4B5563;'>Room:</span> ${(b.room as any)?.name}</div>
+                    <div><span style='color:#4B5563;'>Category:</span> ${b.course?.category?.name}</div>
+                    <div><span style='color:#4B5563;'>Time:</span> ${formatTime(b.startTime, b.endTime)}</div>
+                    <div style='margin-top:5px;'>
+                        <span style='background:#D1FAE5;color:#065F46;padding:2px 5px;border-radius:4px;'>Confirmed: ${confirmed}</span>
+                        <span style='background:#FEE2E2;color:#991B1B;padding:2px 5px;border-radius:4px;margin-left:4px;'>Not Confirmed: ${notConfirmed}</span>
+                        <span style='background:#DBEAFE;color:#1E40AF;padding:2px 5px;border-radius:4px;margin-left:4px;'>Free: ${free}</span>
+                    </div>
+                `
+
+                    return {
+                        id: b.id,
+                        title: `${b.course?.shortname || b.course?.title} - ${(b.room as any)?.name || ''}`,
+                        start: dayjs(b.date)
+                            .hour(dayjs(b.startTime).hour())
+                            .minute(dayjs(b.startTime).minute())
+                            .toISOString(),
+                        end: dayjs(b.date)
+                            .hour(dayjs(b.endTime).hour())
+                            .minute(dayjs(b.endTime).minute())
+                            .toISOString(),
+                        extendedProps: {
+                            ...b,
+                            tooltipId: 'global-tooltip',
+                            tooltipHTML,
+                            backgroundColor,
+                            textColor,
+                            sortOrder: b.location?.backgroundColor || '' // this is the key!
+                        },
+                    }
+                }),
+    )
 
     if (loading) {
         return (
@@ -163,6 +182,7 @@ export default function CalendarPage() {
                     right: 'dayGridMonth,timeGridWeek,timeGridDay',
                 }}
                 events={events}
+                eventOrder="extendedProps.sortOrder"
                 height="auto"
                 dayMaxEvents={4} // 👈 show up to 4 items per day
                 eventClick={(arg) => {
