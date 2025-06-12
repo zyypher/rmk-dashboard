@@ -220,7 +220,7 @@ export default function BookingModal({
                                         : 'Select Course'}
                                 </SelectValue>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-h-60 overflow-y-auto">
                                 {courses.map((course) => (
                                     <SelectItem
                                         key={course.id}
@@ -258,7 +258,7 @@ export default function BookingModal({
                                         : 'Select Category'}
                                 </SelectValue>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-h-60 overflow-y-auto">
                                 {categories.map((cat) => (
                                     <SelectItem key={cat.id} value={cat.id}>
                                         {cat.name}
@@ -294,7 +294,7 @@ export default function BookingModal({
                                         : 'Select Language'}
                                 </SelectValue>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-h-60 overflow-y-auto">
                                 {languages.map((lang) => (
                                     <SelectItem key={lang.id} value={lang.name}>
                                         {lang.name}
@@ -337,7 +337,7 @@ export default function BookingModal({
                                         : 'Select Location'}
                                 </SelectValue>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-h-60 overflow-y-auto">
                                 {locations.map((loc) => (
                                     <SelectItem key={loc.id} value={loc.id}>
                                         {loc.name}
@@ -372,12 +372,7 @@ export default function BookingModal({
                                     {displayRoomName}
                                 </SelectValue>
                             </SelectTrigger>
-                            <SelectContent>
-                                {/* {filteredRooms.map((room) => (
-                                    <SelectItem key={room.id} value={room.id}>
-                                        {room.name}
-                                    </SelectItem>
-                                ))} */}
+                            <SelectContent className="max-h-60 overflow-y-auto">
                                 {filteredRooms.length > 0 ? (
                                     filteredRooms.map((room) => (
                                         <SelectItem
