@@ -11,20 +11,22 @@ import { Tooltip as ReactTooltip } from 'react-tooltip'
 import 'react-tooltip/dist/react-tooltip.css'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import BookingFlowDialog from '@/components/custom/booking-flow-dialog'
-import { Course } from '@/types/course';
-import { Trainer } from '@/types';
-import { Room } from '@/types/room';
-import { Language } from '@/types/language';
-import { Category } from '@/types/category';
-import { Location } from '@/types/location';
-import axios from 'axios';
-import toast from 'react-hot-toast';
+import { Course } from '@/types/course'
+import { Trainer } from '@/types'
+import { Room } from '@/types/room'
+import { Language } from '@/types/language'
+import { Category } from '@/types/category'
+import { Location } from '@/types/location'
+import axios from 'axios'
+import toast from 'react-hot-toast'
 
 export default function CalendarPage() {
     const [bookings, setBookings] = useState<Booking[]>([])
     const [loading, setLoading] = useState(true)
-    const [isBookingFlowDialogOpen, setIsBookingFlowDialogOpen] = useState(false)
-    const [selectedBookingForDialog, setSelectedBookingForDialog] = useState<Booking | null>(null)
+    const [isBookingFlowDialogOpen, setIsBookingFlowDialogOpen] =
+        useState(false)
+    const [selectedBookingForDialog, setSelectedBookingForDialog] =
+        useState<Booking | null>(null)
     const [courses, setCourses] = useState<Course[]>([])
     const [trainers, setTrainers] = useState<Trainer[]>([])
     const [rooms, setRooms] = useState<Room[]>([])
@@ -123,7 +125,7 @@ export default function CalendarPage() {
                 .toISOString(),
             extendedProps: {
                 ...b,
-                tooltipId,
+                tooltipId: 'global-tooltip',
                 tooltipHTML,
                 backgroundColor,
                 textColor,
@@ -164,24 +166,34 @@ export default function CalendarPage() {
                 height="auto"
                 dayMaxEvents={4} // 👈 show up to 4 items per day
                 eventClick={(arg) => {
-                    const clickedBooking = arg.event.extendedProps as Booking;
+                    const clickedBooking = arg.event.extendedProps as Booking
                     // Explicitly reconstruct the booking object to ensure reactivity and full data
                     setSelectedBookingForDialog({
                         ...clickedBooking,
-                        room: clickedBooking.room ? { ...clickedBooking.room } : { id: '', name: '', capacity: 0, locationId: '' }, // Ensure room is always a complete object
-                        location: clickedBooking.location ? { ...clickedBooking.location } : { name: '' }, // Ensure location is always an object
-                    });
+                        room: clickedBooking.room
+                            ? { ...clickedBooking.room }
+                            : { id: '', name: '', capacity: 0, locationId: '' }, // Ensure room is always a complete object
+                        location: clickedBooking.location
+                            ? { ...clickedBooking.location }
+                            : { name: '' }, // Ensure location is always an object
+                    })
                     setIsBookingFlowDialogOpen(true)
                 }}
                 eventContent={(arg) => (
                     <div
+                        style={{
+                            position: 'relative',
+                            zIndex: 1,
+                            isolation: 'isolate',
+                        }}
                         data-tooltip-id={arg.event.extendedProps.tooltipId}
                         data-tooltip-html={arg.event.extendedProps.tooltipHTML}
                     >
                         <div
                             className="rounded p-1 text-xs shadow-sm"
                             style={{
-                                backgroundColor: arg.event.extendedProps.backgroundColor,
+                                backgroundColor:
+                                    arg.event.extendedProps.backgroundColor,
                                 color: arg.event.extendedProps.textColor,
                             }}
                         >
@@ -189,17 +201,6 @@ export default function CalendarPage() {
                                 {arg.event.title}
                             </div>
                         </div>
-                        <ReactTooltip
-                            id={arg.event.extendedProps.tooltipId}
-                            place="top"
-                            className="z-[9999] !border !border-gray-200 !bg-white !text-gray-900 !shadow-lg"
-                            style={{
-                                padding: '10px',
-                                maxWidth: '280px',
-                                fontSize: '12px',
-                                lineHeight: '1.5',
-                            }}
-                        />
                     </div>
                 )}
             />
@@ -213,9 +214,15 @@ export default function CalendarPage() {
                     // Re-fetch bookings to ensure calendar is updated after add/edit
                     const fetchBookings = async () => {
                         try {
-                            const res = await fetch('/api/bookings?page=1&pageSize=9999')
+                            const res = await fetch(
+                                '/api/bookings?page=1&pageSize=9999',
+                            )
                             const data = await res.json()
-                            setBookings(Array.isArray(data.bookings) ? data.bookings : [])
+                            setBookings(
+                                Array.isArray(data.bookings)
+                                    ? data.bookings
+                                    : [],
+                            )
                         } catch (error) {
                             console.error('Error fetching bookings:', error)
                         }
@@ -229,6 +236,19 @@ export default function CalendarPage() {
                 languages={languages}
                 categories={categories}
                 locations={locations}
+            />
+            <ReactTooltip
+                id="global-tooltip"
+                place="top"
+                float={true}
+                className="tooltip-solid !z-[9999] !border !border-gray-200 !text-gray-900 !shadow-lg"
+                style={{
+                    padding: '10px',
+                    maxWidth: '280px',
+                    fontSize: '12px',
+                    lineHeight: '1.5',
+                    zIndex: 9999,
+                }}
             />
         </div>
     )
