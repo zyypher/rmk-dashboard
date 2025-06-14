@@ -7,7 +7,11 @@ export async function GET(req: NextRequest) {
         const [courses, trainers, rooms, languages, categories, locations] = await Promise.all([
             prisma.course.findMany(),
             prisma.trainer.findMany(),
-            prisma.room.findMany(),
+            prisma.room.findMany({
+                include: {
+                    location: true
+                }
+            }),
             prisma.language.findMany(),
             prisma.category.findMany(),
             prisma.location.findMany({
