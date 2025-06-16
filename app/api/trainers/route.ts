@@ -4,31 +4,47 @@ import { prisma } from '@/lib/prisma'
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url)
-        const page = parseInt(searchParams.get('page') || '1', 10)
-        const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
+        const paginated = searchParams.get('paginated') === 'true'
+        
+        if (paginated) {
+            const page = parseInt(searchParams.get('page') || '1', 10)
+            const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
 
-        const [trainers, totalCount] = await Promise.all([
-            prisma.trainer.findMany({
-                skip: (page - 1) * pageSize,
-                take: pageSize,
-                include: {
-                    languages: true,
-                    courses: true,
+            const [trainers, totalCount] = await Promise.all([
+                prisma.trainer.findMany({
+                    skip: (page - 1) * pageSize,
+                    take: pageSize,
+                    include: {
+                        languages: true,
+                        courses: true,
+                    },
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                }),
+                prisma.trainer.count(),
+            ])
+
+            const formatted = trainers.map((trainer) => ({
+                ...trainer,
+                languages: trainer.languages.map((lang) => lang.name),
+            }))
+
+            const totalPages = Math.ceil(totalCount / pageSize)
+            return NextResponse.json({ trainers: formatted, totalPages })
+        } else {
+            // Return all trainers for dropdowns/selects
+            const trainers = await prisma.trainer.findMany({
+                select: {
+                    id: true,
+                    name: true,
                 },
                 orderBy: {
-                    createdAt: 'desc',
+                    name: 'asc',
                 },
-            }),
-            prisma.trainer.count(),
-        ])
-
-        const formatted = trainers.map((trainer) => ({
-            ...trainer,
-            languages: trainer.languages.map((lang) => lang.name),
-        }))
-
-        const totalPages = Math.ceil(totalCount / pageSize)
-        return NextResponse.json({ trainers: formatted, totalPages })
+            })
+            return NextResponse.json({ trainers })
+        }
     } catch (error) {
         console.error('Failed to fetch trainers:', error)
         return NextResponse.json(

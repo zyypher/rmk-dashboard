@@ -53,22 +53,14 @@ export default function CalendarPage() {
 
     const fetchDropdowns = async () => {
         try {
-            const [c, t, r, l, cat, loc] = await Promise.all([
-                axios.get('/api/courses'),
-                axios.get('/api/trainers'),
-                axios.get('/api/rooms'),
-                axios.get('/api/languages'),
-                axios.get('/api/categories'),
-                axios.get('/api/locations'),
-            ])
-            setCourses(Array.isArray(c.data.courses) ? c.data.courses : [])
-            setTrainers(Array.isArray(t.data.trainers) ? t.data.trainers : [])
-            setRooms(Array.isArray(r.data.rooms) ? r.data.rooms : [])
-            setLanguages(l.data)
-            setCategories(cat.data)
-            setLocations(
-                Array.isArray(loc.data.locations) ? loc.data.locations : [],
-            )
+            const res = await axios.get('/api/bookings/dropdowns')
+            const data = res.data
+            setCourses(Array.isArray(data.courses) ? data.courses : [])
+            setTrainers(Array.isArray(data.trainers) ? data.trainers : [])
+            setRooms(Array.isArray(data.rooms) ? data.rooms : [])
+            setLanguages(data.languages || [])
+            setCategories(data.categories || [])
+            setLocations(Array.isArray(data.locations) ? data.locations : [])
         } catch (error) {
             toast.error('Failed to fetch dropdowns')
             console.error('Error fetching dropdowns:', error)
@@ -122,6 +114,7 @@ export default function CalendarPage() {
                     <div><span style='color:#4B5563;'>Room:</span> ${(b.room as any)?.name}</div>
                     <div><span style='color:#4B5563;'>Category:</span> ${b.course?.category?.name}</div>
                     <div><span style='color:#4B5563;'>Time:</span> ${formatTime(b.startTime, b.endTime)}</div>
+                    ${b.notes ? `<div><span style='color:#4B5563;'>Notes:</span> ${b.notes}</div>` : ''}
                     <div style='margin-top:5px;'>
                         <span style='background:#D1FAE5;color:#065F46;padding:2px 5px;border-radius:4px;'>Confirmed: ${confirmed}</span>
                         <span style='background:#FEE2E2;color:#991B1B;padding:2px 5px;border-radius:4px;margin-left:4px;'>Not Confirmed: ${notConfirmed}</span>

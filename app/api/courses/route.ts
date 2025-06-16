@@ -4,27 +4,42 @@ import { prisma } from '@/lib/prisma'
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const page = parseInt(searchParams.get('page') || '1', 10)
-    const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
+    const paginated = searchParams.get('paginated') === 'true'
+    
+    if (paginated) {
+      const page = parseInt(searchParams.get('page') || '1', 10)
+      const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
 
-    const [courses, totalCount] = await Promise.all([
-      prisma.course.findMany({
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        include: {
-          category: true,
-          languages: true,
+      const [courses, totalCount] = await Promise.all([
+        prisma.course.findMany({
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          include: {
+            category: true,
+            languages: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+        prisma.course.count(),
+      ])
+
+      const totalPages = Math.ceil(totalCount / pageSize)
+      return NextResponse.json({ courses, totalPages })
+    } else {
+      // Return all courses for dropdowns/selects
+      const courses = await prisma.course.findMany({
+        select: {
+          id: true,
+          title: true,
         },
         orderBy: {
           title: 'asc',
         },
-      }),
-      prisma.course.count(),
-    ])
-
-    const totalPages = Math.ceil(totalCount / pageSize)
-
-    return NextResponse.json({ courses, totalPages })
+      })
+      return NextResponse.json({ courses })
+    }
   } catch (error) {
     console.error('Error fetching courses:', error)
     return NextResponse.json({ error: 'Failed to fetch courses' }, { status: 500 })

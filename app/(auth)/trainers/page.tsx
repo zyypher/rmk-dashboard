@@ -131,7 +131,7 @@ export default function TrainersPage() {
         setLoading(true)
         try {
             const res = await axios.get('/api/trainers', {
-                params: { page, pageSize },
+                params: { page, pageSize, paginated: true },
             })
             setTrainers(res.data.trainers)
             setTotalPages(res.data.totalPages)

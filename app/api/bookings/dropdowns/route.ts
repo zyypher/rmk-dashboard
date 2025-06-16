@@ -6,7 +6,15 @@ export async function GET(req: NextRequest) {
     try {
         const [courses, trainers, rooms, languages, categories, locations] = await Promise.all([
             prisma.course.findMany(),
-            prisma.trainer.findMany(),
+            prisma.trainer.findMany({
+                select: {
+                    id: true,
+                    name: true,
+                },
+                orderBy: {
+                    name: 'asc',
+                },
+            }),
             prisma.room.findMany({
                 include: {
                     location: true

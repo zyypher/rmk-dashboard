@@ -4,23 +4,34 @@ import { prisma } from '@/lib/prisma'
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url)
-        const page = parseInt(searchParams.get('page') || '1', 10)
-        const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
+        const paginated = searchParams.get('paginated') === 'true'
+        
+        if (paginated) {
+            const page = parseInt(searchParams.get('page') || '1', 10)
+            const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
 
-        const [locations, totalCount] = await Promise.all([
-            prisma.location.findMany({
-                skip: (page - 1) * pageSize,
-                take: pageSize,
+            const [locations, totalCount] = await Promise.all([
+                prisma.location.findMany({
+                    skip: (page - 1) * pageSize,
+                    take: pageSize,
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                }),
+                prisma.location.count(),
+            ])
+
+            const totalPages = Math.ceil(totalCount / pageSize)
+            return NextResponse.json({ locations, totalPages })
+        } else {
+            // Return all locations for dropdowns/selects
+            const locations = await prisma.location.findMany({
                 orderBy: {
-                    createdAt: 'desc',
+                    name: 'asc',
                 },
-            }),
-            prisma.location.count(),
-        ])
-
-        const totalPages = Math.ceil(totalCount / pageSize)
-
-        return NextResponse.json({ locations, totalPages })
+            })
+            return NextResponse.json({ locations })
+        }
     } catch (error) {
         return NextResponse.json(
             { error: 'Failed to fetch locations' },

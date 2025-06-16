@@ -352,11 +352,11 @@ export default function AddDelegateModal({
                     </p>
                 )}
 
-                <Input {...register('quotation')} placeholder="Quotation" />
+                {/* <Input {...register('quotation')} placeholder="Quotation" />
                 <div className="flex items-center space-x-2">
                     <Checkbox id="paid" {...register('paid')} />
                     <Label htmlFor="paid">Paid</Label>
-                </div>
+                </div> */}
 
                 <div>
                     <Label>Is Corporate?</Label>
