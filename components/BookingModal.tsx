@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, useWatch } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import {
@@ -111,13 +111,27 @@ export default function BookingModal({
         resolver: yupResolver(bookingSchema) as any,
     })
 
+    console.log('##courses', courses)
+
     const [displayRoomName, setDisplayRoomName] = useState('Select Room')
+
+    const courseId = useWatch({ control, name: 'courseId' })
+    useEffect(() => {
+        const course = courses.find((c) => c.id === courseId)
+        if (course?.categoryId) {
+            setValue('categoryId', course.categoryId, { shouldValidate: true })
+        }
+    }, [courseId, courses, setValue])
 
     useEffect(() => {
         if (booking) {
+            const categoryId =
+                courses.find((course) => course.id === booking.courseId)
+                    ?.categoryId || ''
+
             reset({
                 courseId: booking.courseId || '',
-                categoryId: booking.course?.category?.id || '',
+                categoryId,
                 language: booking.language || '',
                 locationId: booking.locationId || '',
                 trainerId: booking.trainerId || '',
@@ -135,21 +149,8 @@ export default function BookingModal({
                     ? booking.roomId
                     : '',
             })
-            console.log(
-                '##BookingModal: booking updated, roomId:',
-                booking.roomId,
-                'locationId:',
-                booking.locationId,
-                'filteredRooms length (after reset):',
-                rooms.filter(
-                    (room) =>
-                        room.locationId === booking.locationId &&
-                        room.capacity &&
-                        room.capacity > 0,
-                ).length,
-            )
         }
-    }, [booking, reset, rooms])
+    }, [booking, reset, rooms, courses, setValue])
 
     const selectedLocationId = watch('locationId')
     const filteredRooms = rooms.filter(
@@ -245,7 +246,8 @@ export default function BookingModal({
                     control={control}
                     render={({ field }) => (
                         <Select
-                            key={field.value}
+                            // key={field.value}
+                            {...field}
                             value={field.value}
                             onValueChange={field.onChange}
                         >
