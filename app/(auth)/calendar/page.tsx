@@ -122,6 +122,7 @@ export default function CalendarPage() {
                     <div><span style='color:#4B5563;'>Room:</span> ${(b.room as any)?.name}</div>
                     <div><span style='color:#4B5563;'>Category:</span> ${b.course?.category?.name}</div>
                     <div><span style='color:#4B5563;'>Time:</span> ${formatTime(b.startTime, b.endTime)}</div>
+                    ${b.notes ? `<div><span style='color:#4B5563;'>Notes:</span> ${b.notes}</div>` : ''}
                     <div style='margin-top:5px;'>
                         <span style='background:#D1FAE5;color:#065F46;padding:2px 5px;border-radius:4px;'>Confirmed: ${confirmed}</span>
                         <span style='background:#FEE2E2;color:#991B1B;padding:2px 5px;border-radius:4px;margin-left:4px;'>Not Confirmed: ${notConfirmed}</span>
