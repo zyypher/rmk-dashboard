@@ -105,7 +105,7 @@ export default function LocationsPage() {
         setLoading(true)
         try {
             const res = await axios.get('/api/locations', {
-                params: { page, pageSize },
+                params: { page, pageSize, paginated: true }
             })
             setLocations(res.data.locations)
             setTotalPages(res.data.totalPages)
