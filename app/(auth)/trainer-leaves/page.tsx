@@ -93,7 +93,9 @@ export default function TrainerLeavesPage() {
 
     const fetchTrainers = async () => {
         try {
-            const res = await axios.get('/api/trainers')
+            const res = await axios.get('/api/trainers', {
+                params: { paginated: false }
+            })
             setTrainers(res.data.trainers)
         } catch {
             toast.error('Failed to fetch trainers')
