@@ -13,6 +13,8 @@ import {
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
+import { saveAs } from 'file-saver'
 
 interface AttendantSheetModalProps {
     isOpen: boolean
@@ -36,27 +38,26 @@ export default function AttendantSheetModal({
     large,
     bookingInfo,
 }: AttendantSheetModalProps) {
-
     console.log('##bookingInfo', bookingInfo)
-    const exportToExcel = () => {
+    const exportToExcelOld = () => {
         const data = Object.entries(delegates).map(([seatId, d]) => ({
-            'Seat': seatId,
-            'Name': d.name || '',
+            Seat: seatId,
+            Name: d.name || '',
             'Emirates ID': d.emiratesId || '',
-            'Phone': d.phone || '',
-            'Email': d.email || '',
-            'Company': d.companyName || '',
-            'Type': d.isCorporate ? 'Corporate' : 'Public',
-            'Status': d.status === 'CONFIRMED' ? 'Confirmed' : 'Not Confirmed',
+            Phone: d.phone || '',
+            Email: d.email || '',
+            Company: d.companyName || '',
+            Type: d.isCorporate ? 'Corporate' : 'Public',
+            Status: d.status === 'CONFIRMED' ? 'Confirmed' : 'Not Confirmed',
             'Client Name': d.newClient?.name || '-',
             'Trade License': d.newClient?.tradeLicenseNumber || '-',
-        }));
+        }))
 
-        const worksheet = XLSX.utils.json_to_sheet(data);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Attendant Sheet");
-        XLSX.writeFile(workbook, "attendant_sheet.xlsx");
-    };
+        const worksheet = XLSX.utils.json_to_sheet(data)
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendant Sheet')
+        XLSX.writeFile(workbook, 'attendant_sheet.xlsx')
+    }
 
     const exportToPDF = () => {
         const doc = new jsPDF({
@@ -185,13 +186,150 @@ export default function AttendantSheetModal({
         }
     }
 
+    const exportToExcelNew = async () => {
+        const workbook = new ExcelJS.Workbook()
+        const worksheet = workbook.addWorksheet('Attendant Sheet')
+
+        // Header Section (merged cells)
+        worksheet.mergeCells('A1', 'H1')
+        worksheet.getCell('A1').value = 'ATTENDANCE LIST OF ATTENDEES'
+        worksheet.getCell('A1').alignment = {
+            vertical: 'middle',
+            horizontal: 'center',
+        }
+        worksheet.getCell('A1').font = { bold: true, size: 14 }
+
+        worksheet.addRow([])
+
+        worksheet.addRow([
+            `Training Course: ${bookingInfo?.course || ''}`,
+            '',
+            '',
+            '',
+            `Tutor/Lecturer: ${bookingInfo?.trainer || ''}`,
+            '',
+            '',
+            '',
+        ])
+        worksheet.addRow([
+            `Training Date: ${bookingInfo?.date || ''}`,
+            '',
+            '',
+            '',
+            `Training Timings: ${bookingInfo?.time || ''}`,
+            '',
+            '',
+            '',
+        ])
+        worksheet.addRow([
+            `Training Venue: ${bookingInfo?.venue || ''}`,
+            '',
+            '',
+            '',
+            `Training Language: ${bookingInfo?.language || ''}`,
+            '',
+            '',
+            '',
+        ])
+        worksheet.addRow([])
+
+        // Table Headers
+        const headerRow = worksheet.addRow([
+            'No.',
+            'Name of Trainee',
+            'Emirates ID No.',
+            'Contact No.',
+            'Company Name',
+            'Client Name',
+            'Trade License',
+            'Signature',
+        ])
+        headerRow.eachCell((cell) => {
+            cell.font = { bold: true }
+            cell.alignment = { horizontal: 'center' }
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' },
+            }
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF042D54' },
+            }
+            cell.font = { color: { argb: 'FFFFFFFF' }, bold: true }
+        })
+
+        // Delegate Rows
+        const tableData = Object.entries(delegates).map(([seatId, d], i) => [
+            i + 1,
+            d.name || '',
+            d.emiratesId || '',
+            d.phone || '',
+            d.companyName || '',
+            d.newClient?.name || '-',
+            d.newClient?.tradeLicenseNumber || '-',
+            '',
+        ])
+
+        tableData.forEach((row) => {
+            const newRow = worksheet.addRow(row)
+            newRow.eachCell((cell) => {
+                cell.alignment = { horizontal: 'center' }
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' },
+                }
+            })
+        })
+
+        worksheet.addRow([])
+        worksheet.addRow([
+            `Total no of attendees: ${tableData.length}`,
+            '',
+            '',
+            '',
+            'Tutor/Lecturer Signature: ____________________',
+            '',
+            'Checked and received by: ____________________',
+        ])
+        worksheet.addRow([])
+
+        // Footer info (merged and centered)
+        const footerLines = [
+            'RMK Abu Dhabi: Al Salam St., Abdullah Bin Darwish Alketbi Tower, Intersection Hamdan St., 14th Floor, Office no. 1404',
+            'Tel: +971-26738340    Mobile# 0588081972',
+            'Email: ghada@rmkexperts.com / admin@rmkexperts.com | www.rmkexperts.com',
+        ]
+
+        footerLines.forEach((line) => {
+            const nextRowNum =
+                (worksheet.lastRow?.number || worksheet.rowCount) + 1
+            worksheet.mergeCells(`A${nextRowNum}:H${nextRowNum}`)
+            worksheet.getCell(`A${nextRowNum}`).value = line
+            worksheet.getCell(`A${nextRowNum}`).alignment = {
+                horizontal: 'center',
+            }
+        })
+
+        worksheet.columns.forEach((column) => {
+            column.width = 20
+        })
+
+        const buffer = await workbook.xlsx.writeBuffer()
+        saveAs(new Blob([buffer]), 'attendant_sheet.xlsx')
+    }
+
     return (
         <Dialog
             isOpen={isOpen}
             onClose={onClose}
             title="Attendant Sheet"
             submitLabel="Export to Excel"
-            onSubmit={exportToExcel}
+            // onSubmit={exportToExcel}
             className={large ? 'max-w-6xl' : ''}
         >
             <div className="max-h-[60vh] overflow-x-auto">
@@ -227,6 +365,26 @@ export default function AttendantSheetModal({
                         ))}
                     </TableBody>
                 </Table>
+                <div className="mt-4 flex justify-end gap-4">
+                    <button
+                        className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                        onClick={exportToExcelOld}
+                    >
+                        Export to Excel Old
+                    </button>
+                    <button
+                        className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+                        onClick={exportToExcelNew}
+                    >
+                        Export to Excel New
+                    </button>
+                    <button
+                        className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                        onClick={exportToPDF}
+                    >
+                        Export to PDF
+                    </button>
+                </div>
             </div>
         </Dialog>
     )
