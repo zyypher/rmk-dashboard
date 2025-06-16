@@ -111,7 +111,7 @@ const CoursesPage = () => {
         setLoading(true)
         try {
             const res = await axios.get('/api/courses', {
-                params: { page, pageSize },
+                params: { page, pageSize, paginated: true }
             })
             setCourses(res.data.courses)
             setTotalPages(res.data.totalPages)
