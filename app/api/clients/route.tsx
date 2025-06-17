@@ -5,6 +5,8 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url)
         const id = searchParams.get('id')
+        const paginatedParam = searchParams.get('paginated')
+        const paginated = paginatedParam === 'true'
 
         if (id) {
             // Fetch a single client by ID
@@ -16,6 +18,18 @@ export async function GET(req: NextRequest) {
             } else {
                 return NextResponse.json({ error: 'Client not found' }, { status: 404 });
             }
+        }
+
+        if (!paginated) {
+            // Return all clients if pagination is explicitly false, sorted alphabetically by name (case-insensitive)
+            const allClients = await prisma.client.findMany({
+                orderBy: { name: 'asc' },
+            });
+
+            // Sort in application layer for case-insensitivity
+            allClients.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+            return NextResponse.json({ clients: allClients, totalPages: 1 });
         }
 
         const page = parseInt(searchParams.get('page') || '1', 10)
