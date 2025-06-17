@@ -105,7 +105,7 @@ export default function ClientsPage() {
         setLoading(true)
         try {
             const res = await axios.get('/api/clients', {
-                params: { page, pageSize },
+                params: { page, pageSize, paginated: true },
             })
             setClients(res.data.clients)
             setTotalPages(res.data.totalPages)
