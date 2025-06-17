@@ -19,6 +19,26 @@ import { Category } from '@/types/category'
 import { Location } from '@/types/location'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import { Dialog } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Plus, ClipboardList, Trash2 } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import * as yup from 'yup'
+import { yupResolver } from '@hookform/resolvers/yup'
+import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
+
+interface DailyNote {
+    id?: string
+    date: string // ISO string
+    note: string
+    createdAt?: string
+    updatedAt?: string
+}
+
+const dailyNoteSchema = yup.object({
+    note: yup.string().required('Note cannot be empty'),
+})
 
 export default function CalendarPage() {
     const [bookings, setBookings] = useState<Booking[]>([])
@@ -33,6 +53,18 @@ export default function CalendarPage() {
     const [languages, setLanguages] = useState<Language[]>([])
     const [categories, setCategories] = useState<Category[]>([])
     const [locations, setLocations] = useState<Location[]>([])
+    const [dailyNotes, setDailyNotes] = useState<Record<string, DailyNote>>({}) // Explicitly type useState
+    const [noteDialogOpen, setNoteDialogOpen] = useState(false)
+    const [selectedNoteDate, setSelectedNoteDate] = useState<Date | null>(null)
+    const [currentDailyNote, setCurrentDailyNote] = useState<DailyNote | null>(null)
+    const [noteFormLoading, setNoteFormLoading] = useState(false)
+
+    const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({
+        resolver: yupResolver(dailyNoteSchema),
+        defaultValues: {
+            note: '',
+        },
+    })
 
     useEffect(() => {
         const fetchBookings = async () => {
@@ -49,6 +81,7 @@ export default function CalendarPage() {
 
         fetchBookings()
         fetchDropdowns()
+        fetchDailyNotes()
     }, [])
 
     const fetchDropdowns = async () => {
@@ -65,6 +98,98 @@ export default function CalendarPage() {
             toast.error('Failed to fetch dropdowns')
             console.error('Error fetching dropdowns:', error)
         }
+    }
+
+    const fetchDailyNotes = async () => {
+        try {
+            const res = await axios.get('/api/daily-notes')
+            const notesArray: DailyNote[] = res.data
+            const notesMap: Record<string, DailyNote> = notesArray.reduce<Record<string, DailyNote>>((acc, note) => {
+                acc[dayjs(note.date).format('YYYY-MM-DD')] = note
+                return acc
+            }, {}) // Initial value is an empty object of the correct type
+            setDailyNotes(notesMap)
+        } catch (error) {
+            toast.error('Failed to fetch daily notes')
+            console.error('Error fetching daily notes:', error)
+        }
+    }
+
+    const handleAddOrEditNote = async (data: { note: string }) => {
+        if (!selectedNoteDate) return
+        setNoteFormLoading(true)
+        
+        // Ensure we're using the same date handling as openNoteDialog
+        const localDate = dayjs(selectedNoteDate).startOf('day').toDate()
+        const dateString = dayjs(localDate).format('YYYY-MM-DD')
+        
+        console.log('Saving note for date:', dateString)
+        console.log('Selected note date:', selectedNoteDate)
+        console.log('Local date:', localDate)
+
+        try {
+            if (currentDailyNote) {
+                // Update existing note
+                await axios.put('/api/daily-notes', { date: dateString, note: data.note })
+                toast.success('Note updated successfully!')
+            } else {
+                // Create new note
+                await axios.post('/api/daily-notes', { date: dateString, note: data.note })
+                toast.success('Note added successfully!')
+            }
+            setNoteDialogOpen(false)
+            fetchDailyNotes() // Re-fetch notes to update calendar
+        } catch (error) {
+            toast.error('Failed to save note')
+            console.error('Error saving note:', error)
+        } finally {
+            setNoteFormLoading(false)
+        }
+    }
+
+    const handleDeleteNote = async () => {
+        if (!selectedNoteDate) return
+        setNoteFormLoading(true)
+        
+        // Ensure we're using the same date handling as openNoteDialog
+        const localDate = dayjs(selectedNoteDate).startOf('day').toDate()
+        const dateString = dayjs(localDate).format('YYYY-MM-DD')
+
+        try {
+            await axios.delete(`/api/daily-notes?date=${dateString}`)
+            toast.success('Note deleted successfully!')
+            setNoteDialogOpen(false)
+            fetchDailyNotes() // Re-fetch notes to update calendar
+        } catch (error) {
+            toast.error('Failed to delete note')
+            console.error('Error deleting note:', error)
+        } finally {
+            setNoteFormLoading(false)
+        }
+    }
+
+    const openNoteDialog = (date: Date) => {
+        console.log('Original date from FullCalendar:', date)
+        console.log('Date as ISO string:', date.toISOString())
+        
+        // Ensure we're working with the local date, not UTC
+        const localDate = dayjs(date).startOf('day').toDate()
+        console.log('Local date after dayjs processing:', localDate)
+        
+        setSelectedNoteDate(localDate)
+        const dateKey = dayjs(localDate).format('YYYY-MM-DD')
+        console.log('Date key for lookup:', dateKey)
+        
+        const existingNote = dailyNotes[dateKey]
+
+        if (existingNote) {
+            setCurrentDailyNote(existingNote)
+            setValue('note', existingNote.note)
+        } else {
+            setCurrentDailyNote(null)
+            reset({ note: '' })
+        }
+        setNoteDialogOpen(true)
     }
 
     const formatTime = (start: string, end: string) => {
@@ -192,6 +317,34 @@ export default function CalendarPage() {
                     })
                     setIsBookingFlowDialogOpen(true)
                 }}
+                dayCellContent={(arg) => {
+                    const dateKey = dayjs(arg.date).format('YYYY-MM-DD')
+                    const noteForDay = dailyNotes[dateKey]
+                    return (
+                        <>
+                            <div className="fc-daygrid-day-top flex justify-between p-1">
+                                <a className="fc-daygrid-day-number">{arg.dayNumberText}</a>
+                                <div className="flex gap-1">
+                                    {noteForDay ? (
+                                        <button
+                                            onClick={() => openNoteDialog(arg.date)}
+                                            className="z-10 rounded-full bg-yellow-100 p-1 text-yellow-800 hover:bg-yellow-200"
+                                        >
+                                            <ClipboardList className="h-4 w-4" />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => openNoteDialog(arg.date)}
+                                            className="z-10 rounded-full bg-blue-100 p-1 text-blue-800 hover:bg-blue-200"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )
+                }}
                 eventContent={(arg) => (
                     <div
                         style={{
@@ -250,6 +403,39 @@ export default function CalendarPage() {
                 categories={categories}
                 locations={locations}
             />
+
+            {/* Note Dialog */}
+            <Dialog
+                isOpen={noteDialogOpen}
+                onClose={() => setNoteDialogOpen(false)}
+                title={currentDailyNote ? 'Edit Daily Note' : 'Add Daily Note'}
+                onSubmit={handleSubmit(handleAddOrEditNote)}
+                buttonLoading={noteFormLoading}
+                submitLabel={currentDailyNote ? 'Save Changes' : 'Add Note'}
+            >
+                <div className="grid gap-4 py-4">
+                    <FloatingLabelInput
+                        label="Note"
+                        value={watch('note')}
+                        onChange={(val) => setValue('note', val, { shouldValidate: true })}
+                        name="note"
+                        error={errors.note?.message}
+                    />
+                </div>
+                {currentDailyNote && (
+                    <div className="flex justify-start">
+                        <Button
+                            type="button"
+                            variant="outline-general"
+                            onClick={handleDeleteNote}
+                            disabled={noteFormLoading}
+                        >
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete Note
+                        </Button>
+                    </div>
+                )}
+            </Dialog>
+
             <ReactTooltip
                 id="global-tooltip"
                 place="top"
