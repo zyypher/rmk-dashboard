@@ -27,6 +27,7 @@ import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 interface DailyNote {
     id?: string
@@ -326,12 +327,21 @@ export default function CalendarPage() {
                                 <a className="fc-daygrid-day-number">{arg.dayNumberText}</a>
                                 <div className="flex gap-1">
                                     {noteForDay ? (
-                                        <button
-                                            onClick={() => openNoteDialog(arg.date)}
-                                            className="z-10 rounded-full bg-yellow-100 p-1 text-yellow-800 hover:bg-yellow-200"
-                                        >
-                                            <ClipboardList className="h-4 w-4" />
-                                        </button>
+                                        <TooltipProvider delayDuration={0}>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        onClick={() => openNoteDialog(arg.date)}
+                                                        className="z-10 rounded-full bg-yellow-100 p-1 text-yellow-800 hover:bg-yellow-200"
+                                                    >
+                                                        <ClipboardList className="h-4 w-4" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top" sideOffset={5} align="center" avoidCollisions={true}>
+                                                    {noteForDay.note}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     ) : (
                                         <button
                                             onClick={() => openNoteDialog(arg.date)}
