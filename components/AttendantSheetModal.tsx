@@ -10,9 +10,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
-import * as XLSX from 'xlsx'
 import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 
@@ -38,231 +35,106 @@ export default function AttendantSheetModal({
     large,
     bookingInfo,
 }: AttendantSheetModalProps) {
-    console.log('##bookingInfo', bookingInfo)
-    const exportToExcelOld = () => {
-        const data = Object.entries(delegates).map(([seatId, d]) => ({
-            Seat: seatId,
-            Name: d.name || '',
-            'Emirates ID': d.emiratesId || '',
-            Phone: d.phone || '',
-            Email: d.email || '',
-            Company: d.companyName || '',
-            Type: d.isCorporate ? 'Corporate' : 'Public',
-            Status: d.status === 'CONFIRMED' ? 'Confirmed' : 'Not Confirmed',
-            'Client Name': d.newClient?.name || '-',
-            'Trade License': d.newClient?.tradeLicenseNumber || '-',
-        }))
-
-        const worksheet = XLSX.utils.json_to_sheet(data)
-        const workbook = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendant Sheet')
-        XLSX.writeFile(workbook, 'attendant_sheet.xlsx')
-    }
-
-    const exportToPDF = () => {
-        const doc = new jsPDF({
-            orientation: 'landscape',
-            unit: 'mm',
-            format: 'a4',
-        })
-
-        const logoUrl = '/images/new/rmk-logo.png'
-        const img = new Image()
-        img.src = logoUrl
-        img.onload = () => {
-            doc.addImage(img, 'PNG', 14, 10, 35, 20) // logo, no squeeze
-
-            // Title
-            doc.setFontSize(14)
-            doc.setTextColor(4, 45, 84)
-            doc.setFont('helvetica', 'bold')
-            doc.text('ATTENDANCE LIST OF ATTENDEES', 148.5, 30, {
-                align: 'center',
-            })
-
-            // Booking Info: Left aligned with grid padding
-            doc.setFontSize(10)
-            doc.setTextColor(0, 0, 0)
-            doc.setFont('helvetica', 'normal')
-
-            const leftInfo = [
-                `Training Course: ${bookingInfo?.course || ''}`,
-                `Training Date: ${bookingInfo?.date || ''}`,
-                `Training Venue: ${bookingInfo?.venue || ''}`,
-            ]
-            const rightInfo = [
-                `Tutor/Lecturer: ${bookingInfo?.trainer || ''}`,
-                `Training Timings: ${bookingInfo?.time || ''}`,
-                `Training Language: ${bookingInfo?.language || ''}`,
-            ]
-
-            leftInfo.forEach((line, i) => doc.text(line, 14, 42 + i * 6))
-            rightInfo.forEach((line, i) => doc.text(line, 170, 42 + i * 6))
-
-            // Table
-            const tableData = Object.entries(delegates).map(
-                ([seatId, d], i) => {
-                    const clientName = d.newClient?.name || '-'
-                    const tradeLicense = d.newClient?.tradeLicenseNumber || '-'
-
-                    return [
-                        i + 1,
-                        d.name || '',
-                        d.emiratesId || '',
-                        d.phone || '',
-                        d.companyName || '',
-                        clientName,
-                        tradeLicense,
-                        '', // Signature
-                    ]
-                },
-            )
-
-            autoTable(doc, {
-                head: [
-                    [
-                        'No.',
-                        'Name of Trainee',
-                        'Emirates ID No.',
-                        'Contact No.',
-                        'Company Name',
-                        'Client Name',
-                        'Trade License',
-                        'Signature',
-                    ],
-                ],
-                body: tableData,
-                startY: 60,
-                theme: 'grid',
-                styles: {
-                    fontSize: 9,
-                    cellPadding: 2,
-                },
-                headStyles: {
-                    fillColor: [4, 45, 84],
-                    textColor: 255,
-                    halign: 'center',
-                },
-                bodyStyles: {
-                    halign: 'center',
-                    lineColor: [50, 50, 50],
-                    lineWidth: 0.5,
-                },
-            })
-
-            const finalY = (doc as any).lastAutoTable?.finalY || 100
-
-            // Footer content above bottom
-            doc.setFontSize(10)
-            doc.setTextColor(0, 0, 0)
-            doc.text(
-                `Total no of attendees: ${tableData.length}`,
-                14,
-                finalY + 10,
-            )
-            doc.text(
-                'Tutor/Lecturer Signature: ____________________',
-                90,
-                finalY + 10,
-            )
-            doc.text(
-                'Checked and received by: ____________________',
-                170,
-                finalY + 10,
-            )
-
-            // Footer block with padding
-            doc.setFontSize(8)
-            const footerLines = [
-                'RMK Abu Dhabi: Al Salam St., Abdullah Bin Darwish Alketbi Tower, Intersection Hamdan St., 14th Floor, Office no. 1404',
-                'Tel: +971-26738340    Mobile# 0588081972',
-                'Email: ghada@rmkexperts.com / admin@rmkexperts.com | www.rmkexperts.com',
-            ]
-            footerLines.forEach((line, i) =>
-                doc.text(line, 148.5, 205 + i * 5, { align: 'center' }),
-            )
-
-            doc.save('attendant_sheet.pdf')
-        }
-    }
-
-    const exportToExcelNew = async () => {
+    const exportToExcel = async () => {
         const workbook = new ExcelJS.Workbook()
         const worksheet = workbook.addWorksheet('Attendant Sheet')
 
-        // Header Section (merged cells)
-        worksheet.mergeCells('A1', 'H1')
-        worksheet.getCell('A1').value = 'ATTENDANCE LIST OF ATTENDEES'
-        worksheet.getCell('A1').alignment = {
-            vertical: 'middle',
-            horizontal: 'center',
+        const imageBuffer = await fetch('/images/new/rmk-logo.png').then(
+            (res) => res.arrayBuffer(),
+        )
+        const imageId = workbook.addImage({
+            buffer: imageBuffer,
+            extension: 'png',
+        })
+        worksheet.addImage(imageId, {
+            tl: { col: 0, row: 0 },
+            ext: { width: 220, height: 55 },
+        })
+
+        for (let i = 0; i < 3; i++) worksheet.addRow([])
+
+        worksheet.mergeCells('C4:H4')
+        const titleCell = worksheet.getCell('C4')
+        titleCell.value = 'ATTENDANCE LIST OF ATTENDEES'
+        titleCell.font = {
+            bold: true,
+            size: 14,
+            name: 'Arial',
+            color: { argb: 'FF083464' },
         }
-        worksheet.getCell('A1').font = { bold: true, size: 14 }
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
 
         worksheet.addRow([])
 
-        worksheet.addRow([
-            `Training Course: ${bookingInfo?.course || ''}`,
-            '',
-            '',
-            '',
-            `Tutor/Lecturer: ${bookingInfo?.trainer || ''}`,
-            '',
-            '',
-            '',
-        ])
-        worksheet.addRow([
-            `Training Date: ${bookingInfo?.date || ''}`,
-            '',
-            '',
-            '',
-            `Training Timings: ${bookingInfo?.time || ''}`,
-            '',
-            '',
-            '',
-        ])
-        worksheet.addRow([
-            `Training Venue: ${bookingInfo?.venue || ''}`,
-            '',
-            '',
-            '',
-            `Training Language: ${bookingInfo?.language || ''}`,
-            '',
-            '',
-            '',
-        ])
+        const infoRows = [
+            [
+                'Training Course:',
+                bookingInfo?.course || '',
+                '',
+                '',
+                '',
+                'Tutor/Lecturer:',
+                bookingInfo?.trainer || '',
+            ],
+            [
+                'Training Date:',
+                bookingInfo?.date || '',
+                '',
+                '',
+                '',
+                'Training Timings:',
+                bookingInfo?.time || '',
+            ],
+            [
+                'Training Venue:',
+                bookingInfo?.venue || '',
+                '',
+                '',
+                '',
+                'Training Language:',
+                bookingInfo?.language || '',
+            ],
+        ]
+
+        infoRows.forEach((row) => {
+            const r = worksheet.addRow(row)
+            r.getCell(1).font = { bold: true }
+            r.getCell(6).font = { bold: true }
+            r.getCell(2).font = { bold: false }
+            r.getCell(7).font = { bold: false }
+        })
+
         worksheet.addRow([])
 
-        // Table Headers
         const headerRow = worksheet.addRow([
             'No.',
             'Name of Trainee',
             'Emirates ID No.',
             'Contact No.',
             'Company Name',
-            'Client Name',
+            'Brand/StoreName',
             'Trade License',
             'Signature',
         ])
+
+        headerRow.height = 25
         headerRow.eachCell((cell) => {
-            cell.font = { bold: true }
-            cell.alignment = { horizontal: 'center' }
-            cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' },
-            }
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+            cell.alignment = { horizontal: 'center', vertical: 'middle' }
             cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FF042D54' },
+                fgColor: { argb: 'FF083464' },
             }
-            cell.font = { color: { argb: 'FFFFFFFF' }, bold: true }
+            cell.border = {
+                top: { style: 'thin' },
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' },
+            }
         })
 
-        // Delegate Rows
-        const tableData = Object.entries(delegates).map(([seatId, d], i) => [
+        const tableData = Object.entries(delegates).map(([_, d], i) => [
             i + 1,
             d.name || '',
             d.emiratesId || '',
@@ -276,18 +148,18 @@ export default function AttendantSheetModal({
         tableData.forEach((row) => {
             const newRow = worksheet.addRow(row)
             newRow.eachCell((cell) => {
-                cell.alignment = { horizontal: 'center' }
+                cell.alignment = { horizontal: 'center', vertical: 'middle' }
                 cell.border = {
                     top: { style: 'thin' },
-                    left: { style: 'thin' },
                     bottom: { style: 'thin' },
+                    left: { style: 'thin' },
                     right: { style: 'thin' },
                 }
             })
         })
 
         worksheet.addRow([])
-        worksheet.addRow([
+        const summaryRow = worksheet.addRow([
             `Total no of attendees: ${tableData.length}`,
             '',
             '',
@@ -296,31 +168,40 @@ export default function AttendantSheetModal({
             '',
             'Checked and received by: ____________________',
         ])
-        worksheet.addRow([])
-
-        // Footer info (merged and centered)
-        const footerLines = [
-            'RMK Abu Dhabi: Al Salam St., Abdullah Bin Darwish Alketbi Tower, Intersection Hamdan St., 14th Floor, Office no. 1404',
-            'Tel: +971-26738340    Mobile# 0588081972',
-            'Email: ghada@rmkexperts.com / admin@rmkexperts.com | www.rmkexperts.com',
-        ]
-
-        footerLines.forEach((line) => {
-            const nextRowNum =
-                (worksheet.lastRow?.number || worksheet.rowCount) + 1
-            worksheet.mergeCells(`A${nextRowNum}:H${nextRowNum}`)
-            worksheet.getCell(`A${nextRowNum}`).value = line
-            worksheet.getCell(`A${nextRowNum}`).alignment = {
-                horizontal: 'center',
-            }
+        summaryRow.height = 35
+        summaryRow.eachCell((cell) => {
+            cell.alignment = { vertical: 'middle' }
         })
 
-        worksheet.columns.forEach((column) => {
-            column.width = 20
-        })
+        worksheet.columns.forEach((col) => (col.width = 20))
 
         const buffer = await workbook.xlsx.writeBuffer()
-        saveAs(new Blob([buffer]), 'attendant_sheet.xlsx')
+
+        const parsedDate = (() => {
+            if (!bookingInfo?.date) return null
+            const [day, month, year] = bookingInfo.date.split('/')
+            if (!day || !month || !year) return null
+            return new Date(`${year}-${month}-${day}`)
+        })()
+
+        const formattedDate = parsedDate
+            ? parsedDate.toLocaleDateString('en-GB').replace(/\//g, '-')
+            : 'Unknown-Date'
+
+        const courseName =
+            bookingInfo?.course
+                ?.replace(/[^a-z0-9]/gi, ' ')
+                ?.trim()
+                .replace(/\s+/g, ' ') || 'Training'
+        const location =
+            bookingInfo?.venue
+                ?.replace(/[^a-z0-9]/gi, ' ')
+                ?.trim()
+                .replace(/\s+/g, ' ') || 'Location'
+
+        const fileName = `EFST ATTENDANCE SHEET ${location} - ${courseName} - ${formattedDate}.xlsx`
+
+        saveAs(new Blob([buffer]), fileName)
     }
 
     return (
@@ -329,7 +210,6 @@ export default function AttendantSheetModal({
             onClose={onClose}
             title="Attendant Sheet"
             submitLabel="Export to Excel"
-            // onSubmit={exportToExcel}
             className={large ? 'max-w-6xl' : ''}
         >
             <div className="max-h-[60vh] overflow-x-auto">
@@ -368,21 +248,9 @@ export default function AttendantSheetModal({
                 <div className="mt-4 flex justify-end gap-4">
                     <button
                         className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-                        onClick={exportToExcelOld}
+                        onClick={exportToExcel}
                     >
-                        Export to Excel Old
-                    </button>
-                    <button
-                        className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
-                        onClick={exportToExcelNew}
-                    >
-                        Export to Excel New
-                    </button>
-                    <button
-                        className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-                        onClick={exportToPDF}
-                    >
-                        Export to PDF
+                        Export Attendance Sheet
                     </button>
                 </div>
             </div>
