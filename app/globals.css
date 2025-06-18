@@ -112,4 +112,8 @@
         -webkit-backdrop-filter: none !important;
         box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.08) !important;
     }
+
+    .note-tooltip-z {
+        z-index: 2147483647 !important;
+    }
 }
