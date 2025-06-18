@@ -7,9 +7,10 @@ export async function GET(req: Request) {
     const clientName = searchParams.get('clientName') || ''
     const delegateName = searchParams.get('delegateName') || ''
     const clientPhone = searchParams.get('clientPhone') || ''
-    const date = searchParams.get('date')
+    const dateFrom = searchParams.get('dateFrom') || ''
+    const dateTo = searchParams.get('dateTo') || ''
     const courseId = searchParams.get('courseId') || ''
-    const locationId = searchParams.get('locationId') || ''
+    const locationIds = searchParams.get('locationIds') || ''
 
     const delegates = await prisma.delegate.findMany({
         where: {
@@ -56,14 +57,25 @@ export async function GET(req: Request) {
         const s = d.session
         if (!s) return false
 
-        const matchesDate = date
-            ? new Date(s.date).toISOString().split('T')[0] === date
+        // Date range filtering
+        const sessionDate = new Date(s.date).toISOString().split('T')[0]
+        const matchesDateRange = dateFrom && dateTo
+            ? sessionDate >= dateFrom && sessionDate <= dateTo
+            : dateFrom
+            ? sessionDate >= dateFrom
+            : dateTo
+            ? sessionDate <= dateTo
             : true
 
         const matchesCourse = courseId ? s.courseId === courseId : true
-        const matchesLocation = locationId ? s.locationId === locationId : true
+        
+        // Multi-location filtering
+        const locationIdsArray = locationIds ? locationIds.split(',') : []
+        const matchesLocation = locationIdsArray.length > 0 
+            ? locationIdsArray.includes(s.locationId || '')
+            : true
 
-        return matchesDate && matchesCourse && matchesLocation
+        return matchesDateRange && matchesCourse && matchesLocation
     })
 
     const result = filtered.map((d) => ({
@@ -88,6 +100,10 @@ export async function GET(req: Request) {
                   })}`
                 : '-',
     }))
+
+    if (result.length === 0) {
+        return new NextResponse(null, { status: 204 })
+    }
 
     return NextResponse.json(result)
 }
