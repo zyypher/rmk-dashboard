@@ -13,6 +13,12 @@ import { uploadToS3 } from '@/lib/s3'
 import axios from 'axios'
 import { Booking } from '@/types/booking'
 import { toast } from 'react-hot-toast'
+import {
+    Tooltip,
+    TooltipTrigger,
+    TooltipContent,
+    TooltipProvider,
+} from '@/components/ui/tooltip'
 
 interface SeatSelectionModalProps {
     isOpen: boolean
@@ -120,24 +126,111 @@ export default function SeatSelectionModal({
                                       ? 'text-yellow-500 border-yellow-500'
                                       : 'text-gray-600 border-gray-400'
 
-                            return (
-                                <button
-                                    key={seatId}
-                                    onClick={() => toggleSeat(seatId)}
-                                    className={clsx(
-                                        'rounded border p-1 transition',
-                                        color,
-                                        isSelected
-                                            ? 'bg-muted'
-                                            : 'hover:scale-105',
-                                    )}
-                                >
-                                    <Armchair
-                                        className="h-6 w-6"
-                                        style={{ transform: 'scaleX(-1)' }}
-                                    />
-                                </button>
-                            )
+                            const delegate = delegates[seatId]
+
+                            // Only show tooltip if delegate exists
+                            if (delegate) {
+                                const tooltipContent = (
+                                    <div className="min-w-[180px] max-w-xs space-y-1">
+                                        <div>
+                                            <span className="font-semibold text-gray-600">
+                                                Name:
+                                            </span>
+                                            <span className="ml-1 font-medium text-black">
+                                                {delegate.name || '—'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="font-semibold text-gray-600">
+                                                Client:
+                                            </span>
+                                            <span className="ml-1 font-medium text-black">
+                                                {delegate.companyName ||
+                                                    delegate.newClient?.name ||
+                                                    '—'}
+                                            </span>
+                                        </div>
+                                        {delegate.email && (
+                                            <div>
+                                                <span className="font-semibold text-gray-600">
+                                                    Email:
+                                                </span>
+                                                <span className="ml-1 text-black">
+                                                    {delegate.email}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {delegate.phone && (
+                                            <div>
+                                                <span className="font-semibold text-gray-600">
+                                                    Phone:
+                                                </span>
+                                                <span className="ml-1 text-black">
+                                                    {delegate.phone}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                                return (
+                                    <TooltipProvider
+                                        delayDuration={0}
+                                        key={seatId}
+                                    >
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    onClick={() =>
+                                                        toggleSeat(seatId)
+                                                    }
+                                                    className={clsx(
+                                                        'rounded border p-1 transition',
+                                                        color,
+                                                        isSelected
+                                                            ? 'bg-muted'
+                                                            : 'hover:scale-105',
+                                                    )}
+                                                >
+                                                    <Armchair
+                                                        className="h-6 w-6"
+                                                        style={{
+                                                            transform:
+                                                                'scaleX(-1)',
+                                                        }}
+                                                    />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent
+                                                side="top"
+                                                sideOffset={8}
+                                                className="min-w-[180px] max-w-xs rounded-lg border border-gray-200 bg-white p-3 text-black shadow-lg"
+                                            >
+                                                {tooltipContent}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                )
+                            } else {
+                                // No delegate: just render the button, no tooltip
+                                return (
+                                    <button
+                                        key={seatId}
+                                        onClick={() => toggleSeat(seatId)}
+                                        className={clsx(
+                                            'rounded border p-1 transition',
+                                            color,
+                                            isSelected
+                                                ? 'bg-muted'
+                                                : 'hover:scale-105',
+                                        )}
+                                    >
+                                        <Armchair
+                                            className="h-6 w-6"
+                                            style={{ transform: 'scaleX(-1)' }}
+                                        />
+                                    </button>
+                                )
+                            }
                         },
                     )}
                 </div>,
@@ -149,25 +242,29 @@ export default function SeatSelectionModal({
     // Handle delegate deletion
     const handleDeleteDelegate = async (delegateId: string) => {
         try {
-            await axios.delete(`/api/delegates/${delegateId}`);
-            toast.success('Delegate deleted successfully');
+            await axios.delete(`/api/delegates/${delegateId}`)
+            toast.success('Delegate deleted successfully')
             // Remove from selectedSeats if it was a selected seat
-            setSelectedSeats((prev) => prev.filter((seat) => delegates[seat]?.id !== delegateId));
+            setSelectedSeats((prev) =>
+                prev.filter((seat) => delegates[seat]?.id !== delegateId),
+            )
             // Remove from delegates map
             setDelegates((prev) => {
-                const newDelegates = { ...prev };
+                const newDelegates = { ...prev }
                 // Find the seatId associated with the deleted delegate
-                const seatIdToRemove = Object.keys(newDelegates).find(key => newDelegates[key].id === delegateId);
+                const seatIdToRemove = Object.keys(newDelegates).find(
+                    (key) => newDelegates[key].id === delegateId,
+                )
                 if (seatIdToRemove) {
-                    delete newDelegates[seatIdToRemove];
+                    delete newDelegates[seatIdToRemove]
                 }
-                return newDelegates;
-            });
+                return newDelegates
+            })
         } catch (error) {
-            console.error('Error deleting delegate:', error);
-            toast.error('Failed to delete delegate');
+            console.error('Error deleting delegate:', error)
+            toast.error('Failed to delete delegate')
         }
-    };
+    }
 
     return (
         <Dialog
@@ -216,30 +313,55 @@ export default function SeatSelectionModal({
                             ? {
                                   id: delegates[activeSeat].id, // Pass the delegate ID
                                   name: delegates[activeSeat].name || '',
-                                  emiratesId: delegates[activeSeat].emiratesId || '',
+                                  emiratesId:
+                                      delegates[activeSeat].emiratesId || '',
                                   phone: delegates[activeSeat].phone || '',
                                   email: delegates[activeSeat].email || '',
                                   photo: null,
                                   companyName:
                                       delegates[activeSeat].companyName || '',
                                   isCorporate:
-                                      delegates[activeSeat].isCorporate ?? false,
-                                  status: delegates[activeSeat].status || 'NOT_CONFIRMED',
-                                  photoUrl: delegates[activeSeat].photoUrl || '',
-                                  quotation: delegates[activeSeat].quotation || '',
+                                      delegates[activeSeat].isCorporate ??
+                                      false,
+                                  status:
+                                      delegates[activeSeat].status ||
+                                      'NOT_CONFIRMED',
+                                  photoUrl:
+                                      delegates[activeSeat].photoUrl || '',
+                                  quotation:
+                                      delegates[activeSeat].quotation || '',
                                   paid: delegates[activeSeat].paid ?? false,
                                   addNewClient:
-                                      delegates[activeSeat].addNewClient ?? false,
-                                  clientId: delegates[activeSeat].clientId || '',
-                                  newClient: delegates[activeSeat].newClient ? { 
-                                    name: delegates[activeSeat].newClient?.name || '',
-                                    phone: delegates[activeSeat].newClient?.phone || '',
-                                    landline: delegates[activeSeat].newClient?.landline || '',
-                                    email: delegates[activeSeat].newClient?.email || '',
-                                    contactPersonName: delegates[activeSeat].newClient?.contactPersonName || '',
-                                    contactPersonPosition: delegates[activeSeat].newClient?.contactPersonPosition || '',
-                                    tradeLicenseNumber: delegates[activeSeat].newClient?.tradeLicenseNumber || '',
-                                  } : undefined,
+                                      delegates[activeSeat].addNewClient ??
+                                      false,
+                                  clientId:
+                                      delegates[activeSeat].clientId || '',
+                                  newClient: delegates[activeSeat].newClient
+                                      ? {
+                                            name:
+                                                delegates[activeSeat].newClient
+                                                    ?.name || '',
+                                            phone:
+                                                delegates[activeSeat].newClient
+                                                    ?.phone || '',
+                                            landline:
+                                                delegates[activeSeat].newClient
+                                                    ?.landline || '',
+                                            email:
+                                                delegates[activeSeat].newClient
+                                                    ?.email || '',
+                                            contactPersonName:
+                                                delegates[activeSeat].newClient
+                                                    ?.contactPersonName || '',
+                                            contactPersonPosition:
+                                                delegates[activeSeat].newClient
+                                                    ?.contactPersonPosition ||
+                                                '',
+                                            tradeLicenseNumber:
+                                                delegates[activeSeat].newClient
+                                                    ?.tradeLicenseNumber || '',
+                                        }
+                                      : undefined,
                               }
                             : undefined
                     }
@@ -251,30 +373,39 @@ export default function SeatSelectionModal({
                                 delegateData.photo &&
                                 typeof delegateData.photo !== 'string'
                             ) {
-                                newPhotoUrl = await uploadToS3(delegateData.photo)
+                                newPhotoUrl = await uploadToS3(
+                                    delegateData.photo,
+                                )
                             }
 
-                            let clientIdToUse = delegateData.clientId; // Default to existing clientId
+                            let clientIdToUse = delegateData.clientId // Default to existing clientId
 
-                            if (delegateData.addNewClient && delegateData.newClient) {
+                            if (
+                                delegateData.addNewClient &&
+                                delegateData.newClient
+                            ) {
                                 try {
                                     const res = await axios.post(
                                         '/api/clients',
                                         delegateData.newClient,
-                                    );
-                                    clientIdToUse = res.data.id; // Use the newly created client's ID
+                                    )
+                                    clientIdToUse = res.data.id // Use the newly created client's ID
                                     // Update client options if necessary (assuming clientOptions is in scope)
                                     // setClientOptions((prev) => [...prev, res.data]);
                                 } catch (error) {
-                                    console.error('Error creating new client:', error);
-                                    toast.error('Failed to create new client.');
+                                    console.error(
+                                        'Error creating new client:',
+                                        error,
+                                    )
+                                    toast.error('Failed to create new client.')
                                     // Optionally, handle this error more gracefully, e.g., prevent delegate save
                                 }
                             }
 
                             const newDelegate: Delegate = {
                                 id: delegates[activeSeat]?.id || '',
-                                sessionId: delegates[activeSeat]?.sessionId || '',
+                                sessionId:
+                                    delegates[activeSeat]?.sessionId || '',
                                 seatId: activeSeat,
                                 name: delegateData.name || '',
                                 emiratesId: delegateData.emiratesId || '',
@@ -286,21 +417,40 @@ export default function SeatSelectionModal({
                                 photoUrl: newPhotoUrl || '',
                                 quotation: delegateData.quotation || '',
                                 paid: delegateData.paid ?? false,
-                                createdAt: delegates[activeSeat]?.createdAt || new Date(),
+                                createdAt:
+                                    delegates[activeSeat]?.createdAt ||
+                                    new Date(),
                                 updatedAt: new Date(),
-                                session: delegates[activeSeat]?.session || {} as any,
+                                session:
+                                    delegates[activeSeat]?.session ||
+                                    ({} as any),
                                 photo: '',
                                 clientId: clientIdToUse || '',
-                                newClient: delegateData.newClient ? {
-                                    name: delegateData.newClient.name || '',
-                                    phone: delegateData.newClient.phone || '',
-                                    landline: delegateData.newClient.landline || '',
-                                    email: delegateData.newClient.email || '',
-                                    contactPersonName: delegateData.newClient.contactPersonName || '',
-                                    contactPersonPosition: delegateData.newClient.contactPersonPosition || '',
-                                    tradeLicenseNumber: delegateData.newClient.tradeLicenseNumber || '',
-                                } : undefined,
-                            };
+                                newClient: delegateData.newClient
+                                    ? {
+                                          name:
+                                              delegateData.newClient.name || '',
+                                          phone:
+                                              delegateData.newClient.phone ||
+                                              '',
+                                          landline:
+                                              delegateData.newClient.landline ||
+                                              '',
+                                          email:
+                                              delegateData.newClient.email ||
+                                              '',
+                                          contactPersonName:
+                                              delegateData.newClient
+                                                  .contactPersonName || '',
+                                          contactPersonPosition:
+                                              delegateData.newClient
+                                                  .contactPersonPosition || '',
+                                          tradeLicenseNumber:
+                                              delegateData.newClient
+                                                  .tradeLicenseNumber || '',
+                                      }
+                                    : undefined,
+                            }
 
                             setDelegates((prev) => ({
                                 ...prev,
@@ -322,7 +472,9 @@ export default function SeatSelectionModal({
                         course: bookingData?.course?.title || '—',
                         trainer: bookingData?.trainer?.name || '—',
                         date: bookingData?.date
-                            ? new Date(bookingData.date).toLocaleDateString('en-GB')
+                            ? new Date(bookingData.date).toLocaleDateString(
+                                  'en-GB',
+                              )
                             : '—',
                         time:
                             bookingData?.startTime && bookingData?.endTime
