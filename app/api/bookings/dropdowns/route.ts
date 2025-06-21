@@ -5,7 +5,11 @@ import { prisma } from '@/lib/prisma'
 export async function GET(req: NextRequest) {
     try {
         const [courses, trainers, rooms, languages, categories, locations] = await Promise.all([
-            prisma.course.findMany(),
+            prisma.course.findMany({
+                orderBy: {
+                    title: 'asc',
+                },
+            }),
             prisma.trainer.findMany({
                 select: {
                     id: true,
@@ -18,16 +22,30 @@ export async function GET(req: NextRequest) {
             prisma.room.findMany({
                 include: {
                     location: true
-                }
+                },
+                orderBy: {
+                    name: 'asc',
+                },
             }),
-            prisma.language.findMany(),
-            prisma.category.findMany(),
+            prisma.language.findMany({
+                orderBy: {
+                    name: 'asc',
+                },
+            }),
+            prisma.category.findMany({
+                orderBy: {
+                    name: 'asc',
+                },
+            }),
             prisma.location.findMany({
                 select: {
                     id: true,
                     name: true,
                     backgroundColor: true,
                     textColor: true,
+                },
+                orderBy: {
+                    name: 'asc',
                 },
             }),
         ])

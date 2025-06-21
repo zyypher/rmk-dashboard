@@ -11,6 +11,8 @@ import {
     TableRow,
 } from '@/components/ui/table'
 import ExcelJS from 'exceljs'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import { saveAs } from 'file-saver'
 
 interface AttendantSheetModalProps {
@@ -35,6 +37,30 @@ export default function AttendantSheetModal({
     large,
     bookingInfo,
 }: AttendantSheetModalProps) {
+    const getFileName = (extension: string) => {
+        const parsedDate = (() => {
+            if (!bookingInfo?.date) return null
+            const [day, month, year] = bookingInfo.date.split('/')
+            if (!day || !month || !year) return null
+            return `${year}-${month}-${day}`
+        })()
+
+        const formattedDate = parsedDate || 'Unknown-Date'
+
+        const courseName =
+            bookingInfo?.course
+                ?.replace(/[^a-z0-9]/gi, ' ')
+                .trim()
+                .replace(/\s+/g, ' ') || 'Training'
+        const location =
+            bookingInfo?.venue
+                ?.replace(/[^a-z0-9]/gi, ' ')
+                .trim()
+                .replace(/\s+/g, ' ') || 'Location'
+
+        return `EFST ATTENDANCE SHEET ${location} - ${courseName} - ${formattedDate}.${extension}`
+    }
+
     const exportToExcel = async () => {
         const workbook = new ExcelJS.Workbook()
         const worksheet = workbook.addWorksheet('Attendant Sheet')
@@ -65,7 +91,6 @@ export default function AttendantSheetModal({
         titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
 
         worksheet.addRow([])
-
         const infoRows = [
             [
                 'Training Course:',
@@ -116,7 +141,6 @@ export default function AttendantSheetModal({
             'Trade License',
             'Signature',
         ])
-
         headerRow.height = 25
         headerRow.eachCell((cell) => {
             cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
@@ -176,32 +200,100 @@ export default function AttendantSheetModal({
         worksheet.columns.forEach((col) => (col.width = 20))
 
         const buffer = await workbook.xlsx.writeBuffer()
+        saveAs(new Blob([buffer]), getFileName('xlsx'))
+    }
 
-        const parsedDate = (() => {
-            if (!bookingInfo?.date) return null
-            const [day, month, year] = bookingInfo.date.split('/')
-            if (!day || !month || !year) return null
-            return new Date(`${year}-${month}-${day}`)
-        })()
+    const exportSimpleExcel = () => {
+        const simpleWorkbook = new ExcelJS.Workbook()
+        const ws = simpleWorkbook.addWorksheet('Simple Sheet')
+        ws.addRow([
+            'Seat',
+            'Name',
+            'Emirates ID',
+            'Phone',
+            'Email',
+            'Company',
+            'Type',
+            'Status',
+        ])
+        Object.entries(delegates).forEach(([seat, d]) => {
+            ws.addRow([
+                seat,
+                d.name,
+                d.emiratesId,
+                d.phone,
+                d.email,
+                d.companyName,
+                d.isCorporate ? 'Corporate' : 'Public',
+                d.status,
+            ])
+        })
+        simpleWorkbook.xlsx.writeBuffer().then((buffer) => {
+            saveAs(new Blob([buffer]), getFileName('simple.xlsx'))
+        })
+    }
 
-        const formattedDate = parsedDate
-            ? parsedDate.toLocaleDateString('en-GB').replace(/\//g, '-')
-            : 'Unknown-Date'
+    const exportToPDF = async () => {
+        const doc = new jsPDF()
+        doc.setFontSize(12)
 
-        const courseName =
-            bookingInfo?.course
-                ?.replace(/[^a-z0-9]/gi, ' ')
-                ?.trim()
-                .replace(/\s+/g, ' ') || 'Training'
-        const location =
-            bookingInfo?.venue
-                ?.replace(/[^a-z0-9]/gi, ' ')
-                ?.trim()
-                .replace(/\s+/g, ' ') || 'Location'
+        doc.addImage('/images/new/rmk-logo.png', 'PNG', 15, 10, 50, 20)
+        doc.text('ATTENDANCE LIST OF ATTENDEES', 105, 40, { align: 'center' })
 
-        const fileName = `EFST ATTENDANCE SHEET ${location} - ${courseName} - ${formattedDate}.xlsx`
+        doc.setFontSize(10)
+        doc.text(`Training Course: ${bookingInfo?.course || ''}`, 15, 50)
+        doc.text(`Tutor/Lecturer: ${bookingInfo?.trainer || ''}`, 115, 50)
+        doc.text(`Training Date: ${bookingInfo?.date || ''}`, 15, 57)
+        doc.text(`Training Timings: ${bookingInfo?.time || ''}`, 115, 57)
+        doc.text(`Training Venue: ${bookingInfo?.venue || ''}`, 15, 64)
+        doc.text(`Training Language: ${bookingInfo?.language || ''}`, 115, 64)
 
-        saveAs(new Blob([buffer]), fileName)
+        autoTable(doc, {
+            startY: 72,
+            head: [
+                [
+                    'No.',
+                    'Name of Trainee',
+                    'Emirates ID No.',
+                    'Contact No.',
+                    'Company Name',
+                    'Brand/StoreName',
+                    'Trade License',
+                    'Signature',
+                ],
+            ],
+            body: Object.entries(delegates).map(([_, d], i) => [
+                i + 1,
+                d.name || '',
+                d.emiratesId || '',
+                d.phone || '',
+                d.companyName || '',
+                d.newClient?.name || '-',
+                d.newClient?.tradeLicenseNumber || '-',
+                '',
+            ]),
+            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { fillColor: [8, 52, 100], textColor: 255 },
+        })
+
+        const finalY = (doc as any).lastAutoTable.finalY || 100
+        doc.text(
+            `Total no of attendees: ${Object.keys(delegates).length}`,
+            15,
+            finalY + 10,
+        )
+        doc.text(
+            'Tutor/Lecturer Signature: ____________________',
+            60,
+            finalY + 10,
+        )
+        doc.text(
+            'Checked and received by: ____________________',
+            135,
+            finalY + 10,
+        )
+
+        doc.save(getFileName('pdf'))
     }
 
     return (
@@ -209,7 +301,7 @@ export default function AttendantSheetModal({
             isOpen={isOpen}
             onClose={onClose}
             title="Attendant Sheet"
-            submitLabel="Export to Excel"
+            submitLabel="Close"
             className={large ? 'max-w-6xl' : ''}
         >
             <div className="max-h-[60vh] overflow-x-auto">
@@ -245,10 +337,23 @@ export default function AttendantSheetModal({
                         ))}
                     </TableBody>
                 </Table>
+
                 <div className="mt-4 flex justify-end gap-4">
                     <button
-                        className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                        onClick={exportSimpleExcel}
+                        className="rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600"
+                    >
+                        Export Simple Excel
+                    </button>
+                    <button
+                        onClick={exportToPDF}
+                        className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                    >
+                        Export as PDF
+                    </button>
+                    <button
                         onClick={exportToExcel}
+                        className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
                     >
                         Export Attendance Sheet
                     </button>
