@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
             prisma.trainingSession.findMany({
                 skip,
                 take: pageSize,
-                orderBy: { createdAt: 'desc' },
+                orderBy: { updatedAt: 'desc' },
                 include: {
                     course: { include: { trainers: true, category: true } },
                     room: true,
