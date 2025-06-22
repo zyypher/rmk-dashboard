@@ -303,7 +303,6 @@ export default function CalendarPage() {
                 events={events}
                 eventOrder="extendedProps.sortOrder"
                 height="auto"
-                dayMaxEvents={4} // 👈 show up to 4 items per day
                 eventClick={(arg) => {
                     const clickedBooking = arg.event.extendedProps as Booking
                     // Explicitly reconstruct the booking object to ensure reactivity and full data
