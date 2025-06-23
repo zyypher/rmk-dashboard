@@ -28,6 +28,7 @@ interface AttendantSheetModalProps {
         venue: string
         language: string
     }
+    clients: { id: string; name: string; tradeLicenseNumber?: string }[]
 }
 
 export default function AttendantSheetModal({
@@ -36,6 +37,7 @@ export default function AttendantSheetModal({
     delegates,
     large,
     bookingInfo,
+    clients,
 }: AttendantSheetModalProps) {
     const getFileName = (extension: string) => {
         const parsedDate = (() => {
@@ -158,16 +160,40 @@ export default function AttendantSheetModal({
             }
         })
 
-        const tableData = Object.entries(delegates).map(([_, d], i) => [
-            i + 1,
-            d.name || '',
-            d.emiratesId || '',
-            d.phone || '',
-            d.companyName || '',
-            d.newClient?.name || '-',
-            d.newClient?.tradeLicenseNumber || '-',
-            '',
-        ])
+        const tableData = Object.entries(delegates).map(([_, d], i) => {
+            let brandStoreName = '-';
+            let tradeLicense = '-';
+            if (d.newClient) {
+                brandStoreName = d.newClient.name || '-';
+                tradeLicense = d.newClient.tradeLicenseNumber || '-';
+            } else if (d.clientId) {
+                const client = clients.find((c) => c.id === d.clientId);
+                if (client) {
+                    brandStoreName = client.name || '-';
+                    if (client.tradeLicenseNumber && client.tradeLicenseNumber !== '-') {
+                        tradeLicense = client.tradeLicenseNumber;
+                    } else {
+                        // Try to find another client with the same name and a trade license number
+                        const altClient = clients.find(
+                            (c) => c.name === client.name && c.tradeLicenseNumber && c.tradeLicenseNumber !== '-'
+                        );
+                        if (altClient) {
+                            tradeLicense = altClient.tradeLicenseNumber || '-';
+                        }
+                    }
+                }
+            }
+            return [
+                i + 1,
+                d.name || '',
+                d.emiratesId || '',
+                d.phone || '',
+                d.companyName || '',
+                brandStoreName,
+                tradeLicense,
+                '',
+            ];
+        })
 
         tableData.forEach((row) => {
             const newRow = worksheet.addRow(row)
@@ -213,10 +239,33 @@ export default function AttendantSheetModal({
             'Phone',
             'Email',
             'Company',
+            'Brand/Store Name',
+            'Trade License',
             'Type',
             'Status',
         ])
         Object.entries(delegates).forEach(([seat, d]) => {
+            let brandStoreName = '-';
+            let tradeLicense = '-';
+            if (d.newClient) {
+                brandStoreName = d.newClient.name || '-';
+                tradeLicense = d.newClient.tradeLicenseNumber || '-';
+            } else if (d.clientId) {
+                const client = clients.find((c) => c.id === d.clientId);
+                if (client) {
+                    brandStoreName = client.name || '-';
+                    if (client.tradeLicenseNumber && client.tradeLicenseNumber !== '-') {
+                        tradeLicense = client.tradeLicenseNumber;
+                    } else {
+                        const altClient = clients.find(
+                            (c) => c.name === client.name && c.tradeLicenseNumber && c.tradeLicenseNumber !== '-'
+                        );
+                        if (altClient) {
+                            tradeLicense = altClient.tradeLicenseNumber || '-';
+                        }
+                    }
+                }
+            }
             ws.addRow([
                 seat,
                 d.name,
@@ -224,6 +273,8 @@ export default function AttendantSheetModal({
                 d.phone,
                 d.email,
                 d.companyName,
+                brandStoreName,
+                tradeLicense,
                 d.isCorporate ? 'Corporate' : 'Public',
                 d.status,
             ])
@@ -262,16 +313,40 @@ export default function AttendantSheetModal({
                     'Signature',
                 ],
             ],
-            body: Object.entries(delegates).map(([_, d], i) => [
-                i + 1,
-                d.name || '',
-                d.emiratesId || '',
-                d.phone || '',
-                d.companyName || '',
-                d.newClient?.name || '-',
-                d.newClient?.tradeLicenseNumber || '-',
-                '',
-            ]),
+            body: Object.entries(delegates).map(([_, d], i) => {
+                let brandStoreName = '-';
+                let tradeLicense = '-';
+                if (d.newClient) {
+                    brandStoreName = d.newClient.name || '-';
+                    tradeLicense = d.newClient.tradeLicenseNumber || '-';
+                } else if (d.clientId) {
+                    const client = clients.find((c) => c.id === d.clientId);
+                    if (client) {
+                        brandStoreName = client.name || '-';
+                        if (client.tradeLicenseNumber && client.tradeLicenseNumber !== '-') {
+                            tradeLicense = client.tradeLicenseNumber;
+                        } else {
+                            // Try to find another client with the same name and a trade license number
+                            const altClient = clients.find(
+                                (c) => c.name === client.name && c.tradeLicenseNumber && c.tradeLicenseNumber !== '-'
+                            );
+                            if (altClient) {
+                                tradeLicense = altClient.tradeLicenseNumber || '-';
+                            }
+                        }
+                    }
+                }
+                return [
+                    i + 1,
+                    d.name || '',
+                    d.emiratesId || '',
+                    d.phone || '',
+                    d.companyName || '',
+                    brandStoreName,
+                    tradeLicense,
+                    '',
+                ];
+            }),
             styles: { fontSize: 8, cellPadding: 2 },
             headStyles: { fillColor: [8, 52, 100], textColor: 255 },
         })
@@ -314,27 +389,50 @@ export default function AttendantSheetModal({
                             <TableHead>Phone</TableHead>
                             <TableHead>Email</TableHead>
                             <TableHead>Company</TableHead>
+                            <TableHead>Brand/Store Name</TableHead>
+                            <TableHead>Trade License</TableHead>
                             <TableHead>Type</TableHead>
                             <TableHead>Status</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {Object.entries(delegates).map(([seatId, d]) => (
-                            <TableRow key={seatId}>
-                                <TableCell>{seatId}</TableCell>
-                                <TableCell>{d.name}</TableCell>
-                                <TableCell>{d.emiratesId}</TableCell>
-                                <TableCell>{d.phone}</TableCell>
-                                <TableCell>{d.email}</TableCell>
-                                <TableCell>{d.companyName}</TableCell>
-                                <TableCell>
-                                    {d.isCorporate ? 'Corporate' : 'Public'}
-                                </TableCell>
-                                <TableCell>
-                                    {d.status === 'CONFIRMED' ? '✅' : '⚠️'}
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {Object.entries(delegates).map(([seatId, d]) => {
+                            let brandStoreName = '-';
+                            let tradeLicense = '-';
+                            if (d.newClient) {
+                                brandStoreName = d.newClient.name || '-';
+                                tradeLicense = d.newClient.tradeLicenseNumber || '-';
+                            } else if (d.clientId) {
+                                const client = clients.find((c) => c.id === d.clientId);
+                                if (client) {
+                                    brandStoreName = client.name || '-';
+                                    if (client.tradeLicenseNumber && client.tradeLicenseNumber !== '-') {
+                                        tradeLicense = client.tradeLicenseNumber;
+                                    } else {
+                                        const altClient = clients.find(
+                                            (c) => c.name === client.name && c.tradeLicenseNumber && c.tradeLicenseNumber !== '-'
+                                        );
+                                        if (altClient) {
+                                            tradeLicense = altClient.tradeLicenseNumber || '-';
+                                        }
+                                    }
+                                }
+                            }
+                            return (
+                                <TableRow key={seatId}>
+                                    <TableCell>{seatId}</TableCell>
+                                    <TableCell>{d.name}</TableCell>
+                                    <TableCell>{d.emiratesId}</TableCell>
+                                    <TableCell>{d.phone}</TableCell>
+                                    <TableCell>{d.email}</TableCell>
+                                    <TableCell>{d.companyName}</TableCell>
+                                    <TableCell>{brandStoreName}</TableCell>
+                                    <TableCell>{tradeLicense}</TableCell>
+                                    <TableCell>{d.isCorporate ? 'Corporate' : 'Public'}</TableCell>
+                                    <TableCell>{d.status === 'CONFIRMED' ? '✅' : '⚠️'}</TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
 
