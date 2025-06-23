@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({ clients, totalPages })
     } catch (error) {
+        console.error('Error in GET /api/clients:', error)
         return NextResponse.json(
             { error: 'Failed to fetch clients' },
             { status: 500 },

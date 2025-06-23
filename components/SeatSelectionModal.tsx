@@ -483,6 +483,7 @@ export default function SeatSelectionModal({
                         venue: bookingData?.location?.name || '—',
                         language: bookingData?.language || '—',
                     }}
+                    clients={clientOptions}
                 />
             </div>
         </Dialog>
