@@ -261,7 +261,7 @@ export default function CalendarPage() {
                             .toISOString(),
                         extendedProps: {
                             ...b,
-                            tooltipId: 'global-tooltip',
+                            tooltipId,
                             tooltipHTML,
                             backgroundColor,
                             textColor,
@@ -361,7 +361,7 @@ export default function CalendarPage() {
                             zIndex: 1,
                             isolation: 'isolate',
                         }}
-                        data-tooltip-id={arg.event.extendedProps.tooltipId}
+                        data-tooltip-id={`tooltip-${arg.event.id}`}
                         data-tooltip-html={arg.event.extendedProps.tooltipHTML}
                     >
                         <div
@@ -445,19 +445,23 @@ export default function CalendarPage() {
                 )}
             </Dialog>
 
-            <ReactTooltip
-                id="global-tooltip"
-                place="top"
-                float={true}
-                className="tooltip-solid !z-[9999] !border !border-gray-200 !text-gray-900 !shadow-lg"
-                style={{
-                    padding: '10px',
-                    maxWidth: '280px',
-                    fontSize: '12px',
-                    lineHeight: '1.5',
-                    zIndex: 9999,
-                }}
-            />
+            {/* Tooltip instances for each event */}
+            {events.map((e) => (
+                <ReactTooltip
+                    key={e.id}
+                    id={`tooltip-${e.id}`}
+                    place="top"
+                    float={true}
+                    className="tooltip-solid !z-[9999] !border !border-gray-200 !text-gray-900 !shadow-lg"
+                    style={{
+                        padding: '10px',
+                        maxWidth: '280px',
+                        fontSize: '12px',
+                        lineHeight: '1.5',
+                        zIndex: 9999,
+                    }}
+                />
+            ))}
         </div>
     )
 }
