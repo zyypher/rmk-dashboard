@@ -426,7 +426,7 @@ export default function BookingModal({
                                         : 'Select Trainer'}
                                 </SelectValue>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="max-h-60 overflow-y-auto">
                                 {trainers.map((trainer) => (
                                     <SelectItem
                                         key={trainer.id}

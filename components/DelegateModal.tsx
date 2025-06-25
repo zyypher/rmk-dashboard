@@ -274,6 +274,7 @@ export default function AddDelegateModal({
             onClose={onClose}
             title="Add Delegate"
             key={seatId}
+            className="max-w-[900px] w-[90vw]"
         >
             <form
                 key={seatId}
