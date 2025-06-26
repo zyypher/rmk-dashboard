@@ -377,7 +377,7 @@ export default function AttendantSheetModal({
             onClose={onClose}
             title="Attendant Sheet"
             submitLabel="Close"
-            className={large ? 'max-w-6xl' : ''}
+            className="max-w-full w-[98vw]"
         >
             <div className="max-h-[60vh] overflow-x-auto">
                 <Table>
