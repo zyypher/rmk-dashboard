@@ -27,7 +27,12 @@ import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { FloatingLabelInput } from '@/components/ui/FloatingLabelInput'
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import {
+    TooltipProvider,
+    Tooltip,
+    TooltipTrigger,
+    TooltipContent,
+} from '@/components/ui/tooltip'
 
 interface DailyNote {
     id?: string
@@ -57,10 +62,19 @@ export default function CalendarPage() {
     const [dailyNotes, setDailyNotes] = useState<Record<string, DailyNote>>({}) // Explicitly type useState
     const [noteDialogOpen, setNoteDialogOpen] = useState(false)
     const [selectedNoteDate, setSelectedNoteDate] = useState<Date | null>(null)
-    const [currentDailyNote, setCurrentDailyNote] = useState<DailyNote | null>(null)
+    const [currentDailyNote, setCurrentDailyNote] = useState<DailyNote | null>(
+        null,
+    )
     const [noteFormLoading, setNoteFormLoading] = useState(false)
 
-    const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({
+    const {
+        register,
+        handleSubmit,
+        reset,
+        setValue,
+        watch,
+        formState: { errors },
+    } = useForm({
         resolver: yupResolver(dailyNoteSchema),
         defaultValues: {
             note: '',
@@ -105,7 +119,9 @@ export default function CalendarPage() {
         try {
             const res = await axios.get('/api/daily-notes')
             const notesArray: DailyNote[] = res.data
-            const notesMap: Record<string, DailyNote> = notesArray.reduce<Record<string, DailyNote>>((acc, note) => {
+            const notesMap: Record<string, DailyNote> = notesArray.reduce<
+                Record<string, DailyNote>
+            >((acc, note) => {
                 acc[dayjs(note.date).format('YYYY-MM-DD')] = note
                 return acc
             }, {}) // Initial value is an empty object of the correct type
@@ -119,11 +135,11 @@ export default function CalendarPage() {
     const handleAddOrEditNote = async (data: { note: string }) => {
         if (!selectedNoteDate) return
         setNoteFormLoading(true)
-        
+
         // Ensure we're using the same date handling as openNoteDialog
         const localDate = dayjs(selectedNoteDate).startOf('day').toDate()
         const dateString = dayjs(localDate).format('YYYY-MM-DD')
-        
+
         console.log('Saving note for date:', dateString)
         console.log('Selected note date:', selectedNoteDate)
         console.log('Local date:', localDate)
@@ -131,11 +147,17 @@ export default function CalendarPage() {
         try {
             if (currentDailyNote) {
                 // Update existing note
-                await axios.put('/api/daily-notes', { date: dateString, note: data.note })
+                await axios.put('/api/daily-notes', {
+                    date: dateString,
+                    note: data.note,
+                })
                 toast.success('Note updated successfully!')
             } else {
                 // Create new note
-                await axios.post('/api/daily-notes', { date: dateString, note: data.note })
+                await axios.post('/api/daily-notes', {
+                    date: dateString,
+                    note: data.note,
+                })
                 toast.success('Note added successfully!')
             }
             setNoteDialogOpen(false)
@@ -151,7 +173,7 @@ export default function CalendarPage() {
     const handleDeleteNote = async () => {
         if (!selectedNoteDate) return
         setNoteFormLoading(true)
-        
+
         // Ensure we're using the same date handling as openNoteDialog
         const localDate = dayjs(selectedNoteDate).startOf('day').toDate()
         const dateString = dayjs(localDate).format('YYYY-MM-DD')
@@ -172,15 +194,15 @@ export default function CalendarPage() {
     const openNoteDialog = (date: Date) => {
         console.log('Original date from FullCalendar:', date)
         console.log('Date as ISO string:', date.toISOString())
-        
+
         // Ensure we're working with the local date, not UTC
         const localDate = dayjs(date).startOf('day').toDate()
         console.log('Local date after dayjs processing:', localDate)
-        
+
         setSelectedNoteDate(localDate)
         const dateKey = dayjs(localDate).format('YYYY-MM-DD')
         console.log('Date key for lookup:', dateKey)
-        
+
         const existingNote = dailyNotes[dateKey]
 
         if (existingNote) {
@@ -233,7 +255,7 @@ export default function CalendarPage() {
                     const textColor = b.location?.textColor || '#1f3a8a'
                     const tooltipId = `tooltip-${b.id}`
                     const tooltipHTML = `
-                    <div style='font-weight: bold;'>${b.course?.shortname || b.course?.title} - ${(b.room as any)?.name || ''}</div>
+                    <div style='font-weight: bold;'>${b.course?.shortname || b.course?.title} - ${(b.room as any)?.name || ''} - ${b.language || ''}</div>
                     <div><span style='color:#4B5563;'>Language:</span> ${b.language}</div>
                     <div><span style='color:#4B5563;'>Trainer:</span> ${b.trainer?.name}</div>
                     <div><span style='color:#4B5563;'>Location:</span> ${b.location?.name}</div>
@@ -265,7 +287,7 @@ export default function CalendarPage() {
                             tooltipHTML,
                             backgroundColor,
                             textColor,
-                            sortOrder: b.location?.backgroundColor || '' // this is the key!
+                            sortOrder: b.location?.backgroundColor || '', // this is the key!
                         },
                     }
                 }),
@@ -323,27 +345,40 @@ export default function CalendarPage() {
                     return (
                         <>
                             <div className="fc-daygrid-day-top flex justify-between p-1">
-                                <a className="fc-daygrid-day-number">{arg.dayNumberText}</a>
+                                <a className="fc-daygrid-day-number">
+                                    {arg.dayNumberText}
+                                </a>
                                 <div className="flex gap-1">
                                     {noteForDay ? (
                                         <TooltipProvider delayDuration={0}>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <button
-                                                        onClick={() => openNoteDialog(arg.date)}
+                                                        onClick={() =>
+                                                            openNoteDialog(
+                                                                arg.date,
+                                                            )
+                                                        }
                                                         className="z-10 rounded-full bg-yellow-100 p-1 text-yellow-800 hover:bg-yellow-200"
                                                     >
                                                         <ClipboardList className="h-4 w-4" />
                                                     </button>
                                                 </TooltipTrigger>
-                                                <TooltipContent side="top" sideOffset={5} align="center" avoidCollisions={true}>
+                                                <TooltipContent
+                                                    side="top"
+                                                    sideOffset={5}
+                                                    align="center"
+                                                    avoidCollisions={true}
+                                                >
                                                     {noteForDay.note}
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
                                     ) : (
                                         <button
-                                            onClick={() => openNoteDialog(arg.date)}
+                                            onClick={() =>
+                                                openNoteDialog(arg.date)
+                                            }
                                             className="z-10 rounded-full bg-blue-100 p-1 text-blue-800 hover:bg-blue-200"
                                         >
                                             <Plus className="h-4 w-4" />
@@ -374,6 +409,12 @@ export default function CalendarPage() {
                         >
                             <div className="font-semibold">
                                 {arg.event.title}
+                                {arg.event.extendedProps.language ? (
+                                    <span>
+                                        {' - ' +
+                                            arg.event.extendedProps.language}
+                                    </span>
+                                ) : null}
                             </div>
                         </div>
                     </div>
@@ -426,7 +467,9 @@ export default function CalendarPage() {
                     <FloatingLabelInput
                         label="Note"
                         value={watch('note')}
-                        onChange={(val) => setValue('note', val, { shouldValidate: true })}
+                        onChange={(val) =>
+                            setValue('note', val, { shouldValidate: true })
+                        }
                         name="note"
                         error={errors.note?.message}
                     />
@@ -439,7 +482,7 @@ export default function CalendarPage() {
                             onClick={handleDeleteNote}
                             disabled={noteFormLoading}
                         >
-                            <Trash2 className="h-4 w-4 mr-2" /> Delete Note
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Note
                         </Button>
                     </div>
                 )}
