@@ -116,4 +116,15 @@
     .note-tooltip-z {
         z-index: 2147483647 !important;
     }
+
+    /* Hide or block non-current-month days in FullCalendar month view */
+    .fc-day-other {
+        background: #f5f5f5 !important;
+        pointer-events: none;
+        opacity: 0.5;
+    }
+    .fc-day-other .fc-daygrid-day-number,
+    .fc-day-other .fc-event {
+        display: none !important;
+    }
 }
