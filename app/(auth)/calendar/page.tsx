@@ -464,15 +464,17 @@ export default function CalendarPage() {
                 submitLabel={currentDailyNote ? 'Save Changes' : 'Add Note'}
             >
                 <div className="grid gap-4 py-4">
-                    <FloatingLabelInput
-                        label="Note"
+                    <Textarea
                         value={watch('note')}
-                        onChange={(val) =>
-                            setValue('note', val, { shouldValidate: true })
-                        }
+                        onChange={e => setValue('note', e.target.value, { shouldValidate: true })}
                         name="note"
-                        error={errors.note?.message}
+                        placeholder="Enter your note here..."
+                        rows={5}
+                        className="min-h-[120px] resize-vertical"
                     />
+                    {errors.note?.message && (
+                        <span className="text-sm text-red-500">{errors.note.message}</span>
+                    )}
                 </div>
                 {currentDailyNote && (
                     <div className="flex justify-start">
