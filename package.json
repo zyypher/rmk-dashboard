@@ -43,6 +43,7 @@
         "@radix-ui/react-tooltip": "^1.0.7",
         "@sendgrid/mail": "^8.1.5",
         "@tanstack/react-table": "^8.19.3",
+        "@tippyjs/react": "^4.2.6",
         "apexcharts": "^4.7.0",
         "axios": "^1.8.4",
         "bcrypt": "^5.1.1",

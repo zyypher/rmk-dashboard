@@ -33,6 +33,9 @@ import {
     TooltipTrigger,
     TooltipContent,
 } from '@/components/ui/tooltip'
+import { Portal } from '@radix-ui/react-portal'
+import Tippy from '@tippyjs/react'
+import 'tippy.js/dist/tippy.css'
 
 interface DailyNote {
     id?: string
@@ -350,30 +353,34 @@ export default function CalendarPage() {
                                 </a>
                                 <div className="flex gap-1">
                                     {noteForDay ? (
-                                        <TooltipProvider delayDuration={0}>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <button
-                                                        onClick={() =>
-                                                            openNoteDialog(
-                                                                arg.date,
-                                                            )
-                                                        }
-                                                        className="z-10 rounded-full bg-yellow-100 p-1 text-yellow-800 hover:bg-yellow-200"
-                                                    >
-                                                        <ClipboardList className="h-4 w-4" />
-                                                    </button>
-                                                </TooltipTrigger>
-                                                <TooltipContent
-                                                    side="top"
-                                                    sideOffset={5}
-                                                    align="center"
-                                                    avoidCollisions={true}
+                                        <Tippy
+                                            content={
+                                                <span
+                                                    style={{
+                                                        maxWidth: 280,
+                                                        display: 'block',
+                                                        whiteSpace: 'pre-line',
+                                                        fontSize: 12,
+                                                    }}
                                                 >
                                                     {noteForDay.note}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
+                                                </span>
+                                            }
+                                            appendTo={document.body}
+                                            placement="top"
+                                            theme="light"
+                                            interactive={true}
+                                            zIndex={2147483647}
+                                        >
+                                            <button
+                                                onClick={() =>
+                                                    openNoteDialog(arg.date)
+                                                }
+                                                className="z-10 rounded-full bg-yellow-100 p-1 text-yellow-800 hover:bg-yellow-200"
+                                            >
+                                                <ClipboardList className="h-4 w-4" />
+                                            </button>
+                                        </Tippy>
                                     ) : (
                                         <button
                                             onClick={() =>
@@ -466,14 +473,20 @@ export default function CalendarPage() {
                 <div className="grid gap-4 py-4">
                     <Textarea
                         value={watch('note')}
-                        onChange={e => setValue('note', e.target.value, { shouldValidate: true })}
+                        onChange={(e) =>
+                            setValue('note', e.target.value, {
+                                shouldValidate: true,
+                            })
+                        }
                         name="note"
                         placeholder="Enter your note here..."
                         rows={5}
-                        className="min-h-[120px] resize-vertical"
+                        className="resize-vertical min-h-[120px]"
                     />
                     {errors.note?.message && (
-                        <span className="text-sm text-red-500">{errors.note.message}</span>
+                        <span className="text-sm text-red-500">
+                            {errors.note.message}
+                        </span>
                     )}
                 </div>
                 {currentDailyNote && (
