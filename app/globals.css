@@ -102,6 +102,7 @@
         color: #111827 !important;
         padding: 2px 4px;
         font-size: 0.75rem;
+        z-index: 2 !important;
     }
 
     /* force solid white background with no transparency */
@@ -126,5 +127,9 @@
     .fc-day-other .fc-daygrid-day-number,
     .fc-day-other .fc-event {
         display: none !important;
+    }
+
+    .react-tooltip-topmost {
+        z-index: 2147483647 !important;
     }
 }
