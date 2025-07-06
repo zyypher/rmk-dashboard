@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { apiCall } from '@/lib/api-utils'
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
@@ -93,7 +94,7 @@ export default function BookingsPage() {
 
     const fetchDropdowns = async () => {
         try {
-            const res = await axios.get('/api/bookings/dropdowns')
+            const res = await apiCall('/api/bookings/dropdowns')
             const {
                 courses,
                 trainers,

@@ -111,13 +111,27 @@ export default function BookingFlowDialog({
     const fetchDropdowns = async () => {
         setDropdownsLoading(true)
         try {
+            // Add cache-busting parameters
+            const timestamp = Date.now()
             const [c, t, r, l, cat, loc] = await Promise.all([
-                axios.get('/api/courses'),
-                axios.get('/api/trainers'),
-                axios.get('/api/rooms'),
-                axios.get('/api/languages'),
-                axios.get('/api/categories'),
-                axios.get('/api/locations'),
+                axios.get(`/api/courses?t=${timestamp}`, {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                }),
+                axios.get(`/api/trainers?t=${timestamp}`, {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                }),
+                axios.get(`/api/rooms?t=${timestamp}`, {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                }),
+                axios.get(`/api/languages?t=${timestamp}`, {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                }),
+                axios.get(`/api/categories?t=${timestamp}`, {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                }),
+                axios.get(`/api/locations?t=${timestamp}`, {
+                    headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+                }),
             ])
             setCourses(Array.isArray(c.data.courses) ? c.data.courses : [])
             setTrainers(Array.isArray(t.data.trainers) ? t.data.trainers : [])

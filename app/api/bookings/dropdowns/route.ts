@@ -2,8 +2,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Disable caching for this route
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(req: NextRequest) {
     try {
+        // Add timestamp to force fresh data
+        const timestamp = Date.now()
+        
         const [courses, trainers, rooms, languages, categories, locations] =
             await Promise.all([
                 prisma.course.findMany({ orderBy: { title: 'asc' } }),
@@ -29,11 +36,22 @@ export async function GET(req: NextRequest) {
             ])
 
         return NextResponse.json(
-            { courses, trainers, rooms, languages, categories, locations },
+            { 
+                courses, 
+                trainers, 
+                rooms, 
+                languages, 
+                categories, 
+                locations,
+                timestamp // Include timestamp in response
+            },
             {
                 status: 200,
                 headers: {
-                    'Cache-Control': 'no-store, no-cache, must-revalidate',
+                    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0',
+                    'Surrogate-Control': 'no-store',
                 },
             },
         )
