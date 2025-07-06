@@ -53,10 +53,26 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10)
     const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
     const skip = (page - 1) * pageSize
+    const date = searchParams.get('date')
+
+    // Build where clause
+    const where: any = {}
+    if (date) {
+        const startOfDay = new Date(date)
+        startOfDay.setHours(0, 0, 0, 0)
+        const endOfDay = new Date(date)
+        endOfDay.setHours(23, 59, 59, 999)
+        
+        where.date = {
+            gte: startOfDay,
+            lte: endOfDay,
+        }
+    }
 
     try {
         const [sessions, total] = await Promise.all([
             prisma.trainingSession.findMany({
+                where,
                 skip,
                 take: pageSize,
                 orderBy: { updatedAt: 'desc' },
@@ -74,7 +90,7 @@ export async function GET(req: NextRequest) {
                     delegates: true,
                 },
             }),
-            prisma.trainingSession.count(),
+            prisma.trainingSession.count({ where }),
         ])
 
         return NextResponse.json({

@@ -23,6 +23,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Plus, ClipboardList, Trash2 } from 'lucide-react'
+import DeleteBookingsDialog from '@/components/DeleteBookingsDialog'
 import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -69,6 +70,8 @@ export default function CalendarPage() {
         null,
     )
     const [noteFormLoading, setNoteFormLoading] = useState(false)
+    const [deleteBookingsDialogOpen, setDeleteBookingsDialogOpen] = useState(false)
+    const [selectedDateForDelete, setSelectedDateForDelete] = useState<Date | null>(null)
 
     const {
         register,
@@ -216,6 +219,26 @@ export default function CalendarPage() {
             reset({ note: '' })
         }
         setNoteDialogOpen(true)
+    }
+
+    const openDeleteBookingsDialog = (date: Date) => {
+        const localDate = dayjs(date).startOf('day').toDate()
+        setSelectedDateForDelete(localDate)
+        setDeleteBookingsDialogOpen(true)
+    }
+
+    const handleBookingsDeleted = () => {
+        // Re-fetch bookings to update the calendar
+        const fetchBookings = async () => {
+            try {
+                const res = await fetch('/api/bookings?page=1&pageSize=9999')
+                const data = await res.json()
+                setBookings(Array.isArray(data.bookings) ? data.bookings : [])
+            } catch (error) {
+                console.error('Error fetching bookings:', error)
+            }
+        }
+        fetchBookings()
     }
 
     const formatTime = (start: string, end: string) => {
@@ -391,6 +414,12 @@ export default function CalendarPage() {
                                             <Plus className="h-4 w-4" />
                                         </button>
                                     )}
+                                    <button
+                                        onClick={() => openDeleteBookingsDialog(arg.date)}
+                                        className="z-10 rounded-full bg-red-100 p-1 text-red-800 hover:bg-red-200"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
                                 </div>
                             </div>
                         </>
@@ -520,6 +549,17 @@ export default function CalendarPage() {
                     }}
                 />
             ))}
+
+            {/* Delete Bookings Dialog */}
+            <DeleteBookingsDialog
+                isOpen={deleteBookingsDialogOpen}
+                onClose={() => {
+                    setDeleteBookingsDialogOpen(false)
+                    setSelectedDateForDelete(null)
+                }}
+                selectedDate={selectedDateForDelete}
+                onBookingsDeleted={handleBookingsDeleted}
+            />
         </div>
     )
 }

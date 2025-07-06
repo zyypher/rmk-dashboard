@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { apiCall } from '@/lib/api-utils'
 import PageHeading from '@/components/layout/page-heading'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
@@ -93,7 +94,7 @@ export default function BookingsPage() {
 
     const fetchDropdowns = async () => {
         try {
-            const res = await axios.get('/api/bookings/dropdowns')
+            const res = await apiCall('/api/bookings/dropdowns')
             const {
                 courses,
                 trainers,
@@ -138,9 +139,12 @@ export default function BookingsPage() {
     const resetBookingFlow = () => {
         setStep(null)
         setSelectedBooking(null)
-        setBookingData(null) // Only reset bookingData if it's no longer used for BookingModal directly
-        setSelectedSeats([]) // Only reset if not handled by BookingFlowDialog internal state
-        setDelegates({}) // Only reset if not handled by BookingFlowDialog internal state
+        setBookingData(null)
+        setSelectedSeats([])
+        setDelegates({})
+        // Clear search and refresh the table after any booking operation
+        setSearch('')
+        fetchBookings(currentPage)
     }
 
     const handleDelete = async () => {
@@ -150,7 +154,8 @@ export default function BookingsPage() {
         try {
             await axios.delete(`/api/bookings/${bookingToDelete.id}`)
             toast.success('Booking deleted')
-            fetchBookings()
+            setSearch('') // Clear search state
+            fetchBookings(currentPage) // Refresh with current page
         } catch {
             toast.error('Failed to delete booking')
         } finally {
