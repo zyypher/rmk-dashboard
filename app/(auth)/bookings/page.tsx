@@ -138,9 +138,12 @@ export default function BookingsPage() {
     const resetBookingFlow = () => {
         setStep(null)
         setSelectedBooking(null)
-        setBookingData(null) // Only reset bookingData if it's no longer used for BookingModal directly
-        setSelectedSeats([]) // Only reset if not handled by BookingFlowDialog internal state
-        setDelegates({}) // Only reset if not handled by BookingFlowDialog internal state
+        setBookingData(null)
+        setSelectedSeats([])
+        setDelegates({})
+        // Clear search and refresh the table after any booking operation
+        setSearch('')
+        fetchBookings(currentPage)
     }
 
     const handleDelete = async () => {
@@ -150,7 +153,8 @@ export default function BookingsPage() {
         try {
             await axios.delete(`/api/bookings/${bookingToDelete.id}`)
             toast.success('Booking deleted')
-            fetchBookings()
+            setSearch('') // Clear search state
+            fetchBookings(currentPage) // Refresh with current page
         } catch {
             toast.error('Failed to delete booking')
         } finally {

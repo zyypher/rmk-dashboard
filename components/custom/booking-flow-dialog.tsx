@@ -79,36 +79,31 @@ export default function BookingFlowDialog({
     useEffect(() => {
         if (isOpen && !dropdownsLoading && courses.length > 0) { // Check for courses.length > 0 to ensure data is loaded
             if (initialBooking) {
-                // Only update internal state if a new booking object is provided or if internal state is null
-                // Using initialBooking.id to check for new booking for edit mode.
-                if (bookingData === null || initialBooking.id !== bookingData.id) {
-                    console.log('##BookingFlowDialog: Initial booking changed, processing new initialBooking.', { initialBookingId: initialBooking.id, currentBookingDataId: bookingData?.id });
-                    const enrichedBooking = {
-                        ...initialBooking,
-                        course: courses.find((c) => c.id === initialBooking.courseId) || initialBooking.course,
-                        trainer: trainers.find((t) => t.id === initialBooking.trainerId) || initialBooking.trainer,
-                        location: locations.find((l) => l.id === initialBooking.locationId) || initialBooking.location,
-                        room: rooms.find((r) => r.id === initialBooking.roomId) || initialBooking.room,
-                    }
-                    setBookingData(enrichedBooking)
+                // Edit mode - always update with the new booking data
+                console.log('##BookingFlowDialog: Edit mode, processing initialBooking.', { initialBookingId: initialBooking.id });
+                const enrichedBooking = {
+                    ...initialBooking,
+                    course: courses.find((c) => c.id === initialBooking.courseId) || initialBooking.course,
+                    trainer: trainers.find((t) => t.id === initialBooking.trainerId) || initialBooking.trainer,
+                    location: locations.find((l) => l.id === initialBooking.locationId) || initialBooking.location,
+                    room: rooms.find((r) => r.id === initialBooking.roomId) || initialBooking.room,
+                }
+                setBookingData(enrichedBooking)
 
-                    setSelectedSeats(initialBooking.selectedSeats || [])
-                    const delegateMap: Record<string, Delegate> = {}
-                    initialBooking.delegates?.forEach((d) => {
-                        delegateMap[d.seatId] = d
-                    })
-                    setDelegates(delegateMap)
-                    isAddModeInitialized.current = false; // Reset flag when in edit mode
-                }
+                setSelectedSeats(initialBooking.selectedSeats || [])
+                const delegateMap: Record<string, Delegate> = {}
+                initialBooking.delegates?.forEach((d) => {
+                    delegateMap[d.seatId] = d
+                })
+                setDelegates(delegateMap)
+                isAddModeInitialized.current = false; // Reset flag when in edit mode
             } else {
-                 // Reset for new booking only when dropdowns are loaded and it's a new booking
-                if (!isAddModeInitialized.current) {
-                    console.log('##BookingFlowDialog: Add mode, resetting internal state.');
-                    setBookingData(null)
-                    setSelectedSeats([])
-                    setDelegates({})
-                    isAddModeInitialized.current = true; // Set flag after initial reset
-                }
+                // Add mode - always reset state for new booking
+                console.log('##BookingFlowDialog: Add mode, resetting internal state.');
+                setBookingData(null)
+                setSelectedSeats([])
+                setDelegates({})
+                isAddModeInitialized.current = true; // Set flag after initial reset
             }
         }
     }, [isOpen, initialBooking, dropdownsLoading, courses, trainers, rooms, locations])
@@ -223,6 +218,12 @@ export default function BookingFlowDialog({
             }
 
             toast.success(`Booking ${isEditing ? 'updated' : 'added'} successfully`)
+            // Reset state before closing
+            setBookingData(null)
+            setSelectedSeats([])
+            setDelegates({})
+            setConflictErrors([])
+            isAddModeInitialized.current = false
             onClose() // Close the dialog on success
         } catch (error: any) {
             toast.error(error.message || 'Failed to submit')
@@ -234,6 +235,11 @@ export default function BookingFlowDialog({
 
     const handleClose = () => {
         setStep(null) // Reset step on close
+        setBookingData(null)
+        setSelectedSeats([])
+        setDelegates({})
+        setConflictErrors([])
+        isAddModeInitialized.current = false
         onClose()
     }
 
