@@ -434,6 +434,7 @@ export default function CalendarPage() {
                         }}
                         data-tooltip-id={`tooltip-${arg.event.id}`}
                         data-tooltip-html={arg.event.extendedProps.tooltipHTML}
+                        className="mb-2" // Add margin-bottom for spacing between tags
                     >
                         <div
                             className="rounded p-1 text-xs shadow-sm"
