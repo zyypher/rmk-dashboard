@@ -72,6 +72,7 @@ export default function CalendarPage() {
     const [noteFormLoading, setNoteFormLoading] = useState(false)
     const [deleteBookingsDialogOpen, setDeleteBookingsDialogOpen] = useState(false)
     const [selectedDateForDelete, setSelectedDateForDelete] = useState<Date | null>(null)
+    const [hiddenTooltipId, setHiddenTooltipId] = useState<string | null>(null)
 
     const {
         register,
@@ -352,18 +353,23 @@ export default function CalendarPage() {
                 eventOrder="extendedProps.sortOrder"
                 height="auto"
                 eventClick={(arg) => {
-                    const clickedBooking = arg.event.extendedProps as Booking
-                    // Explicitly reconstruct the booking object to ensure reactivity and full data
-                    setSelectedBookingForDialog({
-                        ...clickedBooking,
-                        room: clickedBooking.room
-                            ? { ...clickedBooking.room }
-                            : { id: '', name: '', capacity: 0, locationId: '' }, // Ensure room is always a complete object
-                        location: clickedBooking.location
-                            ? { ...clickedBooking.location }
-                            : { name: '' }, // Ensure location is always an object
-                    })
-                    setIsBookingFlowDialogOpen(true)
+                    // Hide the tooltip for this event by setting hiddenTooltipId
+                    setHiddenTooltipId(arg.event.id)
+                    setTimeout(() => {
+                        const clickedBooking = arg.event.extendedProps as Booking
+                        setSelectedBookingForDialog({
+                            ...clickedBooking,
+                            room: clickedBooking.room
+                                ? { ...clickedBooking.room }
+                                : { id: '', name: '', capacity: 0, locationId: '' },
+                            location: clickedBooking.location
+                                ? { ...clickedBooking.location }
+                                : { name: '' },
+                        })
+                        setIsBookingFlowDialogOpen(true)
+                        // Reset hiddenTooltipId after modal opens
+                        setTimeout(() => setHiddenTooltipId(null), 700)
+                    }, 0)
                 }}
                 dayCellContent={(arg) => {
                     const dateKey = dayjs(arg.date).format('YYYY-MM-DD')
@@ -435,6 +441,7 @@ export default function CalendarPage() {
                         data-tooltip-id={`tooltip-${arg.event.id}`}
                         data-tooltip-html={arg.event.extendedProps.tooltipHTML}
                         className="mb-2" // Add margin-bottom for spacing between tags
+                        data-tooltip-hidden={hiddenTooltipId === arg.event.id}
                     >
                         <div
                             className="rounded p-1 text-xs shadow-sm"
@@ -540,6 +547,7 @@ export default function CalendarPage() {
                     id={`tooltip-${e.id}`}
                     place="top"
                     float={true}
+                    isOpen={hiddenTooltipId === e.id ? false : undefined}
                     className="tooltip-solid !z-[9999] !border !border-gray-200 !text-gray-900 !shadow-lg"
                     style={{
                         padding: '10px',
