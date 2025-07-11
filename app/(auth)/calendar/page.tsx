@@ -73,6 +73,7 @@ export default function CalendarPage() {
     const [deleteBookingsDialogOpen, setDeleteBookingsDialogOpen] = useState(false)
     const [selectedDateForDelete, setSelectedDateForDelete] = useState<Date | null>(null)
     const [hiddenTooltipId, setHiddenTooltipId] = useState<string | null>(null)
+    const [tooltipsEnabled, setTooltipsEnabled] = useState(true)
 
     const {
         register,
@@ -353,7 +354,8 @@ export default function CalendarPage() {
                 eventOrder="extendedProps.sortOrder"
                 height="auto"
                 eventClick={(arg) => {
-                    // Hide the tooltip for this event by setting hiddenTooltipId
+                    // Hide all tooltips before opening the modal
+                    setTooltipsEnabled(false)
                     setHiddenTooltipId(arg.event.id)
                     setTimeout(() => {
                         const clickedBooking = arg.event.extendedProps as Booking
@@ -367,7 +369,6 @@ export default function CalendarPage() {
                                 : { name: '' },
                         })
                         setIsBookingFlowDialogOpen(true)
-                        // Reset hiddenTooltipId after modal opens
                         setTimeout(() => setHiddenTooltipId(null), 700)
                     }, 0)
                 }}
@@ -471,6 +472,7 @@ export default function CalendarPage() {
                 onClose={() => {
                     setIsBookingFlowDialogOpen(false)
                     setSelectedBookingForDialog(null)
+                    setTooltipsEnabled(true)
                     // Re-fetch bookings to ensure calendar is updated after add/edit
                     const fetchBookings = async () => {
                         try {
@@ -547,7 +549,7 @@ export default function CalendarPage() {
                     id={`tooltip-${e.id}`}
                     place="top"
                     float={true}
-                    isOpen={hiddenTooltipId === e.id ? false : undefined}
+                    isOpen={tooltipsEnabled && hiddenTooltipId !== e.id ? undefined : false}
                     className="tooltip-solid !z-[9999] !border !border-gray-200 !text-gray-900 !shadow-lg"
                     style={{
                         padding: '10px',
