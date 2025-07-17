@@ -33,11 +33,7 @@ export default function DeleteBookingsDialog({
     const [loading, setLoading] = useState(false)
     const [deleteLoading, setDeleteLoading] = useState(false)
 
-    // Filter bookings to only those matching the selected date in Gulf Standard Time
-    const selectedDateString = selectedDate ? dayjs(selectedDate).tz('Asia/Dubai').format('YYYY-MM-DD') : '';
-    const filteredBookings = bookings.filter(b =>
-        dayjs(b.date).tz('Asia/Dubai').format('YYYY-MM-DD') === selectedDateString
-    );
+    // Use bookings directly everywhere below
 
     useEffect(() => {
         if (isOpen && selectedDate) {
@@ -67,7 +63,7 @@ export default function DeleteBookingsDialog({
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            setSelectedBookings(filteredBookings.map(booking => booking.id))
+            setSelectedBookings(bookings.map(booking => booking.id))
         } else {
             setSelectedBookings([])
         }
@@ -132,7 +128,7 @@ export default function DeleteBookingsDialog({
                     <div className="flex items-center justify-center py-8">
                         <div className="text-gray-500">Loading bookings...</div>
                     </div>
-                ) : filteredBookings.length === 0 ? (
+                ) : bookings.length === 0 ? (
                     <div className="flex items-center justify-center py-8">
                         <div className="text-gray-500">No bookings found for this date</div>
                     </div>
@@ -141,11 +137,11 @@ export default function DeleteBookingsDialog({
                         <div className="flex items-center justify-between border-b pb-3">
                             <div className="flex items-center space-x-2">
                                 <Checkbox
-                                    checked={selectedBookings.length === filteredBookings.length && filteredBookings.length > 0}
+                                    checked={selectedBookings.length === bookings.length && bookings.length > 0}
                                     onCheckedChange={handleSelectAll}
                                 />
                                 <span className="font-medium">
-                                    Select All ({filteredBookings.length} bookings)
+                                    Select All ({bookings.length} bookings)
                                 </span>
                             </div>
                             {selectedBookings.length > 0 && (
@@ -156,7 +152,7 @@ export default function DeleteBookingsDialog({
                         </div>
 
                         <div className="max-h-96 space-y-3 overflow-y-auto">
-                            {filteredBookings.map((booking) => (
+                            {bookings.map((booking) => (
                                 <div
                                     key={booking.id}
                                     className="flex items-start space-x-3 rounded-lg border p-3 hover:bg-gray-50"
