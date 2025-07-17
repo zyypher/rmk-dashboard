@@ -4,6 +4,11 @@ import { Upload } from '@aws-sdk/lib-storage'
 import { S3Client } from '@aws-sdk/client-s3'
 import { Readable } from 'stream'
 import { validateBookingConflicts } from '@/utils/validateBookingConflicts'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 const BUCKET_NAME = process.env.AWS_BUCKET_NAME!
 
@@ -58,11 +63,9 @@ export async function GET(req: NextRequest) {
     // Build where clause
     const where: any = {}
     if (date) {
-        const startOfDay = new Date(date)
-        startOfDay.setHours(0, 0, 0, 0)
-        const endOfDay = new Date(date)
-        endOfDay.setHours(23, 59, 59, 999)
-        
+        // Use Gulf Standard Time for day boundaries
+        const startOfDay = dayjs.tz(date, 'Asia/Dubai').startOf('day').utc().toDate()
+        const endOfDay = dayjs.tz(date, 'Asia/Dubai').endOf('day').utc().toDate()
         where.date = {
             gte: startOfDay,
             lte: endOfDay,
