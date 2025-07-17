@@ -227,6 +227,7 @@ export default function CalendarPage() {
         const localDate = dayjs(date).startOf('day').toDate()
         setSelectedDateForDelete(localDate)
         setDeleteBookingsDialogOpen(true)
+        setTooltipsEnabled(false) // Hide tooltips when opening delete dialog
     }
 
     const handleBookingsDeleted = () => {
@@ -567,6 +568,7 @@ export default function CalendarPage() {
                 onClose={() => {
                     setDeleteBookingsDialogOpen(false)
                     setSelectedDateForDelete(null)
+                    setTooltipsEnabled(true) // Show tooltips again when closing dialog
                 }}
                 selectedDate={selectedDateForDelete}
                 onBookingsDeleted={handleBookingsDeleted}
