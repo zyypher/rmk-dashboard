@@ -1,14 +1,33 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// ---- TZ helpers (format as date-only/time-only in Asia/Dubai) ----
+const TZ = 'Asia/Dubai'
+
+const fmtDate = (d: Date) =>
+    new Intl.DateTimeFormat('en-CA', {
+        timeZone: TZ,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(d) // -> YYYY-MM-DD
+
+const fmtTime = (d: Date) =>
+    new Intl.DateTimeFormat('en-US', {
+        timeZone: TZ,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+    }).format(d) // -> 09:00 AM
+
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
 
     const clientName = searchParams.get('clientName') || ''
     const delegateName = searchParams.get('delegateName') || ''
     const clientPhone = searchParams.get('clientPhone') || ''
-    const dateFrom = searchParams.get('dateFrom') || ''
-    const dateTo = searchParams.get('dateTo') || ''
+    const dateFrom = searchParams.get('dateFrom') || '' // expected 'YYYY-MM-DD'
+    const dateTo = searchParams.get('dateTo') || '' // expected 'YYYY-MM-DD'
     const courseId = searchParams.get('courseId') || ''
     const locationIds = searchParams.get('locationIds') || ''
 
@@ -53,34 +72,36 @@ export async function GET(req: Request) {
         },
     })
 
+    // string compare using YYYY-MM-DD in the business TZ
     const filtered = delegates.filter((d) => {
         const s = d.session
         if (!s) return false
 
-        // Date range filtering
-        const sessionDate = new Date(s.date).toISOString().split('T')[0]
-        const matchesDateRange = dateFrom && dateTo
-            ? sessionDate >= dateFrom && sessionDate <= dateTo
-            : dateFrom
-            ? sessionDate >= dateFrom
-            : dateTo
-            ? sessionDate <= dateTo
-            : true
+        const sessionDate = fmtDate(s.date)
+
+        const matchesDateRange =
+            dateFrom && dateTo
+                ? sessionDate >= dateFrom && sessionDate <= dateTo
+                : dateFrom
+                  ? sessionDate >= dateFrom
+                  : dateTo
+                    ? sessionDate <= dateTo
+                    : true
 
         const matchesCourse = courseId ? s.courseId === courseId : true
-        
-        // Multi-location filtering
+
         const locationIdsArray = locationIds ? locationIds.split(',') : []
-        const matchesLocation = locationIdsArray.length > 0 
-            ? locationIdsArray.includes(s.locationId || '')
-            : true
+        const matchesLocation =
+            locationIdsArray.length > 0
+                ? locationIdsArray.includes(s.locationId || '')
+                : true
 
         return matchesDateRange && matchesCourse && matchesLocation
     })
 
     const result = filtered.map((d) => ({
-        clientName: d.client?.name ?? '-',
-        clientPhone: d.client?.phone ?? '-',
+        clientName: (d.client?.name ?? '-').trim(),
+        clientPhone: (d.client?.phone ?? '-').trim(),
         delegateName: d.name,
         delegateEmail: d.email,
         delegatePhone: d.phone,
@@ -88,16 +109,10 @@ export async function GET(req: Request) {
         courseTitle: d.session?.course?.title ?? '-',
         trainer: d.session?.trainer?.name ?? '-',
         location: d.session?.location?.name ?? '-',
-        date: d.session?.date?.toISOString().split('T')[0] ?? '-',
+        date: d.session ? fmtDate(d.session.date) : '-',
         time:
             d.session?.startTime && d.session?.endTime
-                ? `${new Date(d.session.startTime).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                  })} - ${new Date(d.session.endTime).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                  })}`
+                ? `${fmtTime(d.session.startTime)} - ${fmtTime(d.session.endTime)}`
                 : '-',
     }))
 
