@@ -1,36 +1,121 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🧠 RMK Experts — Training Management Dashboard
 
-## Getting Started
+Welcome to the **RMK Experts Training Management System** — an advanced web-based platform designed to streamline the entire training lifecycle for educational and corporate training institutions.  
 
-First, run the development server:
+Built using **Next.js 14**, **TailwindCSS**, **Prisma**, and **PostgreSQL**, it features an intelligent and modern admin dashboard for managing courses, trainers, bookings, clients, and performance analytics.
+
+---
+
+## 📊 Overview
+
+![RMK Experts Dashboard Banner](./banner.png)
+
+This platform enables administrators and training coordinators to manage operations efficiently, from course scheduling and trainer management to real-time booking analytics and automated report generation.
+
+### 🔹 Core Functionalities
+- 📅 **Training Management** — Courses, categories, trainers, trainer leaves, and calendars.  
+- 🏢 **Management Modules** — Clients, locations, and delegates.  
+- 🧾 **Bookings & Reports** — Bookings overview, analytics charts, and report exports.  
+- 🧑‍🏫 **Trainer & Room Management** — Scheduling, leaves, and resource allocation.  
+- 🌐 **System Administration** — User roles, permissions, settings, and languages.  
+- 📈 **Dashboard Analytics** — Visual performance tracking via **ApexCharts** and **Recharts**.
+
+---
+
+## ⚙️ Tech Stack
+
+| Category | Technologies Used |
+|-----------|-------------------|
+| **Frontend** | Next.js 14, React 18, TailwindCSS, TypeScript, Radix UI, React Hook Form |
+| **Backend** | Prisma ORM, Next.js API Routes, Node.js |
+| **Database** | PostgreSQL |
+| **Authentication** | JSON Web Tokens (JWT) |
+| **Storage** | AWS S3 |
+| **Email Services** | SendGrid |
+| **Visualization** | ApexCharts, Recharts |
+| **Utilities** | Date-fns, Lodash, ExcelJS, PDF-Lib, React-Quill, FullCalendar |
+
+---
+
+## 🛠️ Getting Started
+
+Clone the repository and install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/therealvishnuvinayan/rmk-dashboard.git
+cd rmk-dashboard
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create a `.env` file in the root directory using the provided environment variables:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+DATABASE_URL=
+JWT_SECRET=
+NEXT_PUBLIC_API_BASE_URL=
+NEXT_PUBLIC_AWS_REGION=
+NEXT_PUBLIC_AWS_ACCESS_KEY_ID=
+NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY=
+NEXT_PUBLIC_AWS_BUCKET_NAME=
+SENDGRID_API_KEY=
+SENDGRID_FROM_EMAIL=
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+Push your Prisma schema and start the development server:
 
-## Learn More
+```bash
+npm run db:push
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## 📁 Folder Structure
 
-## Deploy on Vercel
+```
+.
+├── app/                # Next.js App Router pages & layouts
+├── components/         # Shared UI and logic components
+├── prisma/             # Database schema and migrations
+├── public/             # Static assets and uploaded media
+├── styles/             # Tailwind and global styles
+└── package.json
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## 🧩 Key Highlights
+
+- 🧾 Automated report generation with ExcelJS and jsPDF  
+- 📊 Real-time charting via ApexCharts and Recharts  
+- 📅 Interactive FullCalendar integration for scheduling  
+- ☁️ AWS S3 file storage for documents and certificates  
+- ✉️ Email automation powered by SendGrid  
+- ⚡ Optimized Next.js API routes and Prisma transactions  
+- 🔐 Secure JWT-based authentication
+
+---
+
+## 🚀 Deployment
+
+The project is configured for deployment on **Vercel**, with database hosting on **Vercel Postgres** or **AWS RDS**.
+
+```bash
+npm run build
+npm start
+```
+
+---
+
+## 👨‍💻 About
+
+Developed by **Vishnu Vinayan** — Senior Full Stack Developer passionate about scalable systems, UI/UX precision, and intelligent automation.
+
+For portfolio and more projects:  
+🔗 [https://www.vishnuvinayan.com](https://www.vishnuvinayan.com)
+
+---
+
+© 2025 RMK Experts | Built with ❤️ using Next.js, Prisma & TailwindCSS
