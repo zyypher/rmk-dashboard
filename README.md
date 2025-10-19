@@ -8,8 +8,6 @@ Built using **Next.js 14**, **TailwindCSS**, **Prisma**, and **PostgreSQL**, it 
 
 ## 📊 Overview
 
-![RMK Experts Dashboard Banner](./banner.png)
-
 This platform enables administrators and training coordinators to manage operations efficiently, from course scheduling and trainer management to real-time booking analytics and automated report generation.
 
 ### 🔹 Core Functionalities
